@@ -21,6 +21,15 @@ recorded the first time it is seen with a non-empty `pull_requests`, and reused 
 when the association has been cleared. The marker's shape never changes — a push run still
 emits the shorter form, and a PR run keeps its trailing `:<pr>`.
 
+The map only helps a run that was SEEN while its PR was open. A red run whose FIRST sight is
+after the merge (auto-merge lands a PR minutes after the run concludes, and the detector ticks
+every few minutes) has no recorded PR and no live association, so the marker loses the field
+anyway. Measured 2026-11-23: `R:45116060775:completed:failure:qa-validate` on merged PR #1362's
+old head, with `run_prs: {}` in the caller's state. Such a run is therefore resolved from a
+merge-surviving source — `head_branch` → `gh pr list --state all --head <branch>`, which keeps
+answering after the branch is deleted — before the diff runs. That resolution is capped
+(`PR_RESOLVE_MAX`) so a tick with many merged PR runs cannot become a request storm.
+
 With no heartbeat flag the quiet tick is still silent. The heartbeat is a bucket of
 wall-clock time divided by N, never a timestamp, so identical ticks look identical to
 the caller's state file and only the bucket boundary wakes the agent.
@@ -48,6 +57,12 @@ from pathlib import Path
 
 DEFAULT_REPO = "andyholst/trending-local-llms"
 MARKER_PREFIXES = ("C:", "R:", "M:", "H:")
+
+# The per-tick cap on branch→PR resolutions (issue #1364). A tick that follows a burst of
+# merges can carry many PR runs whose `pull_requests` GitHub has already cleared; resolving
+# every one with a `gh pr list` call would turn the detector into a request storm, so the
+# oldest-first budget bounds the tick and the rest resolve on a later tick.
+PR_RESOLVE_MAX = 10
 
 # The minimum settle window between a wake-up and a claim, in seconds (issue #1312).
 #
@@ -102,6 +117,50 @@ def pull_token(run: dict) -> str:
         return ""
     number = rows[0].get("number") if isinstance(rows[0], dict) else None
     return str(number) if isinstance(number, int) and not isinstance(number, bool) else ""
+
+
+def resolve_branch_prs(repo: str, client: str, branches: list[str]) -> dict[str, int]:
+    """Map `head_branch` → PR number for branches whose run row lost `pull_requests` (#1364).
+
+    `gh pr list --state all --head <branch>` keeps answering after the PR merges and its branch
+    is deleted (measured 2026-11-23: PR #1362, merged `2d5b1be`, branch gone, still resolves), so
+    it is the merge-surviving source issue #1355's Done-when named. A branch with no unique PR
+    contributes nothing rather than a guess; a failed read contributes nothing either, so one
+    unreadable branch can never lose the rest of the tick's markers.
+    """
+    resolved: dict[str, int] = {}
+    for branch in branches[:PR_RESOLVE_MAX]:
+        proc = subprocess.run(
+            [client, "pr", "list", "--repo", repo, "--state", "all",
+             "--head", branch, "--json", "number", "--limit", "1"],
+            capture_output=True, text=True, timeout=40, check=False)
+        if proc.returncode != 0:
+            continue
+        try:
+            rows = json.loads(proc.stdout)
+        except ValueError:
+            continue
+        if isinstance(rows, list) and len(rows) == 1 and isinstance(rows[0].get("number"), int):
+            resolved[branch] = rows[0]["number"]
+    return resolved
+
+
+def inject_run_prs(runs: list[dict], pr_by_branch: dict[str, int]) -> list[dict]:
+    """Pure half of the #1364 resolution: give a PR run back the `pull_requests` the merge cleared.
+
+    Only a `pull_request` run whose live `pull_requests` is empty and whose `head_branch` the
+    caller resolved is touched, so a push run and a run that still carries its association are
+    passed through byte-identically and the marker's shape never changes. The diff
+    (`marker_state`) stays pure; this is the only place the resolved number enters a run row.
+    """
+    injected: list[dict] = []
+    for run in runs:
+        branch = run.get("head_branch")
+        if (run.get("event") == "pull_request" and not pull_token(run)
+                and isinstance(branch, str) and branch in pr_by_branch):
+            run = {**run, "pull_requests": [{"number": pr_by_branch[branch]}]}
+        injected.append(run)
+    return injected
 
 
 def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
@@ -204,6 +263,18 @@ def fetch_payload(repo: str, client: str) -> dict:
         comments[kind] = as_list(get(f"{kind}/{COMMENT_QUERY}"))
     runs_payload = get("actions/runs?per_page=30")
     runs = as_list(runs_payload.get("workflow_runs")) if isinstance(runs_payload, dict) else as_list(runs_payload)
+    # A PR run whose FIRST sight is after its merge has neither a live `pull_requests` nor a
+    # recorded one (issue #1364): resolve those branches from the merge-surviving source before
+    # the diff, so the marker still names the thread the woken lane must read.
+    missing: list[str] = []
+    for run in runs:
+        branch = run.get("head_branch")
+        if (run.get("event") == "pull_request" and not pull_token(run)
+                and isinstance(branch, str) and branch and branch not in missing):
+            missing.append(branch)
+    if missing:
+        client = gh_client()
+        runs = inject_run_prs(runs, resolve_branch_prs(repo, client, missing))
     return {"comments": comments, "runs": runs, "master": get("commits/master")}
 
 
