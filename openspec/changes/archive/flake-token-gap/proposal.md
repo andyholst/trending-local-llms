@@ -1,6 +1,7 @@
 # Proposal: flake-token-gap
 
 Issue: #1371
+PR: #1373
 
 ## Why
 
