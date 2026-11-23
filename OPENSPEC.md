@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **465**
+Active changes: **1** · archived: **466**
 
 ## Active changes
 
@@ -280,6 +280,7 @@ Active changes: **1** · archived: **465**
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
 | `land-invalid-change-repair-owed-rows` | archived | #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write) | #1106 | [rulebook-invalid-change-repair](openspec/changes/archive/land-invalid-change-repair-owed-rows/specs/rulebook-invalid-change-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-invalid-change-repair-owed-rows/proposal.md) |
 | `land-planner-implementer-skill-notes-1440` | archived | #1440 | #1441 | [fleet-host-sync-check](openspec/changes/archive/land-planner-implementer-skill-notes-1440/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-planner-implementer-skill-notes-1440/proposal.md) |
+| `land-push-and-verify-rule-1423` | archived | #1423 | #1424 | [fleet-lane-contracts](openspec/changes/archive/land-push-and-verify-rule-1423/specs/fleet-lane-contracts/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-push-and-verify-rule-1423/proposal.md) |
 | `land-reviewer-skill-notes-1432` | archived | #1432 | #1434 | [fleet-host-sync-check](openspec/changes/archive/land-reviewer-skill-notes-1432/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-reviewer-skill-notes-1432/proposal.md) |
 | `lane-wait-status` | archived | #1232 | #1237 | [fleet-handover](openspec/changes/archive/lane-wait-status/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/lane-wait-status/proposal.md) |
 | `ledger-errorless-tests-data-driven` | archived | #1386 | #1387 | [pipeline-failure-ledger-tests](openspec/changes/archive/ledger-errorless-tests-data-driven/specs/pipeline-failure-ledger-tests/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/ledger-errorless-tests-data-driven/proposal.md) |

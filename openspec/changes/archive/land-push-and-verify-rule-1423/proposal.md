@@ -1,6 +1,7 @@
 # Proposal: land-push-and-verify-rule-1423
 
 Issue: #1423
+PR: #1424
 
 ## Why
 

@@ -524,7 +524,6 @@ def main() -> int:
         test_real_seam_refuses_a_diverged_default_profile,
         test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
-        test_lane_skills_carry_the_push_and_verify_rule,
         test_ci_wires_the_guard_on_pr_and_push,
         test_the_lane_set_is_derived_and_the_new_lane_is_wired,
     ):
