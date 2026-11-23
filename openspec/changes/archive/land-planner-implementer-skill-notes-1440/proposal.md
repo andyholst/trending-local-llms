@@ -1,6 +1,7 @@
 # Proposal: land-planner-implementer-skill-notes-1440
 
 Issue: #1440
+PR: #1441
 
 ## Why
 
