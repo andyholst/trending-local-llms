@@ -1,6 +1,7 @@
 # Proposal: watcher-files-red
 
 Issue: #1376
+PR: #1377
 
 ## Why
 
