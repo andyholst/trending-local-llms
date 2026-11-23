@@ -41,6 +41,12 @@ NEXT_DUTY_ROW = "tests/test_fleet_handover_protocol.py"
 REVIEWER_BOARD_NOTE = "The board note also names the PRs AWAITING REVIEW"
 REVIEWER_HANDOVER = "handover tll-reviewer"
 REVIEWER_FIRST = "Spend review capacity BEFORE producing new PRs"
+#: Issue #1361 — the ruled `tll-pr-rebase` lane is the repair path for a branch whose
+#: conflicts are confined to the generated artifacts, so its habitual-conflict list must
+#: name that pair with the regenerate rule; otherwise it stop-and-reports on exactly the
+#: PRs it exists to repair.
+PR_REBASE_GENERATED = ("OPENSPEC.md", "ARCHITECTURE.md")
+PR_REBASE_REGENERATE = ("make openspec-index", "make architecture-refresh")
 
 
 def test_the_planner_board_note_names_prs_awaiting_review() -> int:
@@ -108,6 +114,28 @@ def test_rulebook_carries_ghost_guard_row() -> int:
         return 1
     print("ok   AGENTS.md names the ghost-run guard module")
     return 0
+
+
+def test_pr_rebase_soul_names_the_generated_artifact_pair() -> int:
+    """Issue #1361: the rebase lane's conflict list carries the generated pair."""
+    path = ROOT / "agents" / "tll-pr-rebase" / "SOUL.md"
+    rel = path.relative_to(ROOT)
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    failed = 0
+    for needle, why in (
+        (PR_REBASE_GENERATED[0], "OPENSPEC.md in the habitual-conflict list"),
+        (PR_REBASE_GENERATED[1], "ARCHITECTURE.md in the habitual-conflict list"),
+        (PR_REBASE_REGENERATE[0], "the OPENSPEC.md regenerate command"),
+        (PR_REBASE_REGENERATE[1], "the ARCHITECTURE.md regenerate command"),
+    ):
+        if needle in text:
+            print(f"ok   {rel} carries {why}")
+        else:
+            print(f"FAIL {rel} dropped {why}")
+            failed += 1
+    return failed
+
+
 STATUS_RULE = "While a test or CI gate runs, post a status comment on the ISSUE"
 HOST_STAMP = "user@hostname"
 
@@ -165,6 +193,7 @@ def main() -> int:
     failed += test_rulebook_carries_ghost_guard_row()
     failed += test_next_issue_duty_is_documented()
     failed += test_the_planner_board_note_names_prs_awaiting_review()
+    failed += test_pr_rebase_soul_names_the_generated_artifact_pair()
     if failed:
         print(f"FAIL {failed}")
         return 1
