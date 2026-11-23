@@ -32,6 +32,31 @@ REVIEW_SHAPE = "· reviewing #<id> · PR #<n>"
 PLANNER_READS = "The planner reads the issue comments to delegate accordingly."
 AGENTS_SECTION = "TLL fleet — lifecycle, delegation and divergence gate"
 FOLLOW_UP = "Always follow up on the issue"
+#: Issue #1418: the host-ahead pitfall notes are LANDED, reconciled, in both mirrors.
+HOST_AHEAD_HEADER = "## Host notes ahead of master"
+HOST_TIMESTAMP = "20261123T140611Z"
+HOST_NAME = "asimov@mac"
+LANDED_HOST_AHEAD_NOTES = {
+    "tll-planner": (
+        "agents/tll-planner/skills/tll-planner/SKILL.md",
+        (
+            ("Bound lane concurrency", "#1416"),
+            ('A PR with "no checks reported"', "#1115"),
+            ("wiping Hermes runtime stamps", "#1401"),
+            ("SUPERSEDE a filed `validate`/`openspec-index` failure", "#1412/#1413"),
+        ),
+    ),
+    "tll-implementer": (
+        "agents/tll-implementer/skills/tll-implementer/SKILL.md",
+        (
+            ("`## Technical Solution` is a fast red in the `closure` job", "scripts/pr_body.py"),
+            ("an OpenSpec index check on the MERGE TREE", "#1239"),
+            ("force-push YOUR branch between your push and the merge", "#1398"),
+            ("master-alarm routing sees only a BARE `make <target>` LINE", "master_alarm.py"),
+            ("re-read the PR's live state", "state,mergedAt,mergeCommit"),
+        ),
+    ),
+}
 
 
 def check(cond: bool, msg: str) -> int:
@@ -324,11 +349,34 @@ def test_ci_wires_the_guard_on_pr_and_push() -> int:
     return failed
 
 
+def test_lane_skill_mirrors_carry_landed_host_ahead_notes() -> int:
+    """Issue #1418: both lane mirrors carry the reconciled host-ahead pitfall notes.
+
+    The host copies ran ahead of master with a `## Host notes ahead of master` section.
+    They are landed here MERGED into each skill's own Pitfalls list — no timestamp
+    header, no machine name — and every rule keeps its issue reference.
+    """
+    failed = 0
+    for lane, (rel, notes) in LANDED_HOST_AHEAD_NOTES.items():
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        pitfalls = text.split("## Pitfalls", 1)[-1].split("\n## ", 1)[0]
+        for phrase, reference in notes:
+            failed += check(phrase in pitfalls, f"{lane} skill's Pitfalls carry {phrase!r}")
+            failed += check(reference in text, f"{lane} skill keeps the reference {reference!r}")
+        failed += check(
+            HOST_AHEAD_HEADER not in text, f"{lane} skill dropped the host timestamp header"
+        )
+        failed += check(HOST_TIMESTAMP not in text, f"{lane} skill dropped the host timestamp")
+        failed += check(HOST_NAME not in text, f"{lane} skill dropped the machine name")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
         test_every_lane_carries_the_pr_handover_shapes,
         test_planner_skill_reads_the_comments,
+        test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
