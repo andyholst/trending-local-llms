@@ -278,7 +278,10 @@ jobs:
       - name: OpenSpec index on the merge tree (issue #1239)
         run: |
           set -euo pipefail
-          git fetch origin master:refs/remotes/origin/master --depth=1 >/dev/null
+          # No --depth=1: the validate checkout uses fetch-depth: 0, and a shallow
+          # fetch here would truncate the history that tests/test_commit_authorship.py
+          # reads later in this same job (issue #1239 follow-up).
+          git fetch origin master:refs/remotes/origin/master >/dev/null
           if ! git merge --no-commit --no-ff origin/master >/dev/null 2>&1; then
             git merge --abort >/dev/null 2>&1 || true
             echo "[merge-tree-index] MERGE CONFLICT: rebase on current master and retry"

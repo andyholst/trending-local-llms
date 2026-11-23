@@ -172,6 +172,7 @@ def test_every_validate_gate_is_on_a_list():
     expected_keepers = {
         "architecture-check": "qa-validate architecture-repair + architecture-bot",
         "openspec-check": "qa-validate index-repair + architecture-bot",
+        "openspec-index-check": "qa-validate index-repair + architecture-bot",
     }
     for gate in a.KEEPERS:
         keeper = a.GATES[gate][1]

@@ -60,6 +60,13 @@ def main() -> int:
     check("validate carries the merge-tree step", bool(step))
     for name in CLAUSES:
         check(f"step keeps {name}", name not in missing(step), name)
+    # The validate checkout is fetch-depth: 0 so the authorship test can read real
+    # history. A shallow fetch in this step silently truncates it and reddens
+    # tests/test_commit_authorship.py later in the same job.
+    fetch_line = next((ln.strip() for ln in step.splitlines()
+                       if "git fetch origin master:" in ln), "")
+    check("the merge-tree fetch keeps full history (no --depth)",
+          bool(fetch_line) and "--depth" not in fetch_line, fetch_line)
     planted = step.replace("git reset --hard HEAD", "git checkout .")
     check("a planted restore omission is named by the guard",
           "tree is restored" in missing(planted), str(missing(planted)))
