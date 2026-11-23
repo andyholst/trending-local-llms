@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import pipeline_failure_guard_check as G  # noqa: E402
+import pipeline_failure_issue as F  # noqa: E402
 
 GUARD_SCRIPT = ROOT / "scripts" / "pipeline_failure_guard_check.py"
 MAKEFILE = ROOT / "Makefile"
@@ -689,6 +690,38 @@ def test_the_pr_block_grace_is_derived_from_its_stated_repair_window() -> None:
           f"filer={F.PR_BLOCK_GRACE_HOURS} repair_window={repair_window} gate={G.PR_BLOCK_GRACE_HOURS}")
 
 
+def test_the_committed_ledger_targets_are_normalized_bare_names() -> None:
+    """Issue #1054: every stored `targets` entry is a bare make target, not `Makefile:<line>: <name>`.
+
+    The convergence that stripped the Makefile line decorations off data/pipeline_failures.json
+    had no guard — a later filer run could silently re-introduce them and turn the ledger's own
+    reproduction commands back into the un-runnable `make Makefile:1384: sweep-alarm`. Drive the
+    REAL `normalize_target` seam (rule 6m: no stand-in for the code under test) over the shipped
+    ledger and require it to be a no-op there, then prove BOTH polarities on planted strings so
+    an over-broad regex cannot pass vacuously.
+    """
+    print("\nledger targets (#1054): stored targets are bare make names, not Makefile:<line>: <name>")
+    data = json.loads(COMMITTED_LEDGER.read_text())
+    stored = [t for e in data["failures"] for t in e.get("targets", [])]
+
+    check("the committed ledger carries at least one target", bool(stored), f"{len(stored)} target(s)")
+    check("every stored target equals its own normalize_target output (no bracketed spelling)",
+          all(t == F.normalize_target(t) for t in stored),
+          ", ".join(sorted({t for t in stored if t != F.normalize_target(t)}))[:600])
+    check("no stored target is empty or carries surrounding whitespace",
+          all(t and t.strip() == t for t in stored),
+          ", ".join(repr(t) for t in stored if not t or t.strip() != t)[:600])
+
+    # Both polarities on the real seam: a planted bracketed log line normalizes to the bare
+    # target, and an already-bare target is left byte-identical.
+    check("the real seam strips a planted Makefile:<line>: prefix",
+          F.normalize_target("Makefile:1384: sweep-alarm") == "sweep-alarm",
+          F.normalize_target("Makefile:1384: sweep-alarm"))
+    check("the real seam leaves an already-bare target byte-identical",
+          F.normalize_target("sweep-alarm") == "sweep-alarm",
+          F.normalize_target("sweep-alarm"))
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
@@ -697,6 +730,7 @@ def main() -> int:
     test_a_stamped_row_whose_named_guard_no_longer_exists_is_red()
     test_a_stamped_row_with_no_error_block_is_its_own_report_never_red()
     test_the_committed_ledger_classifies_its_errorless_rows()
+    test_the_committed_ledger_targets_are_normalized_bare_names()
     test_run_41788683672_is_rediagnosed_with_its_landed_guard()
     test_run_41860616772_is_rediagnosed_with_its_landed_guard()
     test_run_41922211098_is_rediagnosed_with_its_landed_guard()
