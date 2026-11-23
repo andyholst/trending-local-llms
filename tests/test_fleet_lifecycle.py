@@ -452,6 +452,27 @@ def test_lane_skill_mirrors_carry_landed_host_ahead_notes() -> int:
     return failed
 
 
+def test_reviewer_skill_carries_landed_host_ahead_notes() -> int:
+    """Issue #1432: the reviewer mirror carries the two reconciled host-ahead notes.
+
+    The OpenSpec-lifecycle note is a numbered review step, not a pitfall bullet, so the
+    whole-file check is deliberate: the reconciled notes keep their issue references and
+    carry no host timestamp header, timestamp or machine name.
+    """
+    failed = 0
+    text = (ROOT / "agents/tll-reviewer/skills/tll-reviewer/SKILL.md").read_text(encoding="utf-8")
+    for phrase, reference in (
+        ("A PR that closes an issue whose OpenSpec change is still ACTIVE", "#866"),
+        ("a `test_*` listed TWICE in `main()`", "test_workflows.py"),
+    ):
+        failed += check(phrase in text, f"reviewer skill carries {phrase!r}")
+        failed += check(reference in text, f"reviewer skill keeps the reference {reference!r}")
+    failed += check(HOST_AHEAD_HEADER not in text, "reviewer skill dropped the host timestamp header")
+    failed += check(HOST_TIMESTAMP not in text, "reviewer skill dropped the host timestamp")
+    failed += check(HOST_NAME not in text, "reviewer skill dropped the machine name")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
@@ -459,6 +480,7 @@ def main() -> int:
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_pr_rebase_skill_is_push_and_verify,
+        test_reviewer_skill_carries_landed_host_ahead_notes,
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
