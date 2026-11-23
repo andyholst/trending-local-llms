@@ -46,6 +46,9 @@ LANDED_HOST_AHEAD_NOTES = {
             ('A PR with "no checks reported"', "#1115"),
             ("wiping Hermes runtime stamps", "#1401"),
             ("SUPERSEDE a filed `validate`/`openspec-index` failure", "#1412/#1413"),
+            ("Verify a landed change against `origin/master`", "git rev-parse HEAD"),
+            ("Lanes change locally and PUSH", "#1423"),
+            ("separate WALL-CLOCK from CPU and count the containers", "docker ps"),
         ),
     ),
     "tll-implementer": (
@@ -56,6 +59,8 @@ LANDED_HOST_AHEAD_NOTES = {
             ("force-push YOUR branch between your push and the merge", "#1398"),
             ("master-alarm routing sees only a BARE `make <target>` LINE", "master_alarm.py"),
             ("re-read the PR's live state", "state,mergedAt,mergeCommit"),
+            ("OpenSpec LIFECYCLE gate", "#1434"),
+            ("is RED in a local test-image run WITHOUT `GH_TOKEN`", "#972"),
         ),
     ),
 }
