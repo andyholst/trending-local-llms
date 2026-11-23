@@ -273,7 +273,8 @@ def fetch_payload(repo: str, client: str) -> dict:
                 and isinstance(branch, str) and branch and branch not in missing):
             missing.append(branch)
     if missing:
-        client = gh_client()
+        # Keep the caller's gh (the explicit --gh path in the stripped cron env): a second
+        # gh_client() lookup here would silently drop it for the resolution leg.
         runs = inject_run_prs(runs, resolve_branch_prs(repo, client, missing))
     return {"comments": comments, "runs": runs, "master": get("commits/master")}
 
