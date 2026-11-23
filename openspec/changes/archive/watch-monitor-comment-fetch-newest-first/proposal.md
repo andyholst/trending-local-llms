@@ -1,6 +1,7 @@
 # Proposal: watch-monitor-comment-fetch-newest-first
 
 Issue: #1360
+PR: #1365
 
 ## Why
 
