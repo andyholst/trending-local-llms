@@ -123,7 +123,9 @@ def test_this_repository_passes():
              if l.strip() and not l.strip().startswith("#")]
     check("this repo: the list is not vacuous", len(names) >= 8, names)
     check("this repo: the capture classes are on it",
-          {"implement.log", "issue.md", "findings.md", "pr-body.md"} <= set(names), names)
+          {"implement.log", "issue.md", "pr-body.md"} <= set(names), names)
+    check("this repo: findings.md is a reviewed artifact, not a working file",
+          "findings.md" not in names, names)
 
 
 def test_one_list_one_target():

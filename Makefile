@@ -484,6 +484,18 @@ file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh
 findings-check: python-env-image ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
 	$(PYTHON_RUN) python3 scripts/file_findings.py --check
 
+# (issue #1454) The SAME gate, made SHAPE-AWARE so a direct worktree PR cannot be green
+# while rule 6g's mandatory analysis is absent — without reddening every keeper, refresh,
+# docs or architecture PR that carries no `findings.md` (the §6q repo-wide-red hazard).
+# The predicate is `scripts/pr_closure.implementation_shaped`, the ONE parser (rule 6d):
+# only a branch/body that CLAIMS an implementation owes the file. Reads the webhook
+# payload by PATH, never interpolated into the recipe (rule 3f/#351). `FINDINGS_BRANCH`
+# defaults to the checkout's own branch for the fix loop, which has no PR yet; a push or
+# dispatch event carries no `pull_request` and is a green no-op.
+FINDINGS_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+findings-check-for-pr: python-env-image ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings.md; keepers/refreshes/docs are exempt (issue #1454)
+	$(PYTHON_RUN) python3 scripts/file_findings.py --check $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
+
 # Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
 # third-party workflow `uses:` ref must be a 40-hex SHA or on the allow-ref list,
 # and every third-party tool image (Makefile *_IMAGE / scripts / Dockerfile ARG)

@@ -268,6 +268,62 @@ def test_the_pipeline_runs_it_on_every_pr() -> None:
           "GITHUB_EVENT_PATH" not in QA_VALIDATE.split("make pr-closure")[1][:400], "")
 
 
+def test_implementation_shaped_reads_only_the_parsers_own_signals() -> None:
+    """Issue #1454: the shape gate's predicate is THIS module's own derivation.
+
+    True when the branch encodes an issue or the body CLAIMS one; False when there is
+    no branch, when the claim is only quoted (`visible_text` strips code, the view
+    GitHub binds), or when the branch matches a declared exempt prefix — the
+    exemption wins even over a closing keyword in the body.
+    """
+
+    # Given  the branch/body signals the parser already derives
+    # Then    the predicate answers without any second parser
+    check("shaped: a data-gap branch implements", PC.implementation_shaped("ci/data-gap-12-x", ""))
+    check("shaped: a trailing-issue branch implements", PC.implementation_shaped("feat/x-1454", ""))
+    check("shaped: a closing binding claims it", PC.implementation_shaped("shapeless", "Closes #12\n"))
+    check("shaped: an implement verb claims it", PC.implementation_shaped("shapeless", "implement #12\n"))
+    check("shaped: a fix verb claims it", PC.implementation_shaped("shapeless", "fixed #12\n"))
+
+    # And    the shapes that must NOT demand an analysis
+    check("shaped: no branch is shapeless", not PC.implementation_shaped(None, "Closes #12"))
+    check("shaped: an empty branch is shapeless", not PC.implementation_shaped("", ""))
+    check("shaped: a bare reference is not a claim", not PC.implementation_shaped("shapeless", "See #12\n"))
+    check("shaped: a quoted claim is prose, not a claim",
+          not PC.implementation_shaped("shapeless", "Example: `Closes #12`\n"))
+    check("shaped: a fenced claim is prose, not a claim",
+          not PC.implementation_shaped("shapeless", "```\nCloses #12\n```\n"))
+
+
+def test_non_implementation_branches_are_a_declared_exemption_list() -> None:
+    """The exemption is a DECLARED tuple in the ONE parser, and it WINS over a claim."""
+
+    check("declared: it is a tuple of prefixes",
+          isinstance(PC.NON_IMPLEMENTATION_BRANCHES, tuple) and len(PC.NON_IMPLEMENTATION_BRANCHES) >= 8,
+          PC.NON_IMPLEMENTATION_BRANCHES)
+    for prefix in ("ci/trending-refresh-", "ci/keeper", "docs/", "rule/",
+                   "ci/openspec-index-repair-", "ci/pipeline-failure-ledger-"):
+        check(f"declared: {prefix} is exempt", prefix in PC.NON_IMPLEMENTATION_BRANCHES,
+              PC.NON_IMPLEMENTATION_BRANCHES)
+
+    # Given  every exempt shape AND a body that claims an implementation
+    # Then    the exemption still wins — a keeper that writes `Closes #N` is a keeper
+    for branch in ("ci/trending-refresh-20261114-1138", "ci/free-model-refresh-20261120-1",
+                   "ci/keeper-index-20261122t145402z", "ci/openspec-index-repair-20261123T091623Z",
+                   "ci/architecture-block-repair-20261123T091623Z",
+                   "ci/openspec-invalid-change-repair-20261123T091623Z",
+                   "ci/pipeline-failure-ledger-20261123T205600Z",
+                   "docs/contract-prose-sync-1394", "rule/reviewer-skill-notes-1432"):
+        check(f"exempt: {branch} owes no analysis",
+              not PC.implementation_shaped(branch, "Closes #12\n"), branch)
+
+    # And    the prefix helper names WHICH declaration matched, for the SKIP line
+    check("prefix: a keeper names its prefix",
+          PC.non_implementation_prefix("ci/keeper-index-20261122t145402z") == "ci/keeper", "")
+    check("prefix: a plain branch names none",
+          PC.non_implementation_prefix("feat/x-1454") is None, "")
+
+
 def main() -> int:
     print("a merged PR must close the issue it implements (issue #284)")
     tmp = Path(tempfile.mkdtemp(prefix="pr-closure-"))
@@ -284,6 +340,8 @@ def main() -> int:
         test_code_quotes_the_rule_it_does_not_make_a_claim()
         test_the_cli_reads_the_webhook_payload_by_path(tmp)
         test_the_pipeline_runs_it_on_every_pr()
+        test_implementation_shaped_reads_only_the_parsers_own_signals()
+        test_non_implementation_branches_are_a_declared_exemption_list()
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
