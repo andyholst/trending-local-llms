@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **457**
+Active changes: **1** · archived: **458**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `cron-install-check-profile-homes-1409` | active | #1409 | — | [fleet-watchers](openspec/changes/cron-install-check-profile-homes-1409/specs/fleet-watchers/spec.md) | 6/6 | [proposal.md](openspec/changes/cron-install-check-profile-homes-1409/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -166,6 +165,7 @@ Active changes: **2** · archived: **457**
 | `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |
 | `coverage-gap-present-broken` | archived | #1172 | #1180 | [coverage-gap-present-broken](openspec/changes/archive/coverage-gap-present-broken/specs/coverage-gap-present-broken/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/coverage-gap-present-broken/proposal.md) |
 | `cron-install-check-1270` | archived | #1270 — "Fleet: Hermes cron watcher installation must be identical on both hosts". | #1272 | [fleet-watchers](openspec/changes/archive/cron-install-check-1270/specs/fleet-watchers/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/cron-install-check-1270/proposal.md) |
+| `cron-install-check-profile-homes-1409` | archived | #1409 | #1421 | [fleet-watchers](openspec/changes/archive/cron-install-check-profile-homes-1409/specs/fleet-watchers/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/cron-install-check-profile-homes-1409/proposal.md) |
 | `cross-machine-coordination` | archived | #1231 | #1233 | [agent-coordination](openspec/changes/archive/cross-machine-coordination/specs/agent-coordination/spec.md) | 2/3 | [proposal.md](openspec/changes/archive/cross-machine-coordination/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
