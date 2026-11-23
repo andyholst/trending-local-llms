@@ -231,23 +231,30 @@ def _worktree_check(clone: Path, ref: str, td: Path, tag: str) -> int:
 # ------------------------------------------------------------------ tests --
 
 def test_behind_clean_bot_branch_is_rebased_with_a_current_index():
-    """The core #1049 proof: the merge-as-is squash tree is RED at the index gate,
-    and the seam lands a rebased head whose regenerated index is GREEN."""
+    """The core #1049 proof: the merge-as-is squash tree carries a small index
+    drift, and the seam lands a rebased head whose regenerated index is GREEN.
+
+    Issue #1415 changed what "small" means: at or under MAX_OPENSPEC_INDEX_DRIFT
+    differing changes the gate now WARNs and exits 0 instead of reddening on every
+    merge, so the squash tree is no longer RED here — it is named and tolerated.
+    The seam's rebase + regeneration below is unchanged.
+    """
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         _, _, clone = _fixture(td)
         old = _head_oid(clone, HEAD_BRANCH)
 
-        # OLD behavior, made visible: the merge commit GitHub builds (squash tree)
-        # carries the branch's stale OPENSPEC.md — the REAL index gate goes red on it.
+        # The merge commit GitHub builds (squash tree) carries the branch's stale
+        # OPENSPEC.md: the archived change has no matching row and the count moved.
         preview = td / "preview"
         _must(clone, "worktree", "add", "--detach", str(preview), f"refs/remotes/origin/{HEAD_BRANCH}")
         m = _git(preview, "-c", "user.name=Test Bot", "-c", "user.email=test-bot@example.com",
                  "merge", "-q", "--no-ff", "refs/remotes/origin/master", "-m", "preview squash tree")
         assert m.returncode == 0, m.stderr
         stale = _run_generator(preview, "--check")
-        check("merge-as-is lands a stale index: openspec-index-check is RED on the squash tree",
-              stale.returncode != 0, stale.stdout[-160:])
+        check("merge-as-is lands a SMALL tolerated drift: openspec-index-check WARNs, exit 0",
+              stale.returncode == 0 and "WARN" in stale.stdout + stale.stderr,
+              stale.stdout[-160:] + stale.stderr[-160:])
         _must(clone, "worktree", "remove", "--force", str(preview))
         check("the branch tip's committed index claims the active change",
               "Active changes: **1**" in _show(clone, HEAD_BRANCH, "OPENSPEC.md"))

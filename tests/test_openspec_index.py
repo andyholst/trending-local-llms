@@ -3,9 +3,10 @@
 
 `OPENSPEC.md` is the ONE file that references every OpenSpec change this repo has
 ever had. It is generated, so these tests drive the REAL generator (imported by
-path) against a fixture tree that lives under a patched ROOT — a change with no
-row must fail the check, a stale row must fail, and the repository's own index
-must be current and must list every change directory on disk.
+path) against a fixture tree that lives under a patched ROOT — a small drift (at
+most MAX_OPENSPEC_INDEX_DRIFT changes, issue #1415) warns and exits 0 while still
+naming what moved, a larger one fails, and a missing index always fails. The
+repository's own index must be current and list every change directory on disk.
 
 Wired into `make test` (rule 6d).
 """
@@ -47,12 +48,17 @@ def _module():
     return mod
 
 
-def _fixture(td: Path, name: str, tasks: str, issue: str = "", archived: bool = False):
-    """A minimal change tree under td, plus the patched module globals."""
-    mod = _module()
+def _at(mod, td: Path):
+    """Point a freshly loaded generator at a fixture directory."""
     setattr(mod, "ROOT", td)
     setattr(mod, "CHANGES", td / "openspec" / "changes")
     setattr(mod, "INDEX", td / "OPENSPEC.md")
+    return mod
+
+
+def _fixture(td: Path, name: str, tasks: str, issue: str = "", archived: bool = False):
+    """A minimal change tree under td, plus the patched module globals."""
+    mod = _at(_module(), Path(td))
     where = (mod.CHANGES / "archive" / name) if archived else (mod.CHANGES / name)
     (where / "specs" / "capability").mkdir(parents=True, exist_ok=True)
     (where / "specs" / "capability" / "spec.md").write_text("# capability\n", encoding="utf-8")
@@ -60,6 +66,20 @@ def _fixture(td: Path, name: str, tasks: str, issue: str = "", archived: bool = 
     header = f"# Proposal: {name}\n\n" + (f"Issue: {issue}\n\n" if issue else "")
     (where / "proposal.md").write_text(header + "## Why\n\nBecause.\n", encoding="utf-8")
     return mod, where
+
+
+def _many(mod, n: int):
+    """`n` minimal ACTIVE changes; yields each change directory."""
+    for i in range(n):
+        name = f"agent-thing-{i:02d}"
+        where = mod.CHANGES / name
+        (where / "specs" / "capability").mkdir(parents=True, exist_ok=True)
+        (where / "specs" / "capability" / "spec.md").write_text("# capability\n", encoding="utf-8")
+        (where / "tasks.md").write_text("# Tasks\n\n- [x] 1. done\n", encoding="utf-8")
+        (where / "proposal.md").write_text(
+            f"# Proposal: {name}\n\nIssue: #{172 + i}\n\n## Why\n\nBecause.\n", encoding="utf-8"
+        )
+        yield where
 
 
 def _run(mod, argv):
@@ -70,8 +90,13 @@ def _run(mod, argv):
     return rc, out.getvalue() + err.getvalue()
 
 
-def test_change_with_no_row_fails_the_check():
-    """A change on disk that the index does not list fails, and is named."""
+def test_a_small_missing_row_drift_warns_and_is_named():
+    """One change on disk with no row is a SMALL drift: WARN, exit 0, named.
+
+    Issue #1415: failing on this shape reds `make openspec-index-check` on nearly
+    every merge (a merged PR archives its change). The check now tolerates up to
+    MAX_OPENSPEC_INDEX_DRIFT differences and still names the change.
+    """
 
     # Given a change directory and an index that predates it
     with tempfile.TemporaryDirectory() as td:
@@ -81,9 +106,85 @@ def test_change_with_no_row_fails_the_check():
         # When  the index check runs
         rc, out = _run(mod, ["--check"])
 
-    # Then  it fails and names the change with no row
-    check("missing row: check exits non-zero", rc == 1, str(rc))
+    # Then  it exits 0 with a WARN and still names the change with no row
+    check("missing row: small drift exits 0", rc == 0, str(rc))
+    check("missing row: the verdict is a WARN", "WARN" in out, out)
     check("missing row: the change is named", "agent-new-thing" in out, out)
+
+
+def test_drift_boundary_is_the_shared_constant():
+    """Exactly MAX_OPENSPEC_INDEX_DRIFT differing rows exit 0; one more exits 1.
+
+    The boundary is the ONE constant (`MAX_OPENSPEC_INDEX_DRIFT`, issue #1415),
+    not a literal in the test: moving it moves both sides together.
+    """
+
+    threshold = _module().MAX_OPENSPEC_INDEX_DRIFT
+    for n, red in ((threshold, False), (threshold + 1, True)):
+        with tempfile.TemporaryDirectory() as td:
+            mod = _at(_module(), Path(td))
+            wheres = list(_many(mod, n))
+            _run(mod, ["--write"])
+            # Move every row's data (tasks cell) so exactly `n` changes differ and
+            # the count line stays put.
+            for w in wheres:
+                p = w / "tasks.md"
+                p.write_text(p.read_text(encoding="utf-8") + "- [ ] extra\n", encoding="utf-8")
+
+            rc, out = _run(mod, ["--check"])
+
+        if red:
+            check(f"{n} differing rows: exit 1", rc == 1, str(rc))
+            check(f"{n} differing rows: FAIL names the count",
+                  f"[openspec-index] FAIL" in out
+                  and f"{n} differing changes exceed the tolerated {threshold}" in out, out)
+        else:
+            check(f"{n} differing rows: exit 0", rc == 0, str(rc))
+            check(f"{n} differing rows: WARN names the drift", "WARN" in out, out)
+
+
+def test_index_drift_counts_each_category_once():
+    """The counting rule itself: missing + extra + changed + count line (issue #1415)."""
+
+    mod = _module()
+    current = (
+        "Active changes: **1** · archived: **0**\n"
+        "| `keep` | active | #1 | — | — | 1/1 | — |\n"
+        "| `gone` | active | #2 | — | — | 1/1 | — |\n"
+    )
+    fresh = (
+        "Active changes: **2** · archived: **0**\n"
+        "| `keep` | active | #1 | — | — | 1/2 | — |\n"
+        "| `new` | active | #3 | — | — | 1/1 | — |\n"
+    )
+    active = [("keep", Path("/keep")), ("new", Path("/new"))]
+    archived: list = []
+
+    drift, reasons = mod.index_drift(current, fresh, active, archived)
+
+    check("drift count: keep changed + new missing + gone extra + count line = 4",
+          drift == 4, str(drift))
+    check("drift reasons: the changed row is named", any("rows whose data changed" in r for r in reasons),
+          str(reasons))
+    check("drift reasons: the missing row is named", any("no row" in r and "new" in r for r in reasons),
+          str(reasons))
+    check("drift reasons: the extra row is named", any("no longer exist" in r and "gone" in r for r in reasons),
+          str(reasons))
+    check("drift reasons: the count line is named", any("count line says" in r for r in reasons),
+          str(reasons))
+
+
+def test_a_missing_index_still_fails():
+    """Hard requirement (issue #1415): a MISSING OPENSPEC.md reds — nothing to compare."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod = _at(_module(), Path(td))
+        list(_many(mod, 1))  # a change on disk, but no committed index at all
+
+        rc, out = _run(mod, ["--check"])
+
+    check("missing index: exit 1", rc == 1, str(rc))
+    check("missing index: FAIL names the remedy", "FAIL" in out and "make openspec-index" in out, out)
 
 
 def test_row_carries_issue_specs_and_task_progress():
@@ -194,14 +295,16 @@ def test_real_repo_index_is_current_and_lists_every_change():
           f"on disk={sorted(on_disk)} listed={sorted(listed)}")
 
 
-def test_a_stale_count_line_is_named_and_not_blamed_on_the_rows():
+def test_a_small_count_line_drift_warns_and_is_not_blamed_on_the_rows():
     """A committed index whose ONLY drift is the count line must say so.
 
     Measured on `master` 9b3e34c (validate run 38865506979): `OPENSPEC.md` said
     `Active changes: **30**` while the tree held 31 — every row present and
     identical — and the message read `rows exist but their data changed
     (issue/PR/specs/tasks)`, pointing a reader at the rows and at three fields
-    that had not moved. A red check must name the cause it actually found.
+    that had not moved. The diagnosis names the cause it actually found; since
+    issue #1415 this one-difference drift is also TOLERATED (WARN, exit 0)
+    instead of reddening on nearly every merge.
     """
 
     # Given a committed index whose ONLY drift is the count line
@@ -217,14 +320,19 @@ def test_a_stale_count_line_is_named_and_not_blamed_on_the_rows():
         # When  the check runs
         rc, out = _run(mod, ["--check"])
 
-    # Then  it fails, names the COUNT LINE, and does not blame the rows
-    check("count: the check fails", rc != 0, out)
+    # Then  it exits 0 with a WARN, names the COUNT LINE, and does not blame the rows
+    check("count: small drift exits 0", rc == 0, str(rc))
+    check("count: the verdict is a WARN", "WARN" in out, out)
     check("count: the message names the count line", "count line says" in out, out)
     check("count: it does NOT claim the rows changed", "rows whose data changed" not in out, out)
 
 
-def test_a_row_whose_data_moved_is_named():
-    """The other direction: when a row's data really moved, name that row."""
+def test_a_single_changed_row_warns_and_is_named():
+    """The other direction: when one row's data really moved, name that row.
+
+    Issue #1415: one changed row is a small drift, so it warns and exits 0; the
+    boundary behaviour is pinned by `test_drift_boundary_is_the_shared_constant`.
+    """
 
     # Given a change whose tasks.md moved after the index was written
     with tempfile.TemporaryDirectory() as td:
@@ -235,10 +343,10 @@ def test_a_row_whose_data_moved_is_named():
         # When  the check runs
         rc, out = _run(mod, ["--check"])
 
-    # Then  it fails and names the change whose row moved
-    check("row: the check fails", rc != 0, out)
-    check("row: the message names the change whose row moved",
-          "rows whose data changed" in out and "agent-thing" in out, out)
+    # Then  it exits 0 with a WARN and names the change whose row moved
+    check("row: small drift exits 0", rc == 0, str(rc))
+    check("row: WARN names the change whose row moved",
+          "WARN" in out and "rows whose data changed" in out and "agent-thing" in out, out)
 
 
 def test_a_blocked_task_is_counted_as_blocked_not_done():
@@ -294,14 +402,17 @@ def test_wired_into_make_test():
 
 def main() -> int:
     print("OpenSpec root index (scripts/openspec_index.py + OPENSPEC.md)")
-    test_change_with_no_row_fails_the_check()
+    test_a_small_missing_row_drift_warns_and_is_named()
+    test_drift_boundary_is_the_shared_constant()
+    test_index_drift_counts_each_category_once()
+    test_a_missing_index_still_fails()
     test_row_carries_issue_specs_and_task_progress()
     test_archived_change_row_is_marked_archived()
     test_write_then_check_is_green()
     test_bolded_refs_are_parsed()
     test_real_repo_index_is_current_and_lists_every_change()
-    test_a_stale_count_line_is_named_and_not_blamed_on_the_rows()
-    test_a_row_whose_data_moved_is_named()
+    test_a_small_count_line_drift_warns_and_is_not_blamed_on_the_rows()
+    test_a_single_changed_row_warns_and_is_named()
     test_a_blocked_task_is_counted_as_blocked_not_done()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
