@@ -56,6 +56,8 @@ LANDED_HOST_AHEAD_NOTES = {
             ("An auto-close can hide an undone half", "gh pr diff"),
             ("Protected instruction files cannot be written by a headless lane", "security.protected_instruction_files"),
             ("An auto-close can hide an undone half", "gh pr diff <n> --name-only"),
+            ("Cron fires run WITHOUT approval", "gh api … --jq"),
+            ('Do NOT "sync" a host by wiping Hermes runtime stamps', "#1401"),
         ),
     ),
     "tll-implementer": (
@@ -75,6 +77,7 @@ LANDED_HOST_AHEAD_NOTES = {
             ("regenerates `OPENSPEC.md` (e.g. `1 active, 456 archived`)", "#866"),
             ("A `git rebase --continue` can ship a commit whose MESSAGE lost your `--amend` edits", "GIT_EDITOR=true git rebase --continue"),
             ("merge-tree index race is PER-MASTER-MOVE", "not mergeable"),
+            ("Never run `git reset --hard`", "ls openspec/changes/archive | wc -l"),
         ),
     ),
 }

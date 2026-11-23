@@ -11,6 +11,12 @@ reference and be byte-identical to the host text. No rule SHALL appear under a
 `## Host notes ahead of master` header, and no host timestamp header, timestamp or machine-specific
 name SHALL remain in the landed text. No `config.yaml` or `SOUL.md` is part of this change.
 
+The same mirrors SHALL also carry a third additive batch found on the master-move rebase: for planner,
+that cron/headless calls cannot run inline interpreters or be trusted through a truncating filter
+(`gh api … --jq`), and that a host sync must never wipe runtime stamps or unlanded notes (#1401); for
+implementer, that `git reset --hard` after regenerating a generated artifact ships a stale file
+behind a green local check, so cleanup precedes regeneration and the PUSHED index line is verified.
+
 #### Scenario: Both mirrors carry the second batch with their references and no host stamps
 
 - **Given** the `agents/tll-planner/skills/tll-planner/SKILL.md` and
@@ -18,4 +24,12 @@ name SHALL remain in the landed text. No `config.yaml` or `SOUL.md` is part of t
 - **When** the guard reads the skill texts
 - **Then** each of the four new rules appears in the right lane's Pitfalls with its reference, and
   the host timestamp header, the host timestamp and the machine name appear nowhere
+- **Test:** tests/test_fleet_lifecycle.py::test_lane_skill_mirrors_carry_landed_host_ahead_notes
+
+#### Scenario: Third batch of host-ahead notes lands additively with its references
+
+- **Given** the same two mirrors after the master-move rebase
+- **When** the guard reads the skill texts
+- **Then** each of the three further rules appears in the right lane's Pitfalls with its reference,
+  and the host timestamp header, the host timestamp and the machine name appear nowhere
 - **Test:** tests/test_fleet_lifecycle.py::test_lane_skill_mirrors_carry_landed_host_ahead_notes

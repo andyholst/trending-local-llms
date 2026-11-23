@@ -5,6 +5,8 @@
 - [x] Add the two planner host-ahead pitfall notes additively, byte-identical to the host, preserving every existing master byte
 - [x] Add the two implementer host-ahead pitfall notes additively, byte-identical to the host
 - [x] Extend `test_lane_skill_mirrors_carry_landed_host_ahead_notes` with the four new phrase/reference pairs (test already wired into `main()`)
+- [x] Land three further host-ahead notes additively on the master-move rebase: planner cron/no-truncating-filter and do-not-wipe-during-sync; implementer reset-after-regenerate staleness (test pairs added, `main()` unchanged)
+- [x] Record the real PR #1448 (the first body closed #1446 on branch suffix `…-1445`, so #1447 was closed and reopened as #1448); regenerate `OPENSPEC.md` on the rebased head
 - [x] Leave every `agents/*/config.yaml` and `SOUL.md` untouched (rule-3c protected)
 - [x] Run the focused test module, `make lint`, `make architecture-check` and the OpenSpec gates
-- [~] Record PR #1447 and archive this change — blocked: PR not yet opened at task creation; `make openspec-record-pr` will complete it after `gh pr create`
+- [x] Record PR #1448 and archive this change — done by `make openspec-record-pr` after `gh pr create`
