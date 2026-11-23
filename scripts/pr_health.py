@@ -52,8 +52,10 @@ from env_int import env_int  # noqa: E402  (one reading of an integer setting �
 
 try:  # the ONE definition of the markers this script writes (scripts/bot_markers.py, rule 6j)
     from bot_markers import marker_name, parse_markers, start_marker
+    from agent_identity import AGENT_LOGINS  # the ONE definition of the agent login (#1349)
 except ImportError:  # run from the repo root
     from scripts.bot_markers import marker_name, parse_markers, start_marker
+    from scripts.agent_identity import AGENT_LOGINS
 
 MARKER = marker_name("pr-health", "alarm")
 REBASE_MARKER = marker_name("pr-health", "rebase_failed")
@@ -68,9 +70,12 @@ FIX_HINT = ("merge origin/master into it, then `git push origin HEAD:refs/heads/
             "— the PR's head branch, never a differently-named local branch")
 
 #: Bot-owned PRs are decided by the AUTHOR, not by a branch-name convention (issue #1295).
-#: GitHub's `author.is_bot` is authoritative: an agent PR named `fix/…` or `feat/…` is the
-#: sweep's to repair, and a human PR named `ci/…` is report-only. The prefix list is kept ONLY
-#: as a fallback for callers that pass a head without author data (and for the pure tests).
+#: `author.is_bot` is sufficient, but it is NOT necessary: the agent login is a GitHub *User*
+#: (measured `.user.type` -> `User`), so every agent PR answers `is_bot: false` and a key on
+#: `is_bot` alone classified all 22 open PRs as human-owned (issue #1349). The author LOGIN,
+#: checked against `scripts/agent_identity.py`'s ONE agent set, is the field that actually
+#: separates the agent from the owner. The prefix list stays a fallback for callers that pass
+#: a head without author data (and for the pure tests).
 BOT_PUSH_PREFIXES = ("ci/", "tech-debt-", "data-gap-", "issue-")
 
 
@@ -79,15 +84,21 @@ def is_bot_branch(head: str) -> bool:
 
 
 def is_bot_owned(pr: dict) -> bool:
-    """Who owns this PR: its GitHub author when known, the prefix otherwise (#1295).
+    """Who owns this PR: its GitHub author when known, the prefix otherwise (#1295/#1349).
 
-    A PR object from `gh pr list --json …,author` carries `author.is_bot`; that is the
-    one contract. When the field is absent, fall back to `is_bot_branch` so older
-    callers and fixtures keep their meaning — never infer a human is a bot from a name.
+    A PR object from `gh pr list --json …,author` carries `author.is_bot`; that is
+    sufficient. It is not necessary: the agent login `asimov-agent` is a GitHub **User**, so
+    `is_bot` is `false` for every agent PR and the login must be checked too (issue #1349).
+    When no author data is present at all, fall back to `is_bot_branch` so older callers and
+    fixtures keep their meaning — never infer a human is a bot from a name.
     """
     author = pr.get("author") if isinstance(pr, dict) else None
-    if isinstance(author, dict) and isinstance(author.get("is_bot"), bool):
-        return bool(author["is_bot"])
+    if isinstance(author, dict):
+        if author.get("is_bot") is True:
+            return True
+        login = str(author.get("login") or "").strip().lower()
+        if login:
+            return login in AGENT_LOGINS
     return is_bot_branch(str(pr.get("headRefName") or ""))
 
 

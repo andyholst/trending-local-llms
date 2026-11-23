@@ -383,9 +383,10 @@ def test_rebase_plan_classifies_by_ownership_and_conflict():
 
 def test_ownership_is_decided_by_author_not_branch_prefix():
     """Issue #1295: the §6s sweep missed agent PRs named fix/feat/rule and would rewrite a
-    human PR named ci/. GitHub's `author.is_bot` is the contract; the prefix is only a
-    fallback for callers that did not request author data."""
-    bot = {"login": "asimov-agent", "is_bot": True}
+    human PR named ci/. The AUTHOR decides, not the branch prefix. Issue #1349: the agent
+    login is a GitHub *User*, so `is_bot` is `false` for a real agent PR — the login is
+    checked too, and the fixture carries the LIVE spelling (`is_bot: False`)."""
+    bot = {"login": "asimov-agent", "is_bot": False}  # the live shape (issue #1349)
     human = {"login": "andyholst", "is_bot": False}
     plan = PH.rebase_plan([
         pr(1, "fix/agent-owned", author=bot),
@@ -398,7 +399,7 @@ def test_ownership_is_decided_by_author_not_branch_prefix():
         pr(8, "ci/no-author-data"),
     ])
     by = {p["number"]: p["action"] for p in plan}
-    check("bot-authored fix/feat/rule PRs are the sweep's to rebase (#1295)",
+    check("agent-authored fix/feat/rule PRs are the sweep's to rebase (#1295/#1349)",
           by[1] == "rebase-if-behind" and by[2] == "rebase-if-behind"
           and by[3] == "rebase-if-behind", plan)
     check("human-authored ci/tech-debt- PRs are reported, never rewritten (#1295)",
@@ -409,6 +410,28 @@ def test_ownership_is_decided_by_author_not_branch_prefix():
     src = SCRIPT.read_text(encoding="utf-8")
     check("the live gh query actually requests the author field",
           "headRefOid,author" in src, "")
+    check("the fixture carries the live is_bot spelling (false for the agent login)",
+          bot["is_bot"] is False, bot)
+
+
+def test_agent_login_is_bot_owned_when_is_bot_is_false():
+    """Issue #1349: the LIVE queue answers `author.is_bot == false` for every open PR,
+    including the agent login `asimov-agent` (a GitHub *User*, not a Bot). A key on `is_bot`
+    alone returned `{'human-branch': 22}` and the §6s rebaser never rebased anything."""
+    check("an agent-login PR is bot-owned even with is_bot false (#1349)",
+          PH.is_bot_owned({"author": {"login": "asimov-agent", "is_bot": False}}), "")
+    check("a human login is never bot-owned, whatever the branch (#1295)",
+          not PH.is_bot_owned({"author": {"login": "andyholst", "is_bot": False},
+                               "headRefName": "ci/human"}), "")
+    check("is_bot true is still sufficient",
+          PH.is_bot_owned({"author": {"login": "someone", "is_bot": True}}), "")
+    check("no author data still falls back to the prefix",
+          PH.is_bot_owned({"headRefName": "ci/data-gap-1-x"})
+          and not PH.is_bot_owned({"headRefName": "fix/no-author-data"}), "")
+    src = SCRIPT.read_text(encoding="utf-8")
+    check("the login set comes from the ONE identity module",
+          "from agent_identity import AGENT_LOGINS" in src
+          or "from scripts.agent_identity import AGENT_LOGINS" in src, "")
 
 
 def _gitfx(cwd, *args):
@@ -742,6 +765,7 @@ def main() -> int:
     test_no_script_reads_a_number_straight_from_the_environment()
     test_rebase_plan_classifies_by_ownership_and_conflict()
     test_ownership_is_decided_by_author_not_branch_prefix()
+    test_agent_login_is_bot_owned_when_is_bot_is_false()
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
     test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()

@@ -53,6 +53,14 @@ ALLOWED_EMAILS = (
     "noreply@github.com",
 )
 
+#: The GitHub LOGINS that carry the agent identity (issue #1349). `author.is_bot` is not a
+#: usable ownership key for the §6s rebase sweep: the agent login is a GitHub **User**, not a
+#: Bot — measured `gh api repos/andyholst/trending-local-llms/pulls/1289 --jq '.user.type'`
+#: answers `User` — so every agent PR answers `is_bot: false` and the sweep classified all 22
+#: open PRs as human-owned (issue #1295's fix, PR #1296, is inert for the same reason). The
+#: login is the author field that actually distinguishes the agent from the owner.
+AGENT_LOGINS = ("asimov-agent",)
+
 
 #: ONE PERSON, ONE IDENTITY (issue #445). The guard has always checked WHO may be credited; it
 #: never checked HOW MANY SPELLINGS one person used. `andyholst <andy@holst.se>` was therefore an
