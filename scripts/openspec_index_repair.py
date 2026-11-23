@@ -17,6 +17,10 @@ went red (the workflow carries the branch; the decision lives here, rule 6d):
                         red was not index staleness; nothing is written. exit 0.
       DRIFT=index-only  the index was stale; it has been rewritten, and the
                         rewrite is current by the generator's own verdict. exit 0.
+                        The drift count and its tolerance come from the generator's
+                        ONE measure (`index_drift` / MAX_OPENSPEC_INDEX_DRIFT,
+                        issue #1415): a drift `--check` only WARNs about is still
+                        classified and repaired here, never left to accumulate.
       DRIFT=invalid-change an ACTIVE change is structurally incomplete (rule 6f:
                         proposal.md + specs/<capability>/spec.md + tasks.md). This
                         red is NOT index staleness: `openspec validate --changes`
@@ -106,8 +110,15 @@ def classify_and_write() -> int:
 
     print(f"[index-repair] the committed index is stale against this tree "
           f"({len(active)} active, {len(archived)} archived on disk):")
-    for reason in oi._why_stale(current, fresh, active, archived):
+    # Issue #1415: the drift measure is the generator's ONE (`index_drift`), and
+    # the tolerance is its ONE constant — so a drift the gate only WARNs about is
+    # still classified by count here and repaired, never left to accumulate.
+    drift, reasons = oi.index_drift(current, fresh, active, archived)
+    for reason in reasons:
         print(f"[index-repair]   {reason}")
+    tolerated = "within" if drift <= oi.MAX_OPENSPEC_INDEX_DRIFT else "above"
+    print(f"[index-repair]   {drift} differing change(s) — {tolerated} the tolerated "
+          f"MAX_OPENSPEC_INDEX_DRIFT={oi.MAX_OPENSPEC_INDEX_DRIFT}; regenerating")
 
     try:
         oi.INDEX.write_text(fresh, encoding="utf-8")

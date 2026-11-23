@@ -146,6 +146,38 @@ def test_current_index_classifies_none_and_writes_nothing():
         check("none: the index bytes are untouched", oi.INDEX.read_bytes() == before, out)
 
 
+def test_a_tolerated_drift_is_still_classified_and_repaired():
+    """Issue #1415: `--check` only WARNs at or under MAX_OPENSPEC_INDEX_DRIFT, but
+    the keeper still measures that SAME drift by the generator's ONE function and
+    rewrites it — a tolerated drift must not accumulate silently."""
+
+    # Given one changed row (the shape a merge leaves behind): small, so the gate
+    # would only warn about it.
+    with tempfile.TemporaryDirectory() as td:
+        tdp = Path(td)
+        rp = _repair_with(tdp)
+        oi = rp.oi
+        _fixture_change(oi.CHANGES / "alpha", "alpha", issue="#101")
+        oi.INDEX.write_text(oi.render(), encoding="utf-8")
+        tasks = oi.CHANGES / "alpha" / "tasks.md"
+        tasks.write_text(tasks.read_text(encoding="utf-8") + "- [ ] extra\n", encoding="utf-8")
+
+        rc_warn, warn_out = _run(oi, ["--check"])
+        rc, out = _run(rp, ["--classify-and-write"])
+        rc2, out2 = _run(oi, ["--check"])
+
+    check("tolerated: the gate warns and exits 0", rc_warn == 0 and "WARN" in warn_out, warn_out)
+    check("tolerated: the keeper still repairs it (DRIFT=index-only)",
+          rc == 0 and "DRIFT=index-only" in out, out)
+    check("tolerated: the keeper names the count and the shared threshold",
+          "1 differing change(s)" in out and "MAX_OPENSPEC_INDEX_DRIFT=25" in out, out)
+    check("tolerated: the rewritten index passes --check", rc2 == 0, out2)
+
+    src = REPAIR_SCRIPT.read_text(encoding="utf-8")
+    check("tolerated: the keeper shares the generator's measure (no second counter)",
+          "oi.index_drift(" in src and "def index_drift" not in src, "")
+
+
 def test_missing_generated_file_is_index_only_drift():
     """A deleted OPENSPEC.md is exactly this guard's failure shape (issue #304 began
     with one): the repair writes it and the verdict is index-only."""
@@ -246,6 +278,7 @@ def main() -> int:
     assert _subprocess_compile(), "scripts/openspec_index_repair.py does not compile"
     test_stale_index_after_a_merge_classifies_index_only_and_rewrites()
     test_current_index_classifies_none_and_writes_nothing()
+    test_a_tolerated_drift_is_still_classified_and_repaired()
     test_missing_generated_file_is_index_only_drift()
     test_unreadable_index_is_loud_never_a_silent_clean()
     test_keeper_pr_body_implements_no_issue_and_closes_none()
