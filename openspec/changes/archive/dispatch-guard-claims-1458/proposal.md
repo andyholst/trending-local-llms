@@ -1,6 +1,7 @@
 # Proposal: dispatch-guard-claims-1458
 
 Issue: #1458
+PR: #1460
 
 ## Why
 
