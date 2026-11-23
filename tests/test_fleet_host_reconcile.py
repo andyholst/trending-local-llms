@@ -199,8 +199,8 @@ def test_the_target_is_wired_to_make_ci_and_the_description() -> int:
     return failed
 
 
-if __name__ == "__main__":
-    raise SystemExit(sum(fn() for fn in (
+def main() -> int:
+    return sum(fn() for fn in (
         test_forward_host_classifies_and_write_keeps_a_backup,
         test_stale_host_restores_master_bytes,
         test_mixed_host_union_is_a_lossless_superset,
@@ -208,4 +208,8 @@ if __name__ == "__main__":
         test_report_only_leaves_bytes_and_mtime_untouched,
         test_unresolvable_base_exits_two_writing_nothing,
         test_the_target_is_wired_to_make_ci_and_the_description,
-    )))
+    ))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
