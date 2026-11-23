@@ -39,6 +39,12 @@ LANES = (
     "tll-docs",
 )
 
+# The TEXT mirrors compared byte-for-byte. `config.yaml` is deliberately absent: its OWNED
+# blocks go through `agent_profile_provision.check_one` (issue #1401), so a second drift
+# verdict for it is forbidden (#1198/#1204). `fleet_host_reconcile` imports this list --
+# ONE definition of which files are compared (rule 6d).
+MIRROR_RELS = ("SOUL.md", "skills/{lane}/SKILL.md")
+
 # The rulebook markers the fleet's behaviour hangs on. Every one must be present in
 # AGENTS.md AT THE BASE -- a rule dropped from the rulebook is a divergence too.
 RULEBOOK_MARKERS = (
@@ -137,7 +143,8 @@ def main(argv: list[str] | None = None) -> int:
 
     failed = 0
     for lane in LANES:
-        for rel in ("SOUL.md", f"skills/{lane}/SKILL.md", "config.yaml"):
+        for rel in (*MIRROR_RELS, "config.yaml"):
+            rel = rel.format(lane=lane)
             repo_path = f"agents/{lane}/{rel}"
             try:
                 expected = _blob(root, base_sha, repo_path)

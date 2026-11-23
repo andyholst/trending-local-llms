@@ -1702,6 +1702,22 @@ _fleet-host-sync-check:
 fleet-host-sync-check: ## Refuse a host fleet whose lane bytes / AGENTS.md lifecycle rules drift from the fetched base (BASE=origin/master, PROFILES_HOME=..., issue #1209)
 	@$(MAKE) --no-print-directory _fleet-host-sync-check
 
+# ---- fleet mirror reconciliation (issue #1464) ------------------------------
+# The sync check REFUSES divergence but names no direction. This seam reuses its comparison
+# inputs (ONE definition of which files, against which base -- rule 6d) and adds classify +
+# lossless union + backup-first write. Default destination is the HOST profile home (the M:
+# wake refresh); DEST=<worktree> lands the same computed union under agents/<lane>/<rel> for
+# the reviewed PR. Report-only by default; WRITE=1 writes. `config.yaml` is out of scope
+# (#1198/#1204 -- agent-profile-provision owns it).
+FLEET_RECONCILE_ARGS := $(if $(BASE),--base $(BASE),--base origin/master)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)$(if $(ROOT), --root $(ROOT),)$(if $(DEST), --dest $(DEST),)$(if $(WRITE), --write,)$(if $(EXPECT_REF), --expect-ref $(EXPECT_REF),)
+
+.PHONY: _fleet-host-reconcile fleet-host-reconcile
+_fleet-host-reconcile:
+	python3 scripts/fleet_host_reconcile.py$(if $(FLEET_RECONCILE_ARGS), $(FLEET_RECONCILE_ARGS),)
+
+fleet-host-reconcile: ## Classify a divergent fleet text mirror and land the lossless union (BASE=origin/master, PROFILES_HOME=..., DEST=..., WRITE=1, EXPECT_REF=..., issue #1464)
+	@$(MAKE) --no-print-directory _fleet-host-reconcile
+
 .PHONY: _watch-monitor watch-monitor
 WATCH_MONITOR_ARGS := $(if $(REPO),--repo $(REPO),)$(if $(STATE),--state $(STATE),)$(if $(GH),--gh $(GH),)$(if $(CHECK),--check,)
 WATCH_HEARTBEAT_SECONDS ?= 0
