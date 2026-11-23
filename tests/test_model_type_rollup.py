@@ -89,6 +89,33 @@ def main() -> int:
     planted_gaps = MTR.stale_candidates(old_only, old_measures, 7)
     check("a historical-only model is named as a GAP",
           planted_gaps == [("zz-old", "Old Model", 1, "2026-10-01")], str(planted_gaps))
+    fresh = MTR.model_freshness(old_only, old_measures, "zz-old", 7)
+    check("per-model audit names the stale model",
+          any("id=zz-old" in line for line in fresh), str(fresh[:2]))
+    check("per-model audit gives the capture verdict",
+          any("VERDICT: NO measurements in the 7-day window" in line and "#1234" in line
+              for line in fresh), str(fresh[-1]))
+    check("per-model audit reports days behind the newest store date",
+          any("days_behind_newest_store_date=47" in line for line in fresh), str(fresh[1]))
+    current = MTR.model_freshness(old_only, old_measures, "zz-new", 7)
+    check("per-model audit distinguishes a rank decision from a capture gap",
+          any("VERDICT: HAS in-window measurements" in line for line in current),
+          str(current[-1]))
+    absent = MTR.model_freshness(old_only, old_measures, "no-such-id", 7)
+    check("an unknown model id is reported explicitly",
+          absent == ["MODEL NOT FOUND id='no-such-id'; no store row, no trend verdict."],
+          str(absent))
+    aliased_fresh = MTR.model_freshness(
+        {"models": [{"id": "zz-alias", "name": "Alias Model", "type": "LLM",
+                     "measurement_model_aliases": ["other-model"]}]},
+        {"other-model": [{"date": "2026-11-17", "tps": "30"}]}, "zz-alias", 7)
+    check("alias-only rows are NOT reported as the model's own trend evidence",
+          any("came ONLY from declared aliases" in line and "#1213" in line
+              for line in aliased_fresh), str(aliased_fresh[-1]))
+    live_flash = MTR.model_freshness(models, measurements, "qwen3.8-flash-next-125b", 7)
+    check("the live Flash-Next audit never credits alias rows as its own posts",
+          any("came ONLY from declared aliases" in line and "qwen3.8-27b" in line
+              for line in live_flash), str(live_flash[-1]))
     source = (ROOT / "scripts/model_type_rollup.py").read_text(encoding="utf-8")
     check("the rollup never writes a store", ".write_text(" not in source and ".write_bytes(" not in source)
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")

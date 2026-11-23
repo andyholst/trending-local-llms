@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **474**
+Active changes: **1** · archived: **476**
 
 ## Active changes
 
@@ -307,6 +307,7 @@ Active changes: **1** · archived: **474**
 | `message-pattern-in-pr-bodies` | archived | #771 | #772 | [message-pattern-enforcement](openspec/changes/archive/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/message-pattern-in-pr-bodies/proposal.md) |
 | `missing-gh-fixture-host-path` | archived | #895 | #927 | [testing](openspec/changes/archive/missing-gh-fixture-host-path/specs/testing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/missing-gh-fixture-host-path/proposal.md) |
 | `model-footprint-copy-traceability` | archived | #934 | #1104 | [footprint-traceability](openspec/changes/archive/model-footprint-copy-traceability/specs/footprint-traceability/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/model-footprint-copy-traceability/proposal.md) |
+| `model-freshness-1249` | archived | #1249 | #1250 | [model-trending](openspec/changes/archive/model-freshness-1249/specs/model-trending/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/model-freshness-1249/proposal.md) |
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `model-type-rollup-1246` | archived | #1246 (companion to the pending owner ruling #1235) | #1247 | [trend-aggregation](openspec/changes/archive/model-type-rollup-1246/specs/trend-aggregation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/model-type-rollup-1246/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
