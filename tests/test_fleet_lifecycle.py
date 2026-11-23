@@ -159,7 +159,8 @@ def base_blob(rel: str) -> str | None:
     strings and pass vacuously (the shallow-checkout trap issue #1183/#1292 names).
     """
     proc = subprocess.run(
-        ["git", "-C", str(ROOT), "show", f"{UNION_BASE_SHA}:{rel}"],
+        ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show",
+         f"{UNION_BASE_SHA}:{rel}"],
         capture_output=True,
         text=True,
         check=False,
