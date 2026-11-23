@@ -215,8 +215,14 @@ def test_real_seam_refuses_a_diverged_soul() -> int:
         return failed
 
 
-def test_real_seam_tolerates_hermes_config_version() -> int:
-    """Issue #1389: `_config_version` is Hermes runtime metadata, not fleet drift."""
+def test_real_seam_tolerates_hermes_runtime_stamps() -> int:
+    """Issue #1401: Hermes's runtime stamps are host state, not fleet drift.
+
+    The lane config's OWNED blocks are compared through the ONE drift verdict, so
+    `_config_version`, `onboarding.seen` and a NOVEL stamp the fix never saw are all
+    tolerated -- while a stale owned byte still reds, naming the lane's config.yaml, and
+    `SOUL.md` / the lane skill stay byte-exact.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         root = scratch_repo(Path(tmp))
         home = Path(tmp) / "profiles"
@@ -224,25 +230,60 @@ def test_real_seam_tolerates_hermes_config_version() -> int:
         scratch_home(home, root)
         victim = home / "tll-implementer" / "config.yaml"
         base = victim.read_bytes()
-        victim.write_bytes(base + b"_config_version: 54\n")
-        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
-        failed = check(got.returncode == 0, "a planted _config_version scalar is tolerated")
+
+        failed = 0
+        # Every Hermes-written block is host runtime state: the two measured stamps and a
+        # NOVEL one (the whole point of owned-block comparison -- the next stamp is covered).
+        for stamp in (
+            b"_config_version: 54\n",
+            b"onboarding:\n  seen:\n    tool_progress_prompt: true\n",
+            b"some_future_stamp:\n  seen: true\n",
+        ):
+            victim.write_bytes(base + stamp)
+            got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+            failed += check(
+                got.returncode == 0,
+                f"a planted {stamp.split(b':', 1)[0].decode()} stamp is tolerated",
+            )
         print("      " + (got.stdout or got.stderr).strip().splitlines()[-1])
 
-        # the tolerance is ONE key on config.yaml: a stale model: byte still reds
-        victim.write_bytes(base.replace(b"\nmodel:\n", b"\nmodel: stale\n", 1))
-        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
-        failed += check(got.returncode == 1, "a stale model: byte still reds")
-        failed += check(
-            "tll-implementer/config.yaml" in got.stdout and "diverges from" in got.stdout,
-            "the refusal names the lane's config.yaml",
-        )
+        # The teeth: a stale OWNED byte still reds, naming the lane's config.yaml.
+        for block in (b"model", b"model_aliases", b"fallback_providers"):
+            victim.write_bytes(base.replace(b"\n" + block + b":\n", b"\n" + block + b": stale\n", 1))
+            got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+            failed += check(got.returncode == 1, f"a stale {block.decode()}: byte still reds")
+            failed += check(
+                "tll-implementer/config.yaml" in got.stdout and f"`{block.decode()}:`" in got.stdout,
+                f"the refusal names tll-implementer/config.yaml and the {block.decode()}: block",
+            )
 
-        # and SOUL.md is NOT covered by the tolerance
+        # The tolerance is config.yaml ONLY: the same blocks planted in SOUL.md are refused.
         soul = home / "tll-implementer" / "SOUL.md"
-        soul.write_bytes(soul.read_bytes() + b"\n_config_version: 54\n")
+        soul_base = soul.read_bytes()
+        for stamp in (
+            b"\n_config_version: 54\n",
+            b"\nonboarding:\n  seen:\n    tool_progress_prompt: true\n",
+        ):
+            soul.write_bytes(soul_base + stamp)
+            got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+            failed += check(
+                got.returncode == 1,
+                f"a {stamp.strip().splitlines()[0].decode()} planted in SOUL.md is still refused",
+            )
+            failed += check(
+                "tll-implementer/SOUL.md" in got.stdout and "diverges from" in got.stdout,
+                "the SOUL.md refusal names the lane and the file",
+            )
+
+        # The lane skill stays byte-exact too.
+        skill = home / "tll-implementer" / "skills" / "tll-implementer" / "SKILL.md"
+        skill.write_bytes(skill.read_bytes()[:-1])  # one byte short
         got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
-        failed += check(got.returncode == 1, "a _config_version planted in SOUL.md is still refused")
+        failed += check(got.returncode == 1, "a one-byte lane-skill drift is refused")
+        failed += check(
+            "tll-implementer/skills/tll-implementer/SKILL.md" in got.stdout,
+            "the skill refusal names the lane's SKILL.md",
+        )
         return failed
 
 
@@ -291,7 +332,7 @@ def main() -> int:
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
-        test_real_seam_tolerates_hermes_config_version,
+        test_real_seam_tolerates_hermes_runtime_stamps,
         test_real_seam_refuses_a_diverged_default_profile,
         test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
