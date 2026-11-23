@@ -647,6 +647,29 @@ def test_a_recorded_pr_blockage_whose_fix_never_lands_is_red_after_its_grace() -
           and any("fix in flight" in line for line in lines5), str(lines5))
 
 
+def test_the_pr_block_grace_is_derived_from_its_stated_repair_window() -> None:
+    """Issue #1176: a bare-literal grace is a guess; its timing must name a measured basis."""
+    print("\nPR-blockage grace (#1176): derived from a stated repair window, not a bare literal")
+    import pipeline_failure_issue as F
+    src = (ROOT / "scripts" / "pipeline_failure_issue.py").read_text()
+    check("a named repair window exists",
+          hasattr(F, "PR_BLOCK_REPAIR_WINDOW_HOURS"),
+          "pipeline_failure_issue.py has no PR_BLOCK_REPAIR_WINDOW_HOURS")
+    check("the grace is ASSIGNED FROM the repair window, not a literal",
+          "PR_BLOCK_GRACE_HOURS = PR_BLOCK_REPAIR_WINDOW_HOURS" in src,
+          "PR_BLOCK_GRACE_HOURS is a bare literal with no provenance")
+    comment = src.split("#: The PR-blockage grace is DERIVED", 1)
+    check("the derivation comment names the measured outage and the dispatch-only cadence",
+          len(comment) == 2 and "#1164" in comment[1] and "#1029" in comment[1]
+          and "44651246625" in comment[1],
+          "the grace's comment does not name the measured #1164 outage / #1029 cadence")
+    repair_window = getattr(F, "PR_BLOCK_REPAIR_WINDOW_HOURS", None)
+    check("the derived value is unchanged (24 h) and the gate reads the same seam",
+          F.PR_BLOCK_GRACE_HOURS == 24 and repair_window == 24
+          and G.PR_BLOCK_GRACE_HOURS == F.PR_BLOCK_GRACE_HOURS,
+          f"filer={F.PR_BLOCK_GRACE_HOURS} repair_window={repair_window} gate={G.PR_BLOCK_GRACE_HOURS}")
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
@@ -675,6 +698,7 @@ def main() -> int:
     test_unreadable_ledger_exits_2_end_to_end()
     test_gate_is_wired_into_qa_validate_and_the_gate_registry()
     test_a_recorded_pr_blockage_whose_fix_never_lands_is_red_after_its_grace()
+    test_the_pr_block_grace_is_derived_from_its_stated_repair_window()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 

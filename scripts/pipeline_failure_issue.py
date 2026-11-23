@@ -236,11 +236,16 @@ def _ts(value: str | None) -> dt.datetime | None:
 #: master/schedule window of `main_pipeline_failures` never sees (issue #1164).
 PR_BLOCK_MIN_PRS = 2
 
-#: A recorded PR-blocking row whose fix has not landed after this many hours is RED at
-#: `make pipeline-failure-guard-check`. "Whose fix never lands" is only decidable against a
-#: clock: the row is filed the moment two PRs are blocked, and a stale pin blocks EVERY open PR's
-#: `auto-merge` until it is fixed — a larger outage than one red scheduled sweep.
-PR_BLOCK_GRACE_HOURS = 24
+#: The PR-blockage grace is DERIVED, not guessed (issue #1176). There is no sweep interval to
+#: add to: `queued-alarm.yml` has been dispatch-only since issue #1029, so a cadence term would
+#: name a cadence the repository no longer owes. The basis is the MEASURED #1164 outage
+#: (qa-validate runs 44651246625 / 44651246366): a stale pin blocked every open PR's `auto-merge`
+#: and was repaired by a pin raise the same day. One full day of repair window is that measured
+#: bound rounded up, so a fix landing the next working day still clears the gate while an
+#: unfixed fleet-wide blockage reds it. `PR_BLOCK_GRACE_HOURS` is assigned FROM this window —
+#: a regression test refuses a bare-literal grace with no provenance.
+PR_BLOCK_REPAIR_WINDOW_HOURS = 24
+PR_BLOCK_GRACE_HOURS = PR_BLOCK_REPAIR_WINDOW_HOURS
 
 #: A weekly sweep reads at most this many `pull_request` runs' logs. The byte cap on one log
 #: does not bound the NUMBER of reads: 20 open PRs all red at the same step cost 20 fetches on
