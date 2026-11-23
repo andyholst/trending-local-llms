@@ -269,6 +269,31 @@ jobs:
           FB=$(printf '%s' "$FB" | sed -e 's/^ *//' -e 's/ *$//')
           if [ -n "$FB" ]; then printf '%s=%s\n' corrupt_fallback "$FB" >> "$GITHUB_OUTPUT"; fi
 
+      # Issue #1239: a PR-head-only index check cannot see a merge race. Two PRs can
+      # each carry a correct OPENSPEC.md for their own base, yet the SECOND merge lands
+      # an index computed when one fewer archive existed (measured: origin/master
+      # `cebd71c7` said 394 while disk held 395). Verify the merge tree too; the PR-head
+      # check above stays for sibling-change isolation (#432), and the post-merge
+      # keeper (#304) stays as a backstop — no gate is weakened.
+      - name: OpenSpec index on the merge tree (issue #1239)
+        run: |
+          set -euo pipefail
+          # No --depth=1: the validate checkout uses fetch-depth: 0, and a shallow
+          # fetch here would truncate the history that tests/test_commit_authorship.py
+          # reads later in this same job (issue #1239 follow-up).
+          git fetch origin master:refs/remotes/origin/master >/dev/null
+          if ! git merge --no-commit --no-ff origin/master >/dev/null 2>&1; then
+            git merge --abort >/dev/null 2>&1 || true
+            echo "[merge-tree-index] MERGE CONFLICT: rebase on current master and retry"
+            exit 1
+          fi
+          if ! make openspec-index-check; then
+            echo "[merge-tree-index] FAIL: the index is stale on master + this PR."
+            echo "[merge-tree-index] Run 'make openspec-index' and rebase on current master."
+            exit 1
+          fi
+          git reset --hard HEAD >/dev/null
+
       # The lifecycle's END (rule 6f, issue #183): a change whose PR is merged must
       # be archived in the PR that completes it, so an ACTIVE change naming a
       # merged PR is a defect. PR state is a GitHub fact, read on the HOST with the

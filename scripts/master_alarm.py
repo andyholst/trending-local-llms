@@ -74,6 +74,13 @@ GATES: dict[str, tuple[str, str]] = {
     # qa-validate's `invalid-change-repair` job (`SHAPES` below, then the alarm
     # prints it per shape).
     "openspec-check": ("keeper", "qa-validate index-repair + architecture-bot"),
+    # The merge-tree step (issue #1239) runs `make openspec-index-check`. Before the
+    # issue #1281 extractor fix this real gate was invisible (a `;` defeated the
+    # lookahead) and a phantom `openspec-index` from an echo literal took its place;
+    # once the extractor was corrected the gate surfaced as UNCOVERED and red
+    # `tests/test_master_alarm.py` on this PR. It checks the same generated index
+    # as `openspec-check`, so the same two keepers repair a stale index on master.
+    "openspec-index-check": ("keeper", "qa-validate index-repair + architecture-bot"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
     "fleet-host-sync-check": ("alarm", "master-alarm"),
     # The comment/CI/merge monitor is deterministic repo-owned code (issue #1266).
