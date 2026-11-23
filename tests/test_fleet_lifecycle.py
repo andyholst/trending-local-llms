@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -81,6 +82,98 @@ LANDED_HOST_AHEAD_NOTES = {
         ),
     ),
 }
+
+#: Issue #1469: the revision BEFORE the 2026-11-23 second-batch host-ahead union landed
+#: (`cf3e46f` added it). Pinned here so the multiset comparison below is reproducible from
+#: history, never from a sha quoted in chat.
+UNION_BASE_SHA = "84cace0b38f4667eb55a7edfa1466c59ac1cec00"
+#: The four mirrors that union wrote into (issues #1462/#1463).
+UNION_MIRRORS = (
+    "agents/tll-planner/skills/tll-planner/SKILL.md",
+    "agents/tll-implementer/skills/tll-implementer/SKILL.md",
+    "agents/tll-reviewer/skills/tll-reviewer/SKILL.md",
+    "agents/tll-pr-rebase/skills/tll-pr-rebase/SKILL.md",
+)
+#: A parenthetical aside is dropped before clauses are split, so `chasing it (#972).` and a
+#: bare `chasing it.` compare equal — the fragment #1469 measured as duplicated.
+_PARENTHETICAL = re.compile(r"\((?:[^()]|\([^()]*\))*\)")
+_CLAUSE_BREAK = re.compile(r"[.!?;:,]")
+_CLAUSE_EDGE = "*`-—– .,:;!?-•_"
+_TRIVIAL_LINE = re.compile(r"^(?:---+|[#]{1,6}\s*)$")
+MIN_UNIT_CHARS = 6
+MIN_UNIT_WORDS = 2
+#: A TWO-word clause is only distinctive when it is this long — `chasing it` (10) is a real
+#: dangling fragment, while `make X` / `in the` are filler that recurs in any new note.
+MIN_SHORT_UNIT_CHARS = 10
+
+
+def _is_unit(clause: str) -> bool:
+    words = len(clause.split())
+    if words < MIN_UNIT_WORDS:
+        return False
+    floor = MIN_SHORT_UNIT_CHARS if words < 3 else MIN_UNIT_CHARS
+    return len(clause) >= floor
+
+
+def mirror_units(text: str) -> Counter:
+    """The multiset of non-trivial lines and clauses/phrases a mirror carries.
+
+    Whole lines are counted (a repeated wrapped line is a duplicate), and each line is ALSO
+    split into clauses on punctuation so a fragment repeated inside a sentence is caught too.
+    Short filler ("ok", "and", a bare URL, `make X`) is not a unit — it cannot carry a rule.
+    """
+    counts: Counter = Counter()
+    for raw in text.splitlines():
+        stripped = raw.strip()
+        if stripped and not _TRIVIAL_LINE.match(stripped) and (
+            len(stripped.split()) >= 4 or "`" in stripped
+        ):
+            counts[("line", stripped)] += 1
+        for fragment in _CLAUSE_BREAK.split(_PARENTHETICAL.sub(" ", raw)):
+            clause = fragment.strip().strip(_CLAUSE_EDGE)
+            if _is_unit(clause):
+                counts[("clause", clause)] += 1
+    return counts
+
+
+def unexpected_growth(base_text: str, head_text: str) -> list[tuple[str, str, int, int]]:
+    """Units whose copy count GREW from base to head — the duplication/interleaving class.
+
+    A unit absent at base is a legitimate new note (0 -> 1). A unit already present at base
+    that appears MORE times at head was duplicated or interleaved by a later union, whatever
+    order it landed in. Returns `(kind, unit, base_count, head_count)` tuples, sorted.
+    """
+    base_counts = mirror_units(base_text)
+    head_counts = mirror_units(head_text)
+    return sorted(
+        (kind, unit, base_counts[(kind, unit)], head_counts[(kind, unit)])
+        for (kind, unit), head_n in head_counts.items()
+        if head_n > base_counts.get((kind, unit), 0) and base_counts.get((kind, unit), 0) > 0
+    )
+
+
+def base_blob(rel: str) -> str | None:
+    """The pinned base revision's copy of `rel`, or None when git cannot read it.
+
+    Loud by design: an unreadable or EMPTY base must FAIL the caller, never compare two empty
+    strings and pass vacuously (the shallow-checkout trap issue #1183/#1292 names).
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(ROOT), "show", f"{UNION_BASE_SHA}:{rel}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        print(
+            f"FAIL cannot read {rel} at the pinned union base {UNION_BASE_SHA[:12]}: "
+            f"{proc.stderr.strip() or 'git show failed'}"
+        )
+        return None
+    if not proc.stdout.strip():
+        print(f"FAIL {rel} is EMPTY at the pinned union base {UNION_BASE_SHA[:12]} — refusing a vacuous pass")
+        return None
+    return proc.stdout
 
 
 def check(cond: bool, msg: str) -> int:
@@ -526,7 +619,12 @@ def test_reviewer_skill_carries_landed_host_ahead_notes() -> int:
 
 
 def test_second_batch_host_ahead_notes_are_landed() -> int:
-    """The 2026-11-23 M: wake landed four lanes' forward notes without dropping master rules."""
+    """The 2026-11-23 M: wake landed four lanes' forward notes without dropping master rules.
+
+    Issue #1469: each landed note must be carried EXACTLY ONCE. Presence alone is what let
+    PR #1463 ship green over a union that grew one of these needles to two copies, so the
+    count is pinned here too.
+    """
     failed = 0
     cases = {
         "tll-planner": (
@@ -553,6 +651,9 @@ def test_second_batch_host_ahead_notes_are_landed() -> int:
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         for needle in needles:
             failed += check(needle in text, f"{lane} mirror carries {needle!r}")
+            failed += check(text.count(needle) == 1, f"{lane} mirror carries {needle!r} exactly once")
+    # The #1463 regression pin, kept verbatim: this one bullet's count was the ONLY duplication
+    # assertion before #1469 generalized it.
     impl = (ROOT / "agents" / "tll-implementer" / "skills" / "tll-implementer" / "SKILL.md")
     if impl.exists():
         body = impl.read_text(encoding="utf-8")
@@ -563,6 +664,51 @@ def test_second_batch_host_ahead_notes_are_landed() -> int:
     return failed
 
 
+def test_mirror_unions_add_no_duplicate_or_interleaved_bullets() -> int:
+    """Issue #1469: the union/no-duplicate PROPERTY, compared against the pinned pre-union base.
+
+    For each of the four mirrors, no non-trivial line or clause may GROW its copy count
+    between the pinned base revision and this tree. A unit absent at base is a legitimate
+    new note (0 -> 1); a unit present at base that appears more times here was duplicated or
+    interleaved by a later union — the exact failure PR #1463 shipped green.
+    """
+    failed = 0
+    for rel in UNION_MIRRORS:
+        head_text = (ROOT / rel).read_text(encoding="utf-8")
+        base_text = base_blob(rel)
+        if base_text is None:
+            failed += 1
+            continue
+        growth = unexpected_growth(base_text, head_text)
+        failed += check(
+            not growth,
+            f"{rel}: no non-trivial line/clause grows past the pinned union base",
+        )
+        for kind, unit, before, after in growth:
+            print(f"     {rel}: {kind} {before}->{after} {unit!r}")
+    return failed
+
+
+def test_the_union_growth_detector_fires_on_a_planted_duplicate() -> int:
+    """Issue #1469: RED-first proof for the detector itself, on real text (no stand-in logic).
+
+    A pure addition stays silent; an exact repeated bullet and an interleaved repeated clause
+    both go red.
+    """
+    failed = 0
+    base = (
+        "- **Keep the board current.** Never post a second status report on the same wait.\n"
+        "- **A distinct rule.** Something no other bullet says, so it counts as new.\n"
+    )
+    additive = base + "- **A brand new note.** Only this tree carries this sentence, so it is growth-free.\n"
+    failed += check(not unexpected_growth(base, additive), "a purely additive note produces no growth")
+    duplicated = base + "- **Keep the board current.** Never post a second status report on the same wait.\n"
+    failed += check(bool(unexpected_growth(base, duplicated)), "an exact repeated bullet is detected")
+    interleaved = base + "- **Twin note.** Never post a second status report on the same wait, again.\n"
+    failed += check(bool(unexpected_growth(base, interleaved)), "an interleaved repeated clause is detected")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
@@ -570,6 +716,8 @@ def main() -> int:
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_second_batch_host_ahead_notes_are_landed,
+        test_mirror_unions_add_no_duplicate_or_interleaved_bullets,
+        test_the_union_growth_detector_fires_on_a_planted_duplicate,
         test_pr_rebase_skill_is_push_and_verify,
         test_reviewer_skill_carries_landed_host_ahead_notes,
         test_lane_skills_carry_the_push_and_verify_rule,
