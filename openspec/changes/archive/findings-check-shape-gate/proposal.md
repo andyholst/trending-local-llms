@@ -1,6 +1,7 @@
 # Proposal: findings-check-shape-gate
 
 Issue: #1454
+PR: #1480
 
 ## Why
 
