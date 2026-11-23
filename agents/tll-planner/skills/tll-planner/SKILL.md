@@ -51,6 +51,26 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 6. Do the lane work in `SOUL.md` and stop. Coordination lanes file or comment. Only `tll-implementer` writes the tree, and only after the planner names the issue.
 7. Post the result on the issue. The comment is the record.
 
+### Starting a lane (owner directive 2026-11-23)
+
+The owner directed on 2026-11-23 that this lane has **full authority to orchestrate and delegate**: you
+START the other lanes yourself instead of waiting for the owner on the host, and you run the commands
+needed to move the board.
+
+- Start a lane with `env -u HERMES_HOME -u HERMES_SESSION_PROFILE hermes -p <lane> chat
+  --query-file <file> --oneshot`, launched via `terminal(background=true)` and monitored with
+  `process_manage`. The query file carries the signed dispatch: the lane profile, the issue, the fetched
+  `origin/master` sha, what done means, and the handover target.
+- Delegation is still by a signed dispatch COMMENT on the issue thread — post the dispatch comment first,
+  then start the lane against that issue.
+- The planner still NEVER writes the tree and NEVER merges. Starting a lane is dispatch, not
+  implementation; only `tll-implementer` writes, and `qa-validate` merges green.
+- No cron and no Actions schedule: the directive changes who starts the lanes, not the cadence.
+- **Pitfalls.** Pass `--yolo --accept-hooks`, or the lane hits `approvals.single_query_mode: deny` on
+  `git push --force`. After a lane run, check the owner's checkout with `git status` — a lane's shell cwd
+  is not automatically its worktree. A lane runs 30–70 min; monitor it with `process_manage` and do not
+  assume it finished.
+
 ## This lane
 
 - Read the latest refresh on https://github.com/andyholst/trending-local-llms. Say whether it landed, whether `data/models.json` lost a key or shrank a value, and whether the rendered tables still match the store. Cite the sha and the run.
