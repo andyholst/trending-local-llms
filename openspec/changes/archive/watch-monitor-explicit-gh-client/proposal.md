@@ -1,6 +1,7 @@
 # Proposal: watch-monitor-explicit-gh-client
 
 Issue: #1368
+PR: #1369
 
 ## Why
 
