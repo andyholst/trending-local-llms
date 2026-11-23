@@ -323,17 +323,44 @@ def open_pr_branches(repo: str) -> set:
     return {p.get("headRefName") for p in out if p.get("headRefName")}
 
 
+def pr_block_candidates(runs: list[dict], cutoff: dt.datetime, open_branches: set) -> list[dict]:
+    """The runs a PR-blockage read may be spent on — the cheap filters BEFORE the cap (issue #1405).
+
+    The log-read cap exists to bound the number of LOG FETCHES, so it must be applied to the runs
+    that can actually be a blockage: concluded-bad, on a branch that is still an OPEN pull request,
+    and inside the window. Bounding the raw newest-first page first spends the budget on green and
+    merged runs, so a shape blocking several open PRs is never grouped the moment newer green runs
+    fill the page (measured: `log budget 8 run(s); skipped 22 run(s) beyond the cap` while every red
+    open-PR run sat past the cap). Every filter here is cheap; only `failed_jobs`/`job_failure`
+    touch the network.
+    """
+    out: list[dict] = []
+    for r in runs:
+        if r.get("conclusion") not in BAD_CONCLUSIONS:
+            continue
+        if r.get("headBranch") not in open_branches:
+            continue
+        created = _ts(r.get("createdAt"))
+        if created is None or created < cutoff:
+            continue
+        out.append(r)
+    return out
+
+
 def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime,
-                          stats: dict | None = None) -> list[dict]:
+                          stats: dict | None = None,
+                          open_branches: set | None = None) -> list[dict]:
     """Concluded-bad `pull_request` runs of the main pipelines inside the window (issue #1164).
 
     Each item carries its failed job, the scrubbed error block, the `make` targets the log names,
     the failing steps, the log region and the normalised `shape`. A still-running or queued run
     belongs to the queued alarm, exactly as in `main_pipeline_failures`. At most
-    `PR_BLOCK_MAX_LOG_READS` runs are read per sweep; the skipped count is written to `stats`
-    so the sweep can announce it (issue #1174).
+    `PR_BLOCK_MAX_LOG_READS` runs' LOGS are read per sweep, and they are the runs that survive the
+    red/open-PR/window pre-filter (issue #1405), so the cap bounds reads rather than relevance; the
+    skipped count is written to `stats` so the sweep can announce it (issue #1174).
     """
     cutoff = now - dt.timedelta(hours=window_hours)
+    branches = open_pr_branches(repo) if open_branches is None else open_branches
     out: list[dict] = []
     skipped = 0
     for wf in MAIN_PIPELINES:
@@ -345,14 +372,10 @@ def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime,
         ])
         if not isinstance(runs, list):
             raise RuntimeError(f"run list for {wf} returned {type(runs).__name__}, not a list")
-        runs, wf_skipped = bound_pr_block_runs(runs)
+        candidates = pr_block_candidates(runs, cutoff, branches)
+        candidates, wf_skipped = bound_pr_block_runs(candidates)
         skipped += wf_skipped
-        for r in runs:
-            if r.get("conclusion") not in BAD_CONCLUSIONS:
-                continue
-            created = _ts(r.get("createdAt"))
-            if created is None or created < cutoff:
-                continue
+        for r in candidates:
             try:
                 jobs = failed_jobs(repo, int(r["databaseId"]))
             except (RuntimeError, ValueError, KeyError):
@@ -424,7 +447,7 @@ def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path:
     stats: dict = {}
     try:
         open_branches = open_pr_branches(repo)
-        items = pr_triggered_failures(repo, window_hours, now, stats)
+        items = pr_triggered_failures(repo, window_hours, now, stats, open_branches)
     except RuntimeError as exc:
         return [f"pr-blockage: READ FAILED: {exc}"]
     skipped = int(stats.get("pr_block_runs_skipped", 0))

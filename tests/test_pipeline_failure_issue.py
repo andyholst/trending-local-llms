@@ -1572,9 +1572,70 @@ def test_pr_blockage_log_read_budget_is_bounded_and_announced() -> None:
             check("a zero cap is refused, never a silent whole-read", True, "")
         else:
             check("a zero cap is refused, never a silent whole-read", False, "no ValueError")
-    check("the collection pass calls the bound seam", "bound_pr_block_runs(runs)" in src, "")
+    check("the collection pass bounds the CANDIDATE list, not the raw page",
+          "bound_pr_block_runs(candidates)" in src, "")
+    check("the cheap pre-filter is its own seam", "pr_block_candidates(runs, cutoff, branches)" in src, "")
     check("the sweep line announces the budget and the skipped count",
           "log budget" in src and "skipped" in src, "")
+
+
+#: Eight NEWER GREEN `pull_request` runs that fill the whole log-read budget on the base revision.
+#: Their only job is to sit ahead of two red runs on open branches: bounding the raw newest-first
+#: page first (issue #1405) keeps exactly these eight and never sees the red ones.
+GREEN_RUNS_AHEAD = [
+    {"databaseId": 710 + i, "workflowName": "qa-validate.yml", "name": "validate",
+     "headBranch": f"ci/green{i}", "headSha": "1" * 40, "event": "pull_request",
+     "createdAt": f"2026-11-11T{21 + i // 60:02d}:{(40 + i) % 60:02d}:00Z",
+     "conclusion": "success", "status": "completed",
+     "url": f"https://github.com/octo/repo/actions/runs/{710 + i}"}
+    for i in range(8)
+]
+
+
+def test_the_read_cap_is_spent_after_the_red_open_pr_filter() -> None:
+    print("\nPR-blockage (#1405): newer green runs cannot crowd a red OPEN-PR run out of the read set")
+    cap = getattr(F, "PR_BLOCK_MAX_LOG_READS", None)
+    check("the cap equals the planted green crowd size", isinstance(cap, int) and cap == 8,
+          str(cap))
+    canned = dict(BASE_CANNED)
+    # Newest-first: the green crowd, then the two red runs on two different OPEN branches.
+    canned["runs-qa-validate_yml-pull_request.json"] = GREEN_RUNS_AHEAD + PR_RUNS
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"},
+                               {"headRefName": "ci/c"}]
+    canned["jobs-700.json"] = PR_JOBS_IMAGE
+    canned["jobs-701.json"] = PR_JOBS_IMAGE
+    canned["jobs-703.json"] = PR_JOBS_OTHER
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        bodies = {p.name: p.read_text() for p in (tmp / "canned").glob("body-*.txt")}
+        pr_body_txt = next((b for b in bodies.values() if "run=700" in b), None)
+        check("the red OPEN-PR shape IS grouped and filed despite the green crowd",
+              pr_body_txt is not None, f"bodies={list(bodies)}\n{proc.stdout}")
+        rows = [e for e in json.loads(ledger.read_text())["failures"]
+                if e.get("trigger") == "pull_request"]
+        check("exactly one PR-blockage row survives the crowd", len(rows) == 1, str(rows))
+        if rows:
+            check("the row still names the two blocked OPEN PRs",
+                  rows[0].get("blocked_prs") == ["ci/a", "ci/b"], str(rows[0].get("blocked_prs")))
+        check("no skipped-red-run line is invented for the discarded green runs",
+              "skipped" not in proc.stdout or "skipped 0" in proc.stdout, proc.stdout)
+
+
+def test_the_open_pr_branch_set_is_read_once_and_passed_down() -> None:
+    print("\nPR-blockage (#1405): the open-PR branch set is computed once and passed into the pass")
+    import inspect
+    sig = inspect.signature(F.pr_triggered_failures)
+    check("the collection pass accepts the caller's open-branch set",
+          "open_branches" in sig.parameters, str(sig))
+    src = FILER.read_text(encoding="utf-8")
+    check("record_pr_blockages passes its own set into the pass",
+          "items = pr_triggered_failures(repo, window_hours, now, stats, open_branches)" in src, "")
+    check("the collection pass reads the branches itself only when handed none",
+          "open_pr_branches(repo) if open_branches is None" in src, "")
 
 
 def main() -> int:
@@ -1622,6 +1683,8 @@ def main() -> int:
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
     test_pr_blockage_dry_run_previews_without_writing()
     test_pr_blockage_log_read_budget_is_bounded_and_announced()
+    test_the_read_cap_is_spent_after_the_red_open_pr_filter()
+    test_the_open_pr_branch_set_is_read_once_and_passed_down()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
