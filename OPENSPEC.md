@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **476**
+Active changes: **1** · archived: **477**
 
 ## Active changes
 
@@ -181,6 +181,7 @@ Active changes: **1** · archived: **476**
 | `data-gap-storage-offload` | archived | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/archive/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-storage-offload/proposal.md) |
 | `declared-coverage-external-binary` | archived | #1154 | #1168 | [declared-coverage-external-binary](openspec/changes/archive/declared-coverage-external-binary/specs/declared-coverage-external-binary/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/declared-coverage-external-binary/proposal.md) |
 | `declared-est-reask-pipeline` | archived | #936 | #941 | [data-gap-analysis](openspec/changes/archive/declared-est-reask-pipeline/specs/data-gap-analysis/spec.md) | 9/11 · 2 blocked | [proposal.md](openspec/changes/archive/declared-est-reask-pipeline/proposal.md) |
+| `dedupe-mirrors-1468` | archived | #1468 | #1472 | [agent-skill-mirrors](openspec/changes/archive/dedupe-mirrors-1468/specs/agent-skill-mirrors/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/dedupe-mirrors-1468/proposal.md) |
 | `detect-approval-hold-in-pr-health` | archived | #1123 (filed with a live measurement) | #1124 | [pr-health](openspec/changes/archive/detect-approval-hold-in-pr-health/specs/pr-health/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/detect-approval-hold-in-pr-health/proposal.md) |
 | `dimension-applicability` | archived | #469 | — | [data-gap-analysis](openspec/changes/archive/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/dimension-applicability/proposal.md) |
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
