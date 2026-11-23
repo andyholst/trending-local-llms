@@ -133,6 +133,63 @@ def stale_candidates(models: dict, measurements: dict, window_days: int) -> list
     return sorted(gaps, key=lambda g: (-g[2], g[0]))
 
 
+def model_freshness(models: dict, measurements: dict, model_id: str,
+                    window_days: int = 7) -> list[str]:
+    """Read-only per-model audit (issue #1249): why is a measured model absent from 🔥?"""
+    newest = latest_date(measurements)
+    cutoff = ""
+    if newest and window_days > 0:
+        from datetime import date, timedelta
+        cutoff = (date.fromisoformat(newest) - timedelta(days=window_days)).isoformat()
+    by_key: dict[str, list[dict]] = defaultdict(list)
+    for key, rows in measurements.items():
+        if isinstance(rows, list):
+            by_key[str(key)].extend(r for r in rows if isinstance(r, dict))
+    found = [m for m in models.get("models", []) if str(m.get("id") or "") == model_id]
+    if not found:
+        return [f"MODEL NOT FOUND id={model_id!r}; no store row, no trend verdict."]
+    model = found[0]
+    rows = [r for key in measurement_keys(model) for r in by_key.get(key, [])]
+    if not rows:
+        return [f"id={model_id} name={str(model.get('name') or '')!r} has NO measurements "
+                f"— absent from 🔥 because there is no measurement row."]
+    dates = [parse_date(r.get("date")) for r in rows if parse_date(r.get("date"))]
+    latest = max(dates) if dates else "—"
+    in_window = [r for r in rows if cutoff and parse_date(r.get("date")) >= cutoff]
+    tps = [t for r in rows if (t := parse_tps(r.get("tps"))) is not None]
+    engines = sorted({str(r.get("engine")) for r in rows if r.get("engine")})
+    archs = sorted({str(r.get("hardware")) for r in rows if r.get("hardware")})
+    own_id = str(model.get("id") or "")
+    own_in_window = [r for key in measurement_keys(model) if key == own_id
+                     for r in by_key.get(key, []) if cutoff and parse_date(r.get("date")) >= cutoff]
+    alias_keys = sorted(k for k in measurement_keys(model) if k != own_id)
+    if own_in_window:
+        reason = "HAS in-window measurements under its OWN id; absence from 🔥 is a RANK/band decision."
+    elif in_window:
+        reason = (f"NO in-window rows under its own id; {len(in_window)} row(s) came ONLY from "
+                  f"declared aliases {alias_keys}. Verify alias identity (#1213) before "
+                  f"treating these as this model's posts; the README 🔥 gate counts source posts.")
+    else:
+        reason = (f"NO measurements in the {window_days}-day window "
+                  f"(cutoff {cutoff or 'n/a'}); newest {latest}. Capture fresh posts "
+                  f"(#1234), do not edit the store or the ranker.")
+    lag = "—"
+    if latest != "—" and newest:
+        from datetime import date
+        lag = str((date.fromisoformat(newest) - date.fromisoformat(latest)).days)
+    return [
+        f"id={model_id} name={str(model.get('name') or '')!r} group={group_of(str(model.get('type') or ''))}",
+        f"newest_measurement={latest} days_behind_newest_store_date={lag} "
+        f"(newest store date {newest})",
+        f"historical_rows={len(rows)} in_window_rows={len(in_window)} "
+        f"window_days={window_days} cutoff={cutoff or 'n/a'}",
+        f"median_tps={format(statistics.median(tps), '.1f') if tps else '—'} "
+        f"engines={len(engines)} architectures={len(archs)}",
+        f"engines: {', '.join(engines[:12])}",
+        f"VERDICT: {reason}",
+    ]
+
+
 def render(groups: dict[str, dict]) -> str:
     lines = ["| type_group | models | measurements | engines | architectures | newest | median t/s |",
              "|---|---:|---:|---:|---:|---|---:|"]
@@ -158,8 +215,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="only rows at or after (newest stored date - N days); 0 = all history")
     ap.add_argument("--gaps", action="store_true",
                     help="also list models with measurements but none in the window (#1234 shape)")
+    ap.add_argument("--model-id", default="",
+                    help="read-only per-model freshness audit instead of the group table (#1249)")
     a = ap.parse_args(argv)
     models, measurements = load_stores(a.models, a.measurements)
+    if a.model_id:
+        print(f"# per-model freshness audit — {a.model_id} (issue #1249)")
+        print("\n".join(model_freshness(models, measurements, a.model_id,
+                                        a.window_days or 7)))
+        return 0
     groups = rollup(models, measurements, a.window_days)
     cutoff = ""
     if a.window_days > 0 and latest_date(measurements):
