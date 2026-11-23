@@ -197,6 +197,27 @@ needed to move the board.
   next lane only when one reports `done`, and queue the rest. Before spawning, measure the target's
   state (`gh issue view <n> --json state` and the bound PR's `state`): a CLOSED issue or a MERGED PR is
   duplicate work, not a task. Repo guard: issue #1416.
+- **Verify a landed change against `origin/master`, never the owner's checkout.** The owner's checkout can
+  sit several commits behind with uncommitted edits, so a probe run there silently tests STALE code — a fix
+  that already merged can look absent and you will file a false gap. Probe in a throwaway detached worktree at
+  the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
+  `git worktree remove --force <path>`), and always name the sha you measured. Compare
+  `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
+- **Lanes change locally and PUSH; CI verifies. Never have a lane pre-run the full containerised suite.**
+  Owner directive #1423: a head's local `make validate` + whole `make test` costs 15–30 min inside the
+  per-purpose Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while
+  each lane PROCESS idles at ~0% CPU in `sleep` polls. The same gates already run in GitHub Actions on
+  `qa-validate`, which costs the host nothing. Dispatch a lane to run ONLY the fast offline checks
+  (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module),
+  push, confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`), and
+  report. Measured effect: the same class of delivery dropped from ~3h to ~23 min. Never write "gate green
+  on the exact head before push" into a dispatch — that phrasing reproduces the waste.
+- **Before calling a lane slow, separate WALL-CLOCK from CPU and count the containers.** A lane can sit for
+  hours at ~0% CPU in `sleep` polls while its real work runs in `docker run` containers on the shared VM.
+  `ps -Ao pid,pcpu,time,etime,command` shows seconds of CPU across a 2h runtime; `docker ps` shows the actual
+  workers AND any LEAKED runner (one left up for days silently holds VM resources — remove it). Only then
+  judge: kill a leaked container, cap concurrency, or let a gate finish. Never kill a live lane to "fix"
+  latency without first naming what it is waiting on.
 - **A PR with "no checks reported" is NEVER green — it is a never-started head.** The seam: `gh pr
   checks <n>` answers `no checks reported on the '<branch>' branch` AND `gh run list --commit <headSha>`
   returns ZERO workflow runs. A `completed/action_required` run with 0 jobs whose actor is

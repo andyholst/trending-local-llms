@@ -142,6 +142,20 @@ Work in **worktrees** branched from the **latest fetched `origin/master`**. Neve
   Remedy: rebase onto the freshly fetched `origin/master`, resolve the `OPENSPEC.md` conflicts (the
   `Active changes: **N** · archived: **M**` count line is the usual collision), run
   `make openspec-index`, commit, re-push. Prove it locally first with the same merge + index check.
+- **The `validate` job also runs the OpenSpec LIFECYCLE gate (`make openspec-archive-check PR=<n>`): a PR
+  whose branch closes issue N may not leave N's OpenSpec change ACTIVE, or validate reds AFTER a green
+  lint/openspec/index/merge-tree run (~12 min in) with `THIS PR #<n> closes issue #N while the change is
+  still ACTIVE`.** Remedy: create the PR first, then on the branch run
+  `make openspec-record-pr ISSUE=<n> PR=<pr>` — it writes the `PR:` line, ARCHIVES the change and
+  regenerates `OPENSPEC.md` — then stage everything (`git add -A`), `commit --amend --no-edit` and
+  `push --force-with-lease`. Verify with `python3 scripts/openspec_archive_check.py --pr <pr>` (prints
+  `no active change left unarchived`) BEFORE waiting on CI; doing this only after seeing the red costs a
+  full validate cycle (#866, #1434).
+- **`test_engine_registry.py` is RED in a local test-image run WITHOUT `GH_TOKEN`** (the metadata probe
+  leaves a date-driven repeat WARN like `StairCut` unresolved, so `engine-check exits 0` fails). CI
+  forwards `GH_TOKEN` and master's own runs are green, so this is a local-environment artifact, not a
+  regression — prove it by running the module against pristine `origin/master` in the same image before
+  chasing it (#972).
 - **A lane can force-push YOUR branch between your push and the merge; re-read the head before
   reporting a verdict.** Measured on #1398/PR #1406: another lane rebased my head to a new sha, and the
   new head's qa-validate ended `action_required` with ZERO jobs (the #1115 never-started shape), so the
