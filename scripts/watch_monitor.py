@@ -25,6 +25,12 @@ With no heartbeat flag the quiet tick is still silent. The heartbeat is a bucket
 wall-clock time divided by N, never a timestamp, so identical ticks look identical to
 the caller's state file and only the bucket boundary wakes the agent.
 
+Comment fetch asks GitHub for newest-first (`sort=created&direction=desc`, issue #1360): the
+`/issues/comments` endpoint defaults to oldest-first, so a plain `per_page=100` pinned both
+hosts' cursors at the 100th-oldest comment and no later comment could ever emit `C:`. A
+one-time `comments_v2` cursor migration baselines the repaired detector without waking a
+lane with the whole stale backlog on its first repaired tick.
+
 The JSON state file belongs to the caller's scratch home, never to the repository. The
 external `gh` CLI is the only stand-in a test needs; the request-building and diffing code
 here is the real product.
@@ -51,6 +57,12 @@ MARKER_PREFIXES = ("C:", "R:", "M:", "H:")
 # refuses a weaker floor, so neither the rulebook row nor the pin can be dropped silently.
 CLAIM_SETTLE_SECONDS = 180
 CLAIM_SETTLE_FLOOR_SECONDS = 60
+
+# The comment fetch must be explicitly newest-first (issue #1360). GitHub answers
+# `/issues/comments?per_page=100` oldest-first by default, which froze the cursor at the
+# 100th-oldest comment. One seam, so the request and its guard cannot disagree.
+COMMENT_QUERY = "comments?per_page=100&sort=created&direction=desc"
+COMMENTS_V2_KEY = "comments_v2"
 
 
 def heartbeat_marker(interval_seconds: int, now: float | None = None) -> str | None:
@@ -105,16 +117,21 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
     lines: list[str] = []
     raw_run_prs = previous.get("run_prs")
     prev_run_prs: dict = raw_run_prs if isinstance(raw_run_prs, dict) else {}
+    migrated = previous.get(COMMENTS_V2_KEY) is True
     state: dict = {"comments": {}, "runs": {}, "master": previous.get("master"),
-                   "run_prs": {str(k): str(v) for k, v in prev_run_prs.items()}}
+                   "run_prs": {str(k): str(v) for k, v in prev_run_prs.items()},
+                   COMMENTS_V2_KEY: True}
 
     prev_comments = previous.get("comments", {}) if isinstance(previous.get("comments"), dict) else {}
     for kind in ("issues", "pulls"):
         rows = as_list(payload.get("comments", {}).get(kind, [])) if isinstance(payload.get("comments"), dict) else []
         ids = [int(r["id"]) for r in rows if isinstance(r.get("id"), int)]
         seen = int(prev_comments.get(kind, 0)) if str(prev_comments.get(kind, 0)).isdigit() else 0
-        for comment_id in sorted(i for i in ids if i > seen):
-            lines.append(f"C:{comment_id}")
+        if migrated:
+            for comment_id in sorted(i for i in ids if i > seen):
+                lines.append(f"C:{comment_id}")
+        # On the first tick after the newest-first repair the stale cursor is seeded to
+        # the newest comment instead of waking the lane with ~100 stale C markers (#1360).
         state["comments"][kind] = max([seen] + ids) if ids else seen
 
     prev_runs = previous.get("runs", {}) if isinstance(previous.get("runs"), dict) else {}
@@ -184,7 +201,7 @@ def fetch_payload(repo: str, client: str) -> dict:
 
     comments = {}
     for kind in ("issues", "pulls"):
-        comments[kind] = as_list(get(f"{kind}/comments?per_page=100"))
+        comments[kind] = as_list(get(f"{kind}/{COMMENT_QUERY}"))
     runs_payload = get("actions/runs?per_page=30")
     runs = as_list(runs_payload.get("workflow_runs")) if isinstance(runs_payload, dict) else as_list(runs_payload)
     return {"comments": comments, "runs": runs, "master": get("commits/master")}
