@@ -6,14 +6,16 @@ host runs the SAME lane behaviour: a host one protocol behind follows different
 rules and can claim the same issue as an updated host. This seam compares the real
 `~/.hermes/profiles/<lane>/` bytes with the blobs in a resolved git base -- never
 with the working tree, so local unmerged work cannot launder a stale host -- and
-checks that the rulebook still carries the tll lifecycle shapes.
+checks that the rulebook still carries the tll lifecycle shapes. A lane `config.yaml`
+is compared by its OWNED blocks (`model`, `model_aliases`, `fallback_providers`), so
+Hermes's runtime stamps are host state, not drift, while a stale owned byte still
+reds (issue #1401).
 
 Exit: 0 clean, 1 divergence found, 2 undecidable (bad base, missing tree/home).
 """
 from __future__ import annotations
 
 import argparse
-import re
 import subprocess
 import sys
 import tempfile
@@ -49,18 +51,14 @@ RULEBOOK_MARKERS = (
 )
 
 # Hermes stamps its own runtime metadata into every lane `config.yaml` on launch
-# (`hermes_cli.config` writes `_config_version: <n>`). That key is HOST RUNTIME STATE,
-# not fleet drift, and it lands on exactly the hosts that RUN their lanes -- so a plain
-# byte compare reds a healthy host on every lane after one turn (issue #1389). Only
-# this one own scalar is tolerated, and only on `config.yaml`: a stale
-# `model:` / `model_aliases:` / `fallback_providers:` byte still reds, and `SOUL.md`
-# and the skill stay byte-exact.
-CONFIG_VERSION_LINE = re.compile(rb"(?m)^_config_version:[ \t]*\S+[ \t]*\r?\n?")
-
-
-def _host_config_bytes(raw: bytes) -> bytes:
-    """Drop Hermes's own `_config_version:` scalar from a lane `config.yaml`."""
-    return CONFIG_VERSION_LINE.sub(b"", raw)
+# (`hermes_cli.config` writes `_config_version: <n>`, and the onboarding prompt writes
+# `onboarding.seen.*`). Those keys are HOST RUNTIME STATE, not fleet drift, and they land
+# on exactly the hosts that RUN their lanes -- so a plain byte compare reds a healthy host
+# on every lane after one turn (issue #1389). Issue #1401: compare the lane config's OWNED
+# blocks (`model`, `model_aliases`, `fallback_providers`) through the ONE drift verdict
+# (`agent_profile_provision.check_one`, the same seam #1297 drives for the default profile),
+# so ANY Hermes-written block -- the next stamp included -- is tolerated while a genuinely
+# stale owned byte still reds. `SOUL.md` and the skill stay byte-exact.
 
 
 def _git(root: Path, *argv: str) -> subprocess.CompletedProcess[bytes]:
@@ -151,10 +149,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[fleet-sync] FAIL {lane}/{rel} missing in {home}")
                 failed += 1
                 continue
-            raw = actual.read_bytes()
             if rel == "config.yaml":
-                raw = _host_config_bytes(raw)
-            if raw != expected:
+                # Issue #1401: only the OWNED blocks are compared, through the ONE drift
+                # verdict -- Hermes's runtime stamps (`_config_version`, `onboarding.seen`,
+                # the next one) are the host's own state, while a stale `model:` /
+                # `model_aliases:` / `fallback_providers:` byte still reds, naming the file.
+                for line in profile_drift(
+                    f"{lane}/{rel}", actual, expected.decode("utf-8"), whole_copy=False
+                ):
+                    print(f"[fleet-sync] FAIL {line}")
+                    failed += 1
+                continue
+            if actual.read_bytes() != expected:
                 print(f"[fleet-sync] FAIL {lane}/{rel} diverges from {base_sha}")
                 failed += 1
 
