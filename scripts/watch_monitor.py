@@ -13,6 +13,14 @@ An `R:` marker names its PR when the run has one (issue #1284), so a woken lane 
 that PR's own thread before acting instead of guessing which thread a run id belongs to. A
 push-triggered run carries no `pull_requests` and keeps the shorter shape.
 
+GitHub CLEARS a run's `pull_requests` once its PR merges and the branch is deleted (measured
+2026-11-23: run `45085274450` on the merged PR #1350's old head answered `pull_requests: []`
+while `event=pull_request`), so a marker emitted after the merge would lose the PR field the
+lane needs. The caller-owned state therefore also carries a `run_prs` map: a run's PR is
+recorded the first time it is seen with a non-empty `pull_requests`, and reused on later ticks
+when the association has been cleared. The marker's shape never changes — a push run still
+emits the shorter form, and a PR run keeps its trailing `:<pr>`.
+
 With no heartbeat flag the quiet tick is still silent. The heartbeat is a bucket of
 wall-clock time divided by N, never a timestamp, so identical ticks look identical to
 the caller's state file and only the bucket boundary wakes the agent.
@@ -95,7 +103,10 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
     if not isinstance(previous, dict):
         previous = {}
     lines: list[str] = []
-    state: dict = {"comments": {}, "runs": {}, "master": previous.get("master")}
+    raw_run_prs = previous.get("run_prs")
+    prev_run_prs: dict = raw_run_prs if isinstance(raw_run_prs, dict) else {}
+    state: dict = {"comments": {}, "runs": {}, "master": previous.get("master"),
+                   "run_prs": {str(k): str(v) for k, v in prev_run_prs.items()}}
 
     prev_comments = previous.get("comments", {}) if isinstance(previous.get("comments"), dict) else {}
     for kind in ("issues", "pulls"):
@@ -115,7 +126,10 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
         token = workflow_token(run.get("name"))
         if token:
             stamp += f":{token}"
-        pr = pull_token(run)
+        live_pr = pull_token(run)
+        pr = live_pr or prev_run_prs.get(str(run_id), "")
+        if live_pr:
+            state["run_prs"][str(run_id)] = live_pr
         if pr:
             stamp += f":{pr}"
         state["runs"][str(run_id)] = stamp
