@@ -36,10 +36,12 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 2. Read `SOUL.md` in this profile. The repo is https://github.com/andyholst/trending-local-llms, branch `master`.
 3. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
 4. Read the data store shape and size before judging it: `data/models.json` currently has top-level
-   `engines` (engine registry) + `models` (catalog) keys, and each model carries an `engines[]` array of
-   per-(model, engine, source_post) measurement rows. Count models, the engine registry, and total inline
-   rows; compare against the previous refresh to say whether the store grew or shrank. A store that lost a
-   top-level key or shrank a model's row count is the alarm.
+   `engines` (engine registry) + `models` (catalog) keys. MEASURED 2026-11-23 at `f2b3db89`: `models` is a
+   LIST and a model row has NO `engines[]` — its per-(model, engine, source_post) measurement rows live in
+   `engagement.seen_posts[]`, each with `url`, `date`, `engine`, `tps`, `hardware`, `quant`, `likes`,
+   `comments`, `reshares`, `views`. Count models, the engine registry, and total `seen_posts` rows;
+   compare against the previous refresh to say whether the store grew or shrank. A store that lost a
+   top-level key or shrank a model's seen-posts count is the alarm.
 5. Verify the rendered tables still match the store **without writing**: `python3
    scripts/update_trending.py --render-only --dry-run` (exit 0 = clean render), then save `README.md` and
    run `python3 scripts/update_trending.py --render-only` and `diff -q` the saved copy against the
@@ -317,8 +319,9 @@ Every lane hands over on the issue thread, so the board can be followed without 
 ## Fleet state (active issues)
 
 - **#689** move the per-engine measurement store out of `data/models.json` — **landed**. Store is now
-  top-level `engines` registry + `models` with per-model `engines[]` rows; verify the flattened view equals
-  the old inline view (equal t/s rows per model) via `--render-only` byte-diff (guards #463/#525).
+  top-level `engines` registry + `models` (a list whose measurement rows live in
+  `engagement.seen_posts[]`, not a per-model `engines[]`); verify the flattened view equals the old inline
+  view (equal t/s rows per model) via `--render-only` byte-diff (guards #463/#525).
 - **#690** worktree-default fleet convention.
 - **#691** propose a `tll-docs` lane (schema⇄contract sync + architecture/how-it-works doc).
 - Successors of this distribution: `tll-architect`, `tll-implementer`, `tll-reviewer`, `tll-security`, `tll-docs`(proposed).
@@ -326,9 +329,11 @@ Every lane hands over on the issue thread, so the board can be followed without 
 ## Measurement store (post-#689 split — landed)
 
 The #689 store split is now live on `master`: `data/models.json` carries a top-level `engines` registry
-plus `models`, and each model has an `engines[]` array of per-(model, engine, source_post) measurement
-rows with their own engagement. Judge sync honesty by that shape — models catalog, engine registry count,
-and total inline rows (not the pre-split "inline engines[] for N models" framing). The standing requirement
+plus `models` (a list). MEASURED 2026-11-23 at `f2b3db89`: the per-(model, engine, source_post) measurement
+rows are NOT a model-level `engines[]` — they are `engagement.seen_posts[]` (each row: `url`, `date`,
+`engine`, `tps`, `hardware`, `quant`, per-post counters). Judge sync honesty by that shape — models catalog,
+engine registry count, and total `seen_posts` rows (not the pre-split "inline engines[] for N models"
+framing). The standing requirement
 after any further change: keep the flattened/regenerated view equal to the previous inline view so no
 measurement is lost (guards #463/#525), highest t/s per (model, engine, vram/ram fit) sorts top, and no new
 timer — dispatch to `tll-architect` (design) then `tll-implementer` (write).
