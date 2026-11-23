@@ -400,6 +400,41 @@ def test_real_seam_refuses_a_bad_base() -> int:
     return failed
 
 
+def test_lane_skills_carry_the_push_and_verify_rule() -> int:
+    """Owner directive 2026-11-23 (#1423): lanes change locally and PUSH; qa-validate verifies.
+
+    The full containerised gate (`make validate`, the whole `make test`, `make live-smoke`) costs
+    15–30 min per lane on the host and N lanes contend for ONE container VM, while the same gates
+    already run in GitHub Actions. Both lane contracts must therefore teach the FAST offline checks
+    plus the push-and-confirm-CI sequence, and name the heavy gates CI-ONLY.
+    """
+    impl = ROOT / "agents" / "tll-implementer" / "skills" / "tll-implementer" / "SKILL.md"
+    plan = ROOT / "agents" / "tll-planner" / "skills" / "tll-planner" / "SKILL.md"
+    impl_text = impl.read_text(encoding="utf-8") if impl.is_file() else ""
+    plan_text = plan.read_text(encoding="utf-8") if plan.is_file() else ""
+    failed = 0
+    for needle, why in (
+        ("## Delivery procedure — push, then CI verifies", "the delivery-procedure heading"),
+        ("python3 scripts/pr_body.py --check-body-file <f> --branch <b>", "the PR-body fast check"),
+        ("`make lint`", "the lint fast check"),
+        ("the targeted unit module", "the targeted unit module instead of the whole suite"),
+        ("gh pr checks <n>", "the CI-registered confirmation"),
+        ("gh run view <id> --json jobs", "the run-jobs confirmation"),
+        ("CI-ONLY", "the CI-only marker"),
+        ("the full `make validate`", "full make validate named CI-only"),
+        ("the whole `make test`", "the whole make test named CI-only"),
+        ("`make live-smoke`", "make live-smoke named CI-only"),
+    ):
+        failed += check(needle in impl_text, f"implementer skill carries {why}")
+    for needle, why in (
+        ("A dispatch's `done` is push-and-verify, never a local gate.", "the push-and-verify dispatch rule"),
+        ("never a pre-push full local gate", "no pre-push full-gate instruction"),
+        ("full `make validate`, the whole\n  `make test` and `make live-smoke` are CI-ONLY", "the CI-only gate list"),
+    ):
+        failed += check(needle in plan_text, f"planner skill carries {why}")
+    return failed
+
+
 def test_ci_wires_the_guard_on_pr_and_push() -> int:
     workflow = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
@@ -481,6 +516,7 @@ def main() -> int:
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_pr_rebase_skill_is_push_and_verify,
         test_reviewer_skill_carries_landed_host_ahead_notes,
+        test_lane_skills_carry_the_push_and_verify_rule,
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
@@ -488,6 +524,7 @@ def main() -> int:
         test_real_seam_refuses_a_diverged_default_profile,
         test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
+        test_lane_skills_carry_the_push_and_verify_rule,
         test_ci_wires_the_guard_on_pr_and_push,
         test_the_lane_set_is_derived_and_the_new_lane_is_wired,
     ):
