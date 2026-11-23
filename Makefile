@@ -755,6 +755,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-workflow-guards
 	$(MAKE) --no-print-directory check-gh-json-fields
 	$(MAKE) --no-print-directory agent-model-chain-check
+	$(MAKE) --no-print-directory local-endpoint-probe-check
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
 	python3 scripts/lint_linefeeds.py --fix
@@ -1618,6 +1619,36 @@ _free-model-refresh-pr-body:
 
 free-model-refresh-pr-body: ## Print the free-model-refresh keeper PR body — no closing keyword, it records the read (RUN_URL=…; issue #1195)
 	@$(MAKE) --no-print-directory _free-model-refresh-pr-body RUN_URL="$(RUN_URL)"
+
+# ---- the chain's LOCAL tier: a capped live probe + an offline staleness check (issue #1352)
+# The `local_fallback` tier (issue #1192) is the owner's own box. When it goes silent a lane
+# blocks until its own client timeout before the paid last resort, and NO gate sees it:
+# `agent-model-chain-check` is a static shape/render gate and was green through both states
+# (measured, issue #1194). `local-endpoint-probe` is the live half (host-run, capped): it reads
+# the tier's OWN endpoint/model from the ONE chain, POSTs a one-token chat completion, and
+# records the result in `agents/model_chain.json`'s `measured.local` (`last_probe` + an additive
+# `probe_history`). `local-endpoint-probe-check` is the offline half, bundled into `make lint`:
+# it refuses a missing record or one that did not follow the chain, and REPORTS staleness
+# loudly WITHOUT touching the endpoint — so auto-merge never depends on a host box (rule 6t:
+# no model call, no network gate). The watcher runs the live half on its H-tick and lands the
+# record through `make keeper-pr` when the recorded state changes (ok<->down) or at least daily.
+LOCAL_PROBE_TIMEOUT_SECONDS ?= 20
+LOCAL_PROBE_MAX_AGE_HOURS ?= 24
+LOCAL_PROBE_HISTORY_MAX ?= 50
+
+.PHONY: _local-endpoint-probe local-endpoint-probe _local-endpoint-probe-check local-endpoint-probe-check
+_local-endpoint-probe:
+	python3 scripts/local_endpoint_probe.py --probe --timeout $(LOCAL_PROBE_TIMEOUT_SECONDS) --history-max $(LOCAL_PROBE_HISTORY_MAX)
+
+local-endpoint-probe: ## Probe the chain's local tier endpoint and record it (capped, host-run; issue #1352)
+	@$(MAKE) --no-print-directory _local-endpoint-probe
+
+_local-endpoint-probe-check:
+	python3 scripts/local_endpoint_probe.py --check --max-age-hours $(LOCAL_PROBE_MAX_AGE_HOURS)
+
+local-endpoint-probe-check: ## Offline: the recorded local-tier probe exists, follows the chain, and reports staleness (issue #1352)
+	@$(MAKE) --no-print-directory _local-endpoint-probe-check
+
 
 # ---- fleet lifecycle / fetched-base divergence gate (issue #1209) -----------
 # The issue thread is the ONE shared board. After fetching upstream master, every
