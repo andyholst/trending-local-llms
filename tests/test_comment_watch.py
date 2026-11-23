@@ -109,7 +109,7 @@ def test_cron_monitor():
         check("monitor output is byte-identical across ticks (scheduler hash)",
               paged == again and paged == sorted(paged), str((paged[:3], again[:3])))
     rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    check("rule 6w binds the cron monitor", "make comment-monitor" in rule and
+    check("rule 6x binds the cron monitor", "make comment-monitor" in rule and
           "including one posted by our own agent identity" in rule)
 
 
@@ -136,7 +136,7 @@ def test_ci_and_comment_monitor():
           "R:555:completed:failure" not in lines, str(lines))
     rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     check("a master merge changes the monitor hash", "M:def456" in lines, str(lines))
-    check("rule 6w binds the CI+comment monitor",
+    check("rule 6x binds the CI+comment monitor",
           "make watch-monitor" in rule and "NEVER-STARTED" in rule and "M:<master sha>" in rule and
           "asimov@omarchy" in rule)
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
@@ -148,9 +148,9 @@ def test_rulebook():
     text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     # Accept the column-0 hard-rule heading and the old bullet spelling, so the
     # rule anchor cannot silently miss it (issue #1243).
-    a = text.find("6w. **Comments are a trigger")
+    a = text.find("6x. **Comments are a trigger")
     if a < 0:
-        a = text.find("6w. Comments are a trigger")
+        a = text.find("6x. Comments are a trigger")
     rule = text[a:text.find("## 3. Data source & collection", a)] if a >= 0 else ""
     clauses = {
         "watcher named": "make comment-watch",
@@ -164,7 +164,7 @@ def test_rulebook():
         "machine-id-only identity": "the MACHINE\n   ID only",
         "regression test named": "tests/test_comment_watch.py",
     }
-    check("AGENTS.md carries rule 6w", bool(rule))
+    check("AGENTS.md carries rule 6x", bool(rule))
     for name, needle in clauses.items():
         check(f"rule keeps {name}", needle in rule, name)
     planted = rule.replace("never acknowledge a comment unseen", "acknowledge before looking")
