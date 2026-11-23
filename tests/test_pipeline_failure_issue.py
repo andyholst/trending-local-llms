@@ -1044,21 +1044,35 @@ def test_a_stamped_row_with_no_error_block_is_pending_and_gets_diagnosed() -> No
 
 
 def test_the_committed_ledger_s_errorless_rows_are_exactly_the_pending_set() -> None:
-    """Issue #1136 on the SHIPPED data: five rows carry fix_pr + guard and no error block."""
-    print("\nrediagnose selection (#1136): the shipped ledger's five errorless rows are pending")
+    """Issue #1136 on the SHIPPED data: every fix-claimed row carrying no error block is pending.
+
+    Data-driven, not a frozen five-run set: the sweep's re-diagnosis pass (#969/#1136) legitimately
+    raises `error_excerpt` into each row and the keeper ledger PR lands that append (rule 3b), so
+    a hard-coded 'the five runs #1039-#1043' expectation self-destructs when the pipeline does its
+    job. Compute the expected set from the row dicts, independently of `rediagnose_pending`.
+    """
+    print("\nrediagnose selection (#1136): the shipped ledger's errorless rows are pending")
     committed = json.loads(COMMITTED_LEDGER.read_text())
+    rows = committed["failures"]
+
+    def has_error_block(e: dict) -> bool:
+        # Independent of row_is_diagnosed (the seam under test): the two keys the raise uses.
+        return bool(e.get("error_excerpt") or e.get("rediagnosed_excerpt"))
+
+    # A row is pending when it carries no error block under either spelling, was not already
+    # raised this ledger's life, and is not the terminal log_expired drain (issue #986).
+    expected = {e["run_id"] for e in rows
+                if not has_error_block(e) and not e.get("rediagnosed_utc")
+                and not e.get("log_expired")}
     pending = {e["run_id"] for e in F.rediagnose_pending(committed)}
-    measured = {43147240875, 43716345030, 43716362366, 43718826142, 43725338063}
-    check("the five measured runs (issues #1039-#1043) are the pending set",
-          pending == measured, f"pending={sorted(pending)}")
-    errorless = {e["run_id"] for e in committed["failures"] if not F.row_is_diagnosed(e)
-                 and not e.get("log_expired")}
+    check("the errorless, unraised rows are exactly the pending set",
+          pending == expected, f"pending={sorted(pending)} expected={sorted(expected)}")
+    errorless = {e["run_id"] for e in rows if not has_error_block(e) and not e.get("log_expired")}
     check("every errorless row (bar the terminal drain) is pending — no row is invisible",
           errorless == pending, f"{sorted(errorless)} vs {sorted(pending)}")
-    check("every row that names a fix PR + guard IS diagnosed except the five",
-          {e["run_id"] for e in committed["failures"] if e.get("fix_pr")} - measured
-          == {e["run_id"] for e in committed["failures"]
-              if e.get("fix_pr") and F.row_is_diagnosed(e)}, "")
+    check("every fix-claimed row is diagnosed or pending — none invisible",
+          {e["run_id"] for e in rows if e.get("fix_pr")} - pending
+          == {e["run_id"] for e in rows if e.get("fix_pr") and has_error_block(e)}, "")
 
 
 def test_a_closed_row_is_stamped_from_the_merged_guard_carrying_pr_that_closed_it() -> None:

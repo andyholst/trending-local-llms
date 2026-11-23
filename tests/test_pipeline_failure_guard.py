@@ -585,27 +585,46 @@ def test_a_stamped_row_with_no_error_block_is_its_own_report_never_red() -> None
           rc4 == 1 and any("never_landed" in line for line in lines4), str(lines4))
 
 
-def test_the_committed_ledger_classifies_its_five_errorless_rows() -> None:
-    """Issue #1136 on the shipped ledger: green, with the five rows named as their own class."""
-    print("\nstamp vs diagnosis (#1136): the shipped ledger's five rows are named, not silent")
+def test_the_committed_ledger_classifies_its_errorless_rows() -> None:
+    """Issue #1136 on the shipped ledger: green, errorless fix-claimed rows named as their own class.
+
+    The expectation is DATA-DRIVEN, not a frozen count: the sweep's re-diagnosis pass (#969/#1136)
+    legitimately raises `error_excerpt` into each previously-errorless row, and the keeper ledger
+    PR lands that append (rule 3b). A hard-coded "five rows / 12 diagnosed" assertion therefore
+    goes red the moment the pipeline does exactly what #1136 asks. Compute the expectation
+    independently from the row dicts (never through the gate's own predicate), then assert the
+    invariant the gate actually owes: every fix-claimed row with no error block is reported as
+    its own class, and the summary partitions fix-claimed rows into diagnosed / attributed.
+    """
+    print("\nstamp vs diagnosis (#1136): the shipped ledger's errorless rows are named, not silent")
     data = json.loads(COMMITTED_LEDGER.read_text())
-    measured = {43147240875, 43716345030, 43716362366, 43718826142, 43725338063}
+    rows = data["failures"]
+
+    def has_error_block(e: dict) -> bool:
+        # Independent of row_is_diagnosed (the gate's predicate): the two keys the raise uses.
+        return bool(e.get("error_excerpt") or e.get("rediagnosed_excerpt"))
+
+    fix_claimed = [e for e in rows if e.get("fix_pr") and e.get("guard")]
+    expected_attributed = {str(e["run_id"]) for e in fix_claimed if not has_error_block(e)}
+    expected_diagnosed = len(fix_claimed) - len(expected_attributed)
     # Only the STAMPED rows get a state (the convention the committed-ledger tests already use):
     # a row with no fix claim is a fix in flight — the gate reports it, it cannot be red on a
     # fixture's guess about whether its issue happens to be open today (rule 6m: no live state in
-    # a fixture). The five measured rows ARE stamped, so they are exercised as CLOSED here.
+    # a fixture). Every stamped row is exercised as CLOSED here.
     states_map = {str(e["run_id"]): {"number": e.get("issue_number"), "state": "CLOSED"}
-                  for e in data["failures"] if e.get("fix_pr") and e.get("issue_number")}
+                  for e in rows if e.get("fix_pr") and e.get("issue_number")}
     rc, lines = G.verdict(data, None, states_map)
     check("the shipped ledger clears the gate (rc 0)", rc == 0, "\n".join(lines)[:800])
     named = {line for line in lines if "NO error block" in line}
-    check("exactly the five measured runs are named as attributed-without-a-diagnosis",
-          len(named) == 5 and all(any(str(rid) in line for line in named) for rid in measured),
+    check("every errorless fix-claimed run is named as attributed-without-a-diagnosis, no more no less",
+          len(named) == len(expected_attributed)
+          and all(any(rid in line for line in named) for rid in expected_attributed),
           "\n".join(sorted(named))[:800])
-    check("the summary counts 12 diagnosed and 5 attributed-without-a-diagnosis",
-          any(line.startswith("12 diagnosed failure")
-              and "5 attributed without a diagnosis" in line for line in lines),
-          "\n".join(lines)[-400:])
+    check(f"the summary counts {expected_diagnosed} diagnosed and "
+          f"{len(expected_attributed)} attributed-without-a-diagnosis",
+          any(line.startswith(f"{expected_diagnosed} diagnosed failure")
+              and f"{len(expected_attributed)} attributed without a diagnosis" in line
+              for line in lines), "\n".join(lines)[-400:])
 
 
 def test_a_recorded_pr_blockage_whose_fix_never_lands_is_red_after_its_grace() -> None:
@@ -677,7 +696,7 @@ def main() -> int:
     test_a_closed_row_the_stamp_raised_with_fix_pr_and_guard_clears_the_gate()
     test_a_stamped_row_whose_named_guard_no_longer_exists_is_red()
     test_a_stamped_row_with_no_error_block_is_its_own_report_never_red()
-    test_the_committed_ledger_classifies_its_five_errorless_rows()
+    test_the_committed_ledger_classifies_its_errorless_rows()
     test_run_41788683672_is_rediagnosed_with_its_landed_guard()
     test_run_41860616772_is_rediagnosed_with_its_landed_guard()
     test_run_41922211098_is_rediagnosed_with_its_landed_guard()
