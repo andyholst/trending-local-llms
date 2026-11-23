@@ -27,7 +27,8 @@ SCRIPT = ROOT / "scripts" / "architecture_check.py"
 #: documents all name the SAME anchors. A heading (`## 6.`) is renumberable prose;
 #: these comments are the stable boundaries.
 ARCH_ANCHORS = ("<!-- arch:targets -->", "<!-- arch:pipelines -->",
-                "<!-- arch:scripts -->", "<!-- arch:guards -->")
+                "<!-- arch:scripts -->", "<!-- arch:guards -->",
+                "<!-- arch:dataflow -->")
 AGENTS_ANCHORS = ("<!-- agents:rulebook -->", "<!-- agents:style -->")
 
 _PASS = 0
@@ -112,7 +113,12 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
             "def main():\n    checks = []\n\n    def add(label, name, fn):\n"
             "        checks.append((label, fn))\n" + adds, encoding="utf-8")
     rows = "\n".join(f"| `{t}` | does the thing |" for t in doc_targets)
-    body = [f"# ARCHITECTURE", "", ARCH_ANCHORS[0], "## 3. Every `make` target", "", "| Target | What |", "|---|---|", rows, ""]
+    # §2 (data flow) precedes §3 and is bounded by its own anchor; it must NAME the
+    # three shipped store files, or the real guard reds this fixture (issue #1395).
+    body = [f"# ARCHITECTURE", "", ARCH_ANCHORS[4], "## 2. Data flow and contracts", "",
+            "The store ships as `data/models.json` (catalog) × `data/measurements.json`",
+            "(keyed by `model_id`) × `data/posts.json` (engagement once per `source_post`).", ""]
+    body += [ARCH_ANCHORS[0], "## 3. Every `make` target", "", "| Target | What |", "|---|---|", rows, ""]
     body += ["", ARCH_ANCHORS[1], "## 4. Pipelines", ""]
     if doci_wf:
         body += [f"- `.github/workflows/{w}` — a pipeline" for w in workflows]
@@ -998,6 +1004,83 @@ def test_agent_skill_contracts_and_leg_preloads_must_be_named():
               not any("#935" in p for p in problems), problems)
 
 
+def test_the_dataflow_region_names_every_shipped_store_file():
+    """#1395: §2's data-flow region must NAME all three shipped store files.
+
+    Names only, never prose — the same boundary rule 6h draws for `--only` lists
+    and §4 `jobs:` keys. The guard's list is a hardcoded tuple, not derived from
+    disk, so deleting a store file cannot silence the check.
+    """
+
+    # Given a fixture whose §2 names the three files
+    mod = _module()
+    check("store files: the guard's list is the shipped three",
+          mod.SHIPPED_STORE_FILES == ("data/models.json", "data/measurements.json",
+                                      "data/posts.json"), str(mod.SHIPPED_STORE_FILES))
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+
+        # When  the scan runs over it
+        problems = mod.store_file_findings(root)
+
+    # Then  it raises nothing
+    check("store files: the in-step fixture names every store file", problems == [], problems)
+
+
+def test_a_dropped_store_filename_is_red():
+    """#1395: dropping one filename from §2 is reported, and restoring it is green."""
+
+    # Given a consistent fixture whose §2 loses ONE store filename
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(doc.read_text(encoding="utf-8")
+                       .replace("`data/posts.json`", "`data/gone.json`"), encoding="utf-8")
+
+        # When  the scan runs
+        problems = _module().store_file_findings(root)
+
+        # Then  the dropped file is named
+        check("store files: a dropped filename is red",
+              any("`data/posts.json`" in p for p in problems), problems)
+
+        # And   restoring the name turns it green again
+        doc.write_text(doc.read_text(encoding="utf-8")
+                       .replace("`data/gone.json`", "`data/posts.json`"), encoding="utf-8")
+        check("store files: restoring the filename clears the finding",
+              _module().store_file_findings(root) == [], _module().store_file_findings(root))
+
+
+def test_the_real_document_passes_the_store_file_scan():
+    """#1395: the real ARCHITECTURE.md §2 names all three shipped store files."""
+
+    # Given the real repository
+    problems = _module().store_file_findings(ROOT)
+
+    # When  the scan runs on it
+    # Then  it is clean
+    check("store files: the real document passes the scan", problems == [], problems)
+
+
+def test_store_docs_explain_the_flatten_seam_and_per_run_variants():
+    """#1395 acceptance 2: `docs/store.md` explains the flatten seam and the per-run
+    t/s variants FROM THE REAL FILES (a reader-facing page, not a name scan)."""
+
+    # Given the walkthrough the issue asks for and the three shipped store files
+    doc = (ROOT / "docs" / "store.md").read_text(encoding="utf-8")
+
+    # When  its explanations are read
+    # Then  the flatten seam, the three files and the per-run footprint are named
+    for needle in ("data/models.json", "data/measurements.json", "data/posts.json",
+                   "flatten_store", "split_store", "load_store",
+                   "weight_gb", "context_tokens", "system_ram_min"):
+        check(f"store docs: names {needle}", needle in doc, "")
+
+    # And   every file it cites really ships (the page describes the tree, not a plan)
+    for path in ("data/models.json", "data/measurements.json", "data/posts.json"):
+        check(f"store docs: {path} really ships", (ROOT / path).is_file(), "")
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -1040,6 +1123,10 @@ def main() -> int:
     test_saying_a_job_runs_NO_model_call_is_history_not_a_claim()
     test_the_agent_target_list_is_one_list_not_a_second_copy()
     test_the_shipped_documents_pass_the_model_call_guard()
+    test_the_dataflow_region_names_every_shipped_store_file()
+    test_a_dropped_store_filename_is_red()
+    test_the_real_document_passes_the_store_file_scan()
+    test_store_docs_explain_the_flatten_seam_and_per_run_variants()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

@@ -85,6 +85,13 @@ RULEBOOK_NEXT_SECTION = "<!-- agents:style -->"
 #: 9 of 46 entries (issue #506).
 SCRIPT_SECTION = "<!-- arch:scripts -->"
 SCRIPT_NEXT_SECTION = "<!-- arch:guards -->"
+#: The shipped three-file store (issue #689): `ARCHITECTURE.md` §2 must NAME all
+#: three files, or a reader cannot tell where a figure lives. The §2 region is
+#: bounded by its own anchor (`DATAFLOW_SECTION`) and the target tables' anchor;
+#: the check reads NAMES ONLY, never prose — the same boundary rule 6h draws for
+#: `--only` stage lists and §4 `jobs:` keys (issue #1395).
+DATAFLOW_SECTION = "<!-- arch:dataflow -->"
+SHIPPED_STORE_FILES = ("data/models.json", "data/measurements.json", "data/posts.json")
 
 #: Every boundary anchor this guard reads, per document. A section's REGION is a
 #: structural claim, so a missing anchor is a finding that NAMES the anchor — never
@@ -95,6 +102,7 @@ _REQUIRED_ANCHORS: tuple[tuple[str, str, str], ...] = (
     (DOC_NAME, "pipelines", NEXT_SECTION),
     (DOC_NAME, "script inventory", SCRIPT_SECTION),
     (DOC_NAME, "guards", SCRIPT_NEXT_SECTION),
+    (DOC_NAME, "data flow", DATAFLOW_SECTION),
     (AGENTS_DOC, "rulebook pipeline list", RULEBOOK_SECTION),
     (AGENTS_DOC, "style", RULEBOOK_NEXT_SECTION),
 )
@@ -187,6 +195,30 @@ def described_scripts(doc: Path) -> set[str]:
             if token.startswith("scripts/"):
                 names.add(token)
     return names
+
+
+def store_file_findings(root: Path) -> list[str]:
+    """The §2 data-flow region must NAME every shipped store file (names only).
+
+    The pre-#689 description drew ONE flat `data/models.json` carrying inline
+    `engines[]`; the tree ships a catalog × measurements × posts split
+    (`flatten_store`/`split_store`, issue #689). A dropped filename is the drift
+    this guard exists for: the prose still reads as a correct architecture while
+    a figure's home has moved. The check proves the three NAMES are present and
+    nothing about the prose around them — the same boundary rule 6h draws for
+    `--only` stage lists and §4 `jobs:` keys (issue #1395).
+    """
+    doc = root / DOC_NAME
+    if not doc.is_file():
+        return []
+    body = section(doc.read_text(encoding="utf-8"), DATAFLOW_SECTION, TARGET_SECTION)
+    if not body:
+        return []
+    return [f"{DOC_NAME} §2 (data flow) does not name `{name}` — the shipped store "
+            f"is `data/models.json` (catalog) × `data/measurements.json` (keyed by "
+            f"`model_id`) × `data/posts.json` (engagement once per `source_post`); "
+            f"restore the name (issue #1395)"
+            for name in SHIPPED_STORE_FILES if name not in body]
 
 
 _RULEBOOK_PIPELINE_CLAIM = re.compile(r"^- \*\*`([A-Za-z0-9_.\-]+\.yml)`\*\*", re.M)
@@ -627,6 +659,11 @@ def findings(root: Path) -> list[str]:
         out += [f"script `scripts/{s}` has no row in {DOC_NAME} §6 (the generated block "
                 f"names it, but a reader has no role for it)" for s in scripts
                 if f"scripts/{s}" not in roles]
+
+    # The shipped store (issue #1395): §2's data-flow region must NAME every store
+    # file. Names only, never prose — the region is bounded by its own anchor and
+    # a dropped filename is reported rather than silently read as an empty section.
+    out += store_file_findings(root)
 
     # The `--only` stage lists are a CLAIM about the validator's stage map, and a
     # closed one: an unknown stage, or a stage no list selects, is a description

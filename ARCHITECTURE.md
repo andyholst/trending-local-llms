@@ -69,6 +69,7 @@ measurements; every figure traces to a `…/status/<id>` post URL.
 
 ---
 
+<!-- arch:dataflow -->
 ## 2. Data flow and contracts
 
 ```
@@ -82,9 +83,11 @@ Firecrawl → lightbrd.com mirror  ───────────────
    ingest_raw_snapshots (additive: adds models,    │
    merges measurements, fills absent keys,         │
    never removes, never shrinks)                   ▼
-                                        data/models.json   (canonical store)
+        data/models.json   data/measurements.json   data/posts.json
+           (catalog)        (keyed by model_id)     (keyed by source_post)
                                                    │
-                             sort_models + recompute_7d_engagement
+              load_store = flatten_store(catalog, measurements, posts)
+              sort_models + recompute_7d_engagement
                                                    │
                                         render_readme(store, as_of)
                                                    ▼
@@ -93,11 +96,12 @@ Firecrawl → lightbrd.com mirror  ───────────────
 
 * **`data/raw/*.json`** — one file per search call, per backend
   (`nvidia`, `metal`, `cpu`, `amd`). Shape: `data/search_contract.json`.
-* **`data/models.json`** — the canonical store: one row per model with id, name,
-  HF link, license, params, type, VRAM tier, `backends`, `supported_engines`,
-  the requirement dimensions (`system_ram_min`, `weight_gb`, `context_tokens`,
-  `storage_offload`, `engine_min_version` — all optional), an `engines[]` list of
-  per-engine measurements and derived trend fields. Shape:
+* **`data/models.json`** — the CATALOG: top-level `generated_utc`, `note`,
+  `engines` (the engine registry) and `models[]` rows — id, name, full_name, hf,
+  license, params, type, VRAM tier, `backends`, `supported_engines`, the
+  requirement dimensions (`system_ram_min`, `weight_gb`, `context_tokens`,
+  `storage_offload`, `engine_min_version` — all optional) and derived trend
+  fields. Since #689 it carries **no inline `engines[]` measurements**. Shape:
   `data/model_contract.json` (documented in `data/MODEL_CONTRACT.md`).
   `scripts/check_contract_prose.py` is the ONE seam that keeps that prose from
   drifting from the schema (issue #1394): every `properties.models.items`
@@ -105,6 +109,21 @@ Firecrawl → lightbrd.com mirror  ───────────────
   equal membership in `required`, and an unknown row fails. Registered as stage
   `docs` in `scripts/validate.py` (run by `_validate` and by
   `_validate-schema`'s `--only schema,docs`).
+* **`data/measurements.json`** — `{model_id: [measurement…]}`: where a t/s figure
+  lives. A row is `{engine, tps, hardware, quant, date, source_post, [footprint…]}`
+  and the OPTIONAL per-run footprint (`weight_gb`, `context_tokens`,
+  `system_ram_min`, `storage_offload`, `engine_min_version`) belongs to THAT run,
+  so one model carries several variants across cards, quants and contexts.
+* **`data/posts.json`** — `{source_post: {date, likes, comments, reshares, views,
+  interactions}}`: engagement published ONCE per post, so a corrected count
+  reaches every model row that cited it.
+* **The flatten seam** — `scripts/update_trending.py::load_store` reads the three
+  files and `flatten_store` splices each measurement's counters from
+  `data/posts.json` back into an inline `engines[]` row, so every existing reader
+  (render/sort/ingest/validate) sees the pre-#689 flat shape; `split_store` writes
+  the split form on merge. A legacy flat store with no split files loads as-is.
+  The longer walkthrough — shape, budgets, the seam and the per-run variants — is
+  `docs/store.md`.
 * **`data/snapshots/trending-<UTC>.json`** — the full store at every merge. This
   is what proves nothing was ever removed (`check_no_removal`,
   `check_no_value_loss`).
