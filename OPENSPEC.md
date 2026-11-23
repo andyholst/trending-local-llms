@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **455**
+Active changes: **1** · archived: **456**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `fleet-host-sync-runtime-stamps` | active | #1401 | — | [fleet-host-sync-check](openspec/changes/fleet-host-sync-runtime-stamps/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/fleet-host-sync-runtime-stamps/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -225,6 +224,7 @@ Active changes: **2** · archived: **455**
 | `fixture-git-identity-isolation` | archived | #943 — "test_worktree_base.py's identity-fallback assertion reads the | #944 | [os-agnostic-test-fixtures](openspec/changes/archive/fixture-git-identity-isolation/specs/os-agnostic-test-fixtures/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/fixture-git-identity-isolation/proposal.md) |
 | `flake-token-gap` | archived | #1371 | #1373 | [test-determinism](openspec/changes/archive/flake-token-gap/specs/test-determinism/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/flake-token-gap/proposal.md) |
 | `fleet-aux-local-sync` | archived | #1198 | #1200 | [fleet-model-chain](openspec/changes/archive/fleet-aux-local-sync/specs/fleet-model-chain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/fleet-aux-local-sync/proposal.md) |
+| `fleet-host-sync-runtime-stamps` | archived | #1401 | #1414 | [fleet-host-sync-check](openspec/changes/archive/fleet-host-sync-runtime-stamps/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fleet-host-sync-runtime-stamps/proposal.md) |
 | `fleet-lane-handover-protocol` | archived | #1189 — "fleet: lanes must hand over on the issue thread — a signed done | #1191 | [fleet-lane-handover](openspec/changes/archive/fleet-lane-handover-protocol/specs/fleet-lane-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/fleet-lane-handover-protocol/proposal.md) |
 | `fleet-lifecycle-divergence-gate` | archived | #1209 — "fleet: the issue owns the PR→reviewer handover, and host lane behaviour is checked against fetched master (CI too)" | #1212 | [fleet-lifecycle](openspec/changes/archive/fleet-lifecycle-divergence-gate/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fleet-lifecycle-divergence-gate/proposal.md) |
 | `fleet-local-fallback-tier` | archived | #1192 | #1197 | [fleet-model-chain](openspec/changes/archive/fleet-local-fallback-tier/specs/fleet-model-chain/spec.md) | 17/17 | [proposal.md](openspec/changes/archive/fleet-local-fallback-tier/proposal.md) |

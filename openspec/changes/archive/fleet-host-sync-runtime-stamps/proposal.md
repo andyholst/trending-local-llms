@@ -1,6 +1,7 @@
 # Proposal: fleet-host-sync-runtime-stamps
 
 Issue: #1401
+PR: #1414
 
 ## Why
 
