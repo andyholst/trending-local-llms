@@ -321,7 +321,13 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
                       # pr_body imports bot_markers (declaration markers incl. ISSUE_PATTERN_MARKER,
                       # rule 6j — #771), so the fixture copies it too, like pr_closure.
                       ("scripts/bot_markers.py", ROOT / "scripts" / "bot_markers.py"),
-                      ("scripts/pr_closure.py", ROOT / "scripts" / "pr_closure.py")):
+                      ("scripts/pr_closure.py", ROOT / "scripts" / "pr_closure.py"),
+                      # Issue #1457 forces the HOST branch, so the REAL python-env ensure
+                      # step runs and its script closure must be present — never a stub.
+                      ("scripts/ensure_image.py", ROOT / "scripts" / "ensure_image.py"),
+                      ("scripts/env_int.py", ROOT / "scripts" / "env_int.py"),
+                      ("scripts/image_manifest_check.py",
+                       ROOT / "scripts" / "image_manifest_check.py")):
         (repo / name).write_bytes(src.read_bytes())
     _git(repo, "init", "-q", "-b", "master")
     _git(repo, "add", "-A")
@@ -339,6 +345,24 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
         "if [ \"$1 $2\" = \"pr list\" ]; then echo '[]'; exit 0; fi\n"
         "cat >> \"$GH_LOG.body\"\n", encoding="utf-8")
     (repo / "bin" / "gh").chmod(0o755)
+    # Issue #1457: the publish step is forced down the HOST branch so the keeper body is
+    # captured the way a runner captures it, and the container runtime is a stub (an
+    # external system, rule 6m): `image inspect` answers present, `run … python3` execs
+    # locally. Real docker would otherwise make this fixture host-dependent.
+    (repo / "bin" / "docker").write_text(
+        "#!/bin/sh\n"
+        "cmd=\"$1\"; shift\n"
+        "case \"$cmd\" in\n"
+        "  image) exit 0 ;;\n"
+        "  run)\n"
+        "    while [ $# -gt 0 ]; do\n"
+        "      case \"$1\" in python3|python) break ;; *) shift ;; esac\n"
+        "    done\n"
+        "    exec \"$@\"\n"
+        "    ;;\n"
+        "esac\n"
+        "exit 0\n", encoding="utf-8")
+    (repo / "bin" / "docker").chmod(0o755)
     return repo, remote
 
 
@@ -477,7 +501,10 @@ def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
         repo, remote = _fixture_repo(td)
         env = {"PATH": f"{repo / 'bin'}:{__import__('os').environ['PATH']}",
                "GH_LOG": str(td / "gh.log"), "GH_TOKEN": "stub",
-               "REPO": "owner/name", "RUN_URL": "https://example.invalid/run/1"}
+               "REPO": "owner/name", "RUN_URL": "https://example.invalid/run/1",
+               # Issue #1457: force the HOST branch so the body is captured exactly as a
+               # runner captures it — the path where the ensure prerequisite used to leak.
+               "IN_CONTAINER": ""}
 
         # --- no drift: changed=false, no branch, gh never called ---------------
         out = td / "output-nodrift"
@@ -530,6 +557,8 @@ def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
               "pr create" in args and "--base master" in args and branch in args, args)
         body = (td / "gh.log.body").read_text()
         check("shipped: the body is not empty and carries the run", "https://example.invalid/run/1" in body)
+        check("shipped: the captured keeper body holds no python-env ensure line",
+              "ensure_image.py" not in body and "python-env:" not in body, body[:200])
         check("shipped: the body carries NO closing keyword",
               not _re.search(r"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*#\d+", body),
               body)
