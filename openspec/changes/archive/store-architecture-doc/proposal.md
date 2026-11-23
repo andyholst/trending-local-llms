@@ -1,6 +1,7 @@
 # Proposal: store-architecture-doc
 
 Issue: #1395
+PR: #1479
 
 ## Why
 

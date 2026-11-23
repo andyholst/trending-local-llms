@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **477**
+Active changes: **1** · archived: **478**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `store-architecture-doc` | active | #1395 | — | [store-docs](openspec/changes/store-architecture-doc/specs/store-docs/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/store-architecture-doc/proposal.md) |
 
 ## Archived changes
 
@@ -457,6 +456,7 @@ Active changes: **2** · archived: **477**
 | `stale-smoke-budget-prose` | archived | #1228 | #1230 | [search-contract](openspec/changes/archive/stale-smoke-budget-prose/specs/search-contract/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/stale-smoke-budget-prose/proposal.md) |
 | `stamp-fix-pr-in-ledger` | archived | #1099 | #1130 | [alarms](openspec/changes/archive/stamp-fix-pr-in-ledger/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/stamp-fix-pr-in-ledger/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
+| `store-architecture-doc` | archived | #1395 | #1479 | [store-docs](openspec/changes/archive/store-architecture-doc/specs/store-docs/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/store-architecture-doc/proposal.md) |
 | `strand-openspec-change-at-merge` | archived | #866 | #894 | [archived-change-lifecycle](openspec/changes/archive/strand-openspec-change-at-merge/specs/archived-change-lifecycle/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/strand-openspec-change-at-merge/proposal.md) |
 | `sweep-alarm-inflight-pending` | archived | #801 (sweep-alarm grades a delivery that is still running as a failed sweep) | #806 | [alarms](openspec/changes/archive/sweep-alarm-inflight-pending/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/sweep-alarm-inflight-pending/proposal.md) |
 | `sweep-alarm-weekly-window` | archived | #804 | #842 | [alarms](openspec/changes/archive/sweep-alarm-weekly-window/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/sweep-alarm-weekly-window/proposal.md) |
