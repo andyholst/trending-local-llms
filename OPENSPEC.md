@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **437**
+Active changes: **1** · archived: **438**
 
 ## Active changes
 
@@ -337,6 +337,7 @@ Active changes: **1** · archived: **437**
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
 | `pr-health-agent-login-1349` | archived | #1349 | #1350 | [rebase-ownership](openspec/changes/archive/pr-health-agent-login-1349/specs/rebase-ownership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/pr-health-agent-login-1349/proposal.md) |
 | `pr-health-bot-ownership-1295` | archived | #1295 | #1296 | [pr-health](openspec/changes/archive/pr-health-bot-ownership-1295/specs/pr-health/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-health-bot-ownership-1295/proposal.md) |
+| `pr-rebase-soul-generated-artifacts` | archived | #1361 | #1362 | [pr-rebase-lane](openspec/changes/archive/pr-rebase-soul-generated-artifacts/specs/pr-rebase-lane/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/pr-rebase-soul-generated-artifacts/proposal.md) |
 | `pr-title-from-the-issue` | archived | #541 | — | [pr-body](openspec/changes/archive/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-title-from-the-issue/proposal.md) |
 | `pr-triggered-failure-ledger` | archived | #1164 | #1170 | [pr-triggered-failure-ledger](openspec/changes/archive/pr-triggered-failure-ledger/specs/pr-triggered-failure-ledger/spec.md) | 18/18 | [proposal.md](openspec/changes/archive/pr-triggered-failure-ledger/proposal.md) |
 | `prechange-guard-fixtures-1292` | archived | #1292 | #1298 | [regression-guards](openspec/changes/archive/prechange-guard-fixtures-1292/specs/regression-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/prechange-guard-fixtures-1292/proposal.md) |
