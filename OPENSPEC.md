@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **477**
+Active changes: **1** · archived: **478**
 
 ## Active changes
 
@@ -282,6 +282,7 @@ Active changes: **1** · archived: **477**
 | `keeper-pr-one-landing-sequence` | archived | #869 | #1082 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-one-landing-sequence/specs/ci-keeper-pr/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/keeper-pr-one-landing-sequence/proposal.md) |
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
 | `land-forward-notes-1446` | archived | #1446 | #1448 | [fleet-host-sync-check](openspec/changes/archive/land-forward-notes-1446/specs/fleet-host-sync-check/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/land-forward-notes-1446/proposal.md) |
+| `land-host-ahead-mirror-residual-1456` | archived | #1456 | #1465 | [fleet-lane-skill-mirrors](openspec/changes/archive/land-host-ahead-mirror-residual-1456/specs/fleet-lane-skill-mirrors/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/land-host-ahead-mirror-residual-1456/proposal.md) |
 | `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
 | `land-host-ahead-skill-notes-1462` | archived | #1462 | #1463 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1462/specs/fleet-host-sync-check/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1462/proposal.md) |
