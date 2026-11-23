@@ -322,8 +322,11 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 # PYTHON_RUN is the docker harness ONLY (mount, workdir, user, env) — the
 # recipe keeps the pure command (`python3 scripts/X.py ...`), so a reader sees
 # exactly what runs and the container seam stays in one place (issue #712).
-PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -w /workspace \
-	-e PYTHONUNBUFFERED=1 $(PYTHON_IMAGE)
+# Inside a container there is no docker to run, so the SAME assignment forks to
+# an EMPTY harness and the recipe uses the container's own interpreter (issue
+# #1411). The fork lives here, never in a second definition.
+PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -w /workspace \
+	-e PYTHONUNBUFFERED=1 $(PYTHON_IMAGE))
 
 # ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
 # Not every host `python3 scripts/…` target routes through PYTHON_RUN; these stay
@@ -343,8 +346,12 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
-python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (build from Dockerfile.python-env when absent; no registry probe)
+python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (build from Dockerfile.python-env when absent; no registry probe; SKIPPED in-container — no docker to build/pull with)
+ifeq ($(IN_CONTAINER),)
 	python3 scripts/ensure_image.py ensure-python
+else
+	@:
+endif
 
 openspec-new: openspec-image ## openspec new change <NAME>
 	@test -n "$(NAME)" || { echo "Usage: make openspec-new NAME=<kebab-name>"; exit 1; }
@@ -1372,18 +1379,18 @@ refresh-pr-body: ## Print the REFRESH PR body: the run's window block + the cont
 	@python3 scripts/pr_body.py --for refresh $(if $(WINDOW_FILE),--window-file "$(WINDOW_FILE)",)
 
 .PHONY: architecture-pr-body
-architecture-pr-body: ## Print the ARCHITECTURE PR body (no closing keyword; issue #542)
-	@python3 scripts/pr_body.py --for architecture --run-url "$(RUN_URL)"
+architecture-pr-body: python-env-image ## Print the ARCHITECTURE PR body (no closing keyword; issue #542)
+	@$(PYTHON_RUN) python3 scripts/pr_body.py --for architecture --run-url "$(RUN_URL)"
 
 .PHONY: pr-title
-pr-title: ## Print the implementation PR TITLE for ISSUE=<n> [KIND=data-gap|tech-debt] (issue #541)
+pr-title: python-env-image ## Print the implementation PR TITLE for ISSUE=<n> [KIND=data-gap|tech-debt] (issue #541)
 	@test -n "$(ISSUE)" || { echo "Usage: make pr-title ISSUE=<n> [KIND=data-gap|tech-debt]"; exit 1; }
-	@python3 scripts/pr_body.py --issue "$(ISSUE)" --title --kind "$(if $(KIND),$(KIND),data-gap)"
+	@$(PYTHON_RUN) python3 scripts/pr_body.py --issue "$(ISSUE)" --title --kind "$(if $(KIND),$(KIND),data-gap)"
 
 .PHONY: pr-body
-pr-body: ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]
+pr-body: python-env-image ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]
 	@test -n "$(ISSUE)" || { echo "Usage: make pr-body ISSUE=<n> [BRANCH=<head branch>]"; exit 1; }
-	@python3 scripts/pr_body.py --issue "$(ISSUE)" $(if $(BRANCH),--branch "$(BRANCH)",)
+	@$(PYTHON_RUN) python3 scripts/pr_body.py --issue "$(ISSUE)" $(if $(BRANCH),--branch "$(BRANCH)",)
 
 # ---- secret scan: no credential may reach the repo (issue #122) --------------
 # gitleaks (MIT, the most widely adopted FOSS secret scanner) runs in ITS OWN
