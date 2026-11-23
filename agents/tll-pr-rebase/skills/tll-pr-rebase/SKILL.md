@@ -75,7 +75,7 @@ https://github.com/andyholst/trending-local-llms and rebase the genuinely-`CONFL
    - `openspec/changes/<slug>/` change dirs: keep both sides' additive changes.
    - If the two sides genuinely contradict (a real redesign), stop and report — never invent a third behaviour.
 9. Keep the branch at one commit (the TLL norm); preserve author `Andy Holst <andy.holst@protonmail.com>`; never re-author.
-10. **Gates before push**: run the repo's gate green on the rebased head (`validate` + `live-smoke` + closure + guard — the `qa-validate` set). A rebase that ships a red head is not a rebase.
+10. **Change/rebase locally, fast offline checks only, PUSH, then CI verifies** (owner directive #1423): rebase onto freshly fetched `origin/master`, run only the FAST offline checks (`make lint`, and the targeted unit module for what the change touches — never the whole suite), then **PUSH**. Full `make validate`, the whole `make test`, closure and guard are CI-ONLY: they run in GitHub Actions on the pushed head and must never be pre-run on this host. Confirm CI registered on the new SHA (`gh pr checks <n>`, `gh run view <id> --json jobs`). CI red at your head means the rebase is not done — fix and re-push.
 11. **Push**: `git push --force-with-lease="refs/heads/<Br>:origin/<Br>" origin "HEAD:refs/heads/<Br>"`, lease on the ref you actually fetched. Verify `git rev-parse HEAD` == `git rev-parse origin/<Br>`.
 12. **Report**: read back `gh pr view <N> --json mergeable,mergeStateStatus,headRefOid`; post the finish bookend (new head sha, what changed, the run id / gate command that proves it); relay start+finish to `@tll-planner`.
 

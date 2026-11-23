@@ -183,6 +183,41 @@ def test_reviewer_shapes_are_in_the_rulebook() -> int:
     return failed
 
 
+def test_pr_rebase_skill_is_push_and_verify() -> int:
+    """Issue #1427: the rebase skill's step 10 is push-and-verify, not a pre-push local gate.
+
+    PR #1424 landed the owner directive (#1423) in the implementer/planner mirrors; this pins the
+    same rule in the tll-pr-rebase mirror so no lane can regress to running the whole containerised
+    suite on the host before pushing.
+    """
+    path = ROOT / "agents" / "tll-pr-rebase" / "skills" / "tll-pr-rebase" / "SKILL.md"
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    lines = [ln for ln in text.splitlines() if ln.strip().startswith("10.")]
+    step = lines[0] if lines else ""
+    failed = 0
+    for needle, why in (
+        ("make lint", "the fast offline check"),
+        ("PUSH", "the push"),
+        ("gh pr checks <n>", "the per-PR CI confirmation"),
+        ("gh run view <id> --json jobs", "the run-jobs CI confirmation"),
+        ("CI red at your head means the rebase is not done", "the red-head rule as a CI verdict"),
+    ):
+        failed += check(needle in step, f"pr-rebase skill step 10 carries {why}")
+    for needle, why in (
+        ("make validate", "the full validate"),
+        ("make test", "the whole test suite"),
+        ("closure", "closure"),
+        ("guard", "guard"),
+    ):
+        failed += check(
+            needle in step and "CI-ONLY" in step,
+            f"pr-rebase skill step 10 names {why} CI-ONLY",
+        )
+    old = "**Gates before push**"
+    failed += check(old not in step, "pr-rebase skill step 10 drops the pre-push local-gate heading")
+    return failed
+
+
 def scratch_repo(dest: Path) -> Path:
     """A REAL local git repo built from the tree — CI's checkout has no git objects."""
     repo = dest / "repo"
@@ -418,6 +453,7 @@ def main() -> int:
         test_every_lane_carries_the_pr_handover_shapes,
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
+        test_pr_rebase_skill_is_push_and_verify,
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
