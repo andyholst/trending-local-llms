@@ -1033,7 +1033,7 @@ _validate-data:
 
 .PHONY: _validate-schema
 _validate-schema:
-	python3 scripts/validate.py --only schema
+	python3 scripts/validate.py --only schema,docs
 
 # Report (never fails) unregistered engines in the raw snapshots and what
 # ingest will decide for each: registered / not-engine / unknown / no-repo.

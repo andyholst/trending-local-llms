@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **455**
+Active changes: **1** · archived: **456**
 
 ## Active changes
 
@@ -159,6 +159,7 @@ Active changes: **1** · archived: **455**
 | `context-benchmark-points-not-windows` | archived | #1017 | #1075 | [data-gap-analysis](openspec/changes/archive/context-benchmark-points-not-windows/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/context-benchmark-points-not-windows/proposal.md) |
 | `context-tokens-ingest-traceable` | archived | #991 — "data-gap: context_tokens (69 models) (2026-11-15)" | #1012 | [context-tokens-ingest](openspec/changes/archive/context-tokens-ingest-traceable/specs/context-tokens-ingest/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/context-tokens-ingest-traceable/proposal.md) |
 | `continuous-queue-1258` | archived | #1258 | #1259 | [fleet-handover](openspec/changes/archive/continuous-queue-1258/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/continuous-queue-1258/proposal.md) |
+| `contract-prose-sync` | archived | #1394 | #1410 | [docs-contracts](openspec/changes/archive/contract-prose-sync/specs/docs-contracts/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/contract-prose-sync/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | archived | #382 | — | [raw-snapshot-quarantine](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/proposal.md) |
 | `coverage-gap-builders-announce` | archived | #1173 | #1187 | [coverage-gap-announce](openspec/changes/archive/coverage-gap-builders-announce/specs/coverage-gap-announce/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/coverage-gap-builders-announce/proposal.md) |
 | `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |

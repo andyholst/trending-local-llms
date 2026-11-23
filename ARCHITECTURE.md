@@ -99,6 +99,12 @@ Firecrawl → lightbrd.com mirror  ───────────────
   `storage_offload`, `engine_min_version` — all optional), an `engines[]` list of
   per-engine measurements and derived trend fields. Shape:
   `data/model_contract.json` (documented in `data/MODEL_CONTRACT.md`).
+  `scripts/check_contract_prose.py` is the ONE seam that keeps that prose from
+  drifting from the schema (issue #1394): every `properties.models.items`
+  property must have a `| \`field\` | yes/no | … |` row, every Required cell must
+  equal membership in `required`, and an unknown row fails. Registered as stage
+  `docs` in `scripts/validate.py` (run by `_validate` and by
+  `_validate-schema`'s `--only schema,docs`).
 * **`data/snapshots/trending-<UTC>.json`** — the full store at every merge. This
   is what proves nothing was ever removed (`check_no_removal`,
   `check_no_value_loss`).
@@ -717,6 +723,7 @@ for a reviewer to hold true.
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
 | `scripts/agent_image_smoke.py` | The #1214 preflight used by `live-smoke`: reads the ONE `ensure_image.py ref` seam, distinguishes published / built-local / absent manifests, and checks every provisioned `tll-*` profile's `config.yaml`, `SOUL.md` and skill `SKILL.md` prompts; read-only, no model call |
 | `scripts/engine_guide_check.py` | Issue #1220's read-only README-sync checker: parses the inference-engine guide rows, the engine matrix columns and the Quick picks line, and names every engine that drifted from the store registry or the measured set in `data/measurements.json` |
+| `scripts/check_contract_prose.py` | The contract⇄prose sync seam (issue #1394, slice A of #691): the ONE reader that keeps `data/MODEL_CONTRACT.md` from drifting from `data/model_contract.json`. It parses the prose's pipe-table rows (`\| \`field\` \| yes/no \| … \|`) and compares them to `properties.models.items` — every schema property MUST have a row, every Required cell MUST equal membership in `required`, and a row naming an undeclared property FAILS as unknown. Presence and required-ness are hard fail; the Meaning cell is prose and is never parsed. Read-only (rule 3b); registered as stage `docs` in `scripts/validate.py`, run by `_validate` and selected by `_validate-schema`'s `--only schema,docs`; `tests/test_contract_prose.py` pins it against the real pair |
 | `scripts/announce_image_fallback.py` | The #1120 announcer: read the captured `corrupt-tag-fallback=<image>=<tag>` report, compose ONE comment naming each image built without a pull (tag, reason, run URL) carrying the registered `corrupt-tag-fallback` marker stamped `run=<run-id>`, skip when this run already announced (`--paginate` thread read), post with `gh issue comment`; missing inputs exit 2 (#1120) |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is), every `--only` stage list matches the validator's stage map, and every job §4 claims is a real one (issues #178, #182). Its §6b half: every workflow in `.github/workflows/` is NAMED in `AGENTS.md` §6b, the rulebook's pipeline list, and §6b names no `.yml` that is not a workflow (both directions; a missing `AGENTS.md` is a finding, never a skip) — §4 stays canonical for a pipeline's shape, §6b is where the rule it enforces lives (rule 6h; the `rulebook-names-every-pipeline` change). Each region it reads is bounded by a STABLE anchor (the `arch:targets`, `arch:pipelines`, `arch:scripts`, `arch:guards`, `agents:rulebook` and `agents:style` comment markers), never a heading number, and a missing or stranded anchor is itself a finding — a renumbered heading used to silently repoint a check (issue #509) |
 | `scripts/issue_bot_working_files.txt` | The ONE list of the files a bot run writes at the repository root and that must never be staged, committed or pushed (issue #543) |
@@ -837,6 +844,12 @@ GitHub issue  →  its own worktree, cut off the freshly fetched origin/master
 `make openspec-index` keeps `OPENSPEC.md` as the one file that lists every change
 this repo has ever made.
 
+Rule 6c asks each change to carry its guard row in this document's §8 table, in the
+same change. The `docs`-stage contract⇄prose guard (issue #1394) names
+`tests/test_contract_prose.py` + `scripts/check_contract_prose.py`; the rulebook
+`AGENTS.md` §8 row is a human-owned edit under rule 3c and is declared on the issue
+(this document is not AGENTS.md).
+
 A change's life ENDS in the PR that completes it: once its `PR: #<n>` line is
 known, that PR runs `make openspec-archive NAME=<change>` (moving the directory
 to `openspec/changes/archive/<name>`) and `make openspec-index`, so the archive
@@ -904,7 +917,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 263 make targets, 106 files in `scripts/`)
+### Bots in the tree (12 pipelines, 263 make targets, 107 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -1053,6 +1066,7 @@ One line each, taken from the script's own docstring.
 - `scripts/check_branch_protection.py` — Rule 1's mechanical guard (issue #959): the base branch must carry protection.
 - `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
 - `scripts/check_conflict_markers.py` — Fail when a tracked file carries a merge-conflict block (issue #588).
+- `scripts/check_contract_prose.py` — (no docstring)
 - `scripts/check_counter_parity.py` — ONE pytest plugin so plain `pytest` agrees with `make test` (issue #1301).
 - `scripts/check_makefile_knobs.py` — Fail when a Makefile knob (`NAME ?= …`) is declared and read by nothing (issue #630).
 - `scripts/check_openspec_tasks.py` — Ensure active OpenSpec changes have ALL task checkboxes completed.

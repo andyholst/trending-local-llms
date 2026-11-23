@@ -37,6 +37,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
+import check_contract_prose as contract_prose  # noqa: E402  (ONE contract<->prose seam, issue #1394)
 from env_int import env_float, env_int  # noqa: E402  (empty means missing — issue #487)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,6 +50,7 @@ POSTS = _DATA_DIR / "posts.json"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
 CONTRACT = _DATA_DIR / "model_contract.json"
+MODEL_CONTRACT_MD = _DATA_DIR / "MODEL_CONTRACT.md"
 MEASUREMENTS_CONTRACT = _DATA_DIR / "measurements_contract.json"
 POSTS_CONTRACT = _DATA_DIR / "posts_contract.json"
 SEARCH_CONTRACT = _DATA_DIR / "search_contract.json"
@@ -428,6 +430,23 @@ def check_model_fields(store: dict) -> None:
             for f in m["formats"]:
                 if not f.get("name") or not f.get("hf"):
                     fail(f"{m.get('id','?')}: format entry missing name or hf link")
+
+
+def check_contract_prose() -> None:
+    """The prose companion of the schema must agree with it (issue #1394).
+
+    Delegates every verdict to `scripts/check_contract_prose.py` — the ONE seam
+    (rule 6d) — so the validator's `docs` stage and the standalone CLI read the
+    same rows against the same schema. An undecidable read is a failure here, not
+    a vacuous pass.
+    """
+    found = contract_prose.check(MODEL_CONTRACT_MD.parent, CONTRACT, MODEL_CONTRACT_MD)
+    if found:
+        for line in found:
+            fail(f"contract-prose: {line}")
+        return
+    print(f"  OK: MODEL_CONTRACT.md agrees with model_contract.json "
+          f"({len(contract_prose.model_items(json.loads(CONTRACT.read_text())))} properties)")
 
 
 def check_schema(store: dict) -> None:
@@ -2692,6 +2711,10 @@ def main() -> int:
     add("registry holds only inference engines", "data", lambda: check_engine_kind(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))
     add("schema conformance (model_contract.json)", "schema", lambda: check_schema(store))
+    # The prose companion of the schema moves with it (issue #1394): stage `docs`,
+    # reached by `_validate` (all stages) and `_validate-schema` (`--only schema,docs`).
+    add("contract <-> prose sync (MODEL_CONTRACT.md vs model_contract.json)", "docs",
+        lambda: check_contract_prose())
     add("measurements conformance (measurements_contract.json)", "schema", lambda: check_measurements_contract())
     add("posts conformance (posts_contract.json)", "schema", lambda: check_posts_contract())
     add("split flatten guard (flatten == store)", "schema", lambda: check_split_flatten(store))
