@@ -1,7 +1,7 @@
 # Proposal: land-forward-implementer-notes-1487
 
 Issue: #1487
-PR: pending
+PR: #1489
 
 ## Why
 
