@@ -55,13 +55,27 @@ import yaml  # noqa: E402
 _PASS = 0
 _FAIL = 0
 
-#: A stub `gh`: `pr view` answers from $FAKE_PR; every `gh` argv is recorded in
-#: $GH_LOG so the request construction is asserted, and any other subcommand is
-#: loud (the seam may only read the PR through `gh pr view`).
+#: A stub `gh`: `pr view` answers from $FAKE_PR; `run list`/`run view` answer the CI proof
+#: (issue #1616) from $FAKE_JOBS, with the branch's CURRENT sha read out of the fixture's bare
+#: origin ($STUB_ORIGIN) — i.e. exactly what the seam pushed, so a planted run matches or does
+#: not by the test's choice. Every `gh` argv is recorded in $GH_LOG so the request construction
+#: is asserted, and any other subcommand is loud.
 STUB_GH = """#!/bin/sh
 echo "gh $*" >> "$GH_LOG"
 case "$1 $2" in
   "pr view") cat "$FAKE_PR" ;;
+  "run list")
+    branch=""
+    prev=""
+    for a in "$@"; do
+      if [ "$prev" = "--branch" ]; then branch="$a"; fi
+      prev="$a"
+    done
+    sha=$(git --git-dir="$STUB_ORIGIN" rev-parse "refs/heads/$branch" 2>/dev/null || echo "")
+    rid="${FAKE_RUN_ID:-1}"
+    printf '[{"databaseId":%s,"headBranch":"%s","headSha":"%s","workflowName":"qa-validate.yml","status":"completed","conclusion":"success","url":"https://github.com/o/r/actions/runs/%s"}]\\n' "$rid" "$branch" "$sha" "$rid"
+    ;;
+  "run view") cat "$FAKE_JOBS" ;;
   *) echo "unexpected gh: $*" >&2; exit 3 ;;
 esac
 """
@@ -230,16 +244,25 @@ def _pr_json(*, head: str = HEAD_BRANCH, state: str = "open", draft: bool = Fals
             "mergeable": mergeable, "mergeStateStatus": state_status}
 
 
-def _run_seam(clone: Path, pr_obj: dict, extra_env: dict | None = None) -> tuple[subprocess.CompletedProcess, str]:
+def _run_seam(clone: Path, pr_obj: dict, extra_env: dict | None = None, *,
+              jobs: dict | list | None = None, origin: str | Path | None = None,
+              ) -> tuple[subprocess.CompletedProcess, str]:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         (td / "gh").write_text(STUB_GH)
         (td / "gh").chmod(0o755)
         (td / "pr.json").write_text(json.dumps(pr_obj))
+        # The CI proof's planted answer (issue #1616): a REAL run by default, `{"jobs": []}`
+        # for the ghost. `origin` is the fixture's BARE repo the stub reads the pushed sha from.
+        (td / "jobs.json").write_text(json.dumps(
+            jobs if jobs is not None
+            else {"jobs": [{"id": 1, "status": "completed", "conclusion": "success"}]}))
         log = td / "gh.log"
         log.write_text("")
         env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
-               "FAKE_PR": str(td / "pr.json"), "GH_LOG": str(log)}
+               "FAKE_PR": str(td / "pr.json"), "FAKE_JOBS": str(td / "jobs.json"),
+               "GH_LOG": str(log),
+               "STUB_ORIGIN": str(origin if origin is not None else clone)}
         env.update(extra_env or {})
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--pr", "77", "--repo", "o/r", "--dir", str(clone)],
@@ -852,7 +875,8 @@ def test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it():
         _must(clone, "config", f"url.{origin_url}.insteadOf", gh_url)
         _must(clone, "config", "--add", f"url.{origin_url}.insteadOf",
               "https://oauth2:TESTPAT@github.com/o/r.git")
-        proc, _log = _run_seam(clone, _pr_json(), extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        proc, _log = _run_seam(clone, _pr_json(), origin=origin_url,
+                               extra_env={"GIT_PUSH_PAT": "TESTPAT"})
         out = proc.stdout + proc.stderr
         check("seam with GIT_PUSH_PAT lands the rebase and names the owner-pat push identity",
               proc.returncode == 0 and "push identity: owner-pat" in out, out[:240])
@@ -873,6 +897,78 @@ def test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it():
             check("seam without GIT_PUSH_PAT still rebases and pushes via origin (checkout identity)",
                   proc2.returncode == 0 and "push identity: checkout-credential" in proc2.stdout,
                   (proc2.stdout + proc2.stderr)[:240])
+
+
+def test_a_rebased_head_whose_run_has_zero_jobs_is_never_reported_as_a_landed_rebase():
+    """(issue #1616) The #1115 ghost recurred on 2026-11-24 with the PAT push already in place:
+    PR #1607 head `d6232184` -> qa-validate run 45419443908 `action_required` with jobs=0, PR
+    #1608 head `ac1b65a7` -> run 45419383942 the same; both needed an owner-identity re-push. A
+    PAT push is necessary and NOT sufficient, so the REAL seam reads the pushed sha's OWN run
+    back through the ONE gh field contract and refuses `rebased=true` when it carries no jobs."""
+    import shlex
+
+    import gh_json_fields
+
+    def _github_clone(td: Path):
+        origin_url, _seed, clone = _fixture(td)
+        _must(clone, "remote", "set-url", "origin", "https://github.com/o/r.git")
+        _must(clone, "config", f"url.{origin_url}.insteadOf", "https://github.com/o/r.git")
+        _must(clone, "config", "--add", f"url.{origin_url}.insteadOf",
+              "https://oauth2:TESTPAT@github.com/o/r.git")
+        return origin_url, clone
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        origin_url, clone = _github_clone(td)
+        before = _git(origin_url, "rev-parse", f"refs/heads/{HEAD_BRANCH}").stdout.strip()
+        ghost, ghost_log = _run_seam(clone, _pr_json(), origin=origin_url,
+                                     jobs={"jobs": []}, extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        out = ghost.stdout + ghost.stderr
+        check("the ghost shape exits 1 — the rebase is NOT reported as landed",
+              ghost.returncode == 1, out[:300])
+        check("`rebased=false`: the squash must not be skipped on an unproven head",
+              "rebased=false" in out and "rebased=true" not in out, out[:300])
+        check("the zero-jobs run is NAMED as the #1115 ghost", "ZERO jobs" in out, out[:300])
+        check("the branch still MOVED — the push landed; only the proof failed",
+              _git(origin_url, "rev-parse", f"refs/heads/{HEAD_BRANCH}").stdout.strip() != before,
+              before)
+
+        reqs = [line for line in ghost_log.splitlines() if "--json" in line]
+        check("the CI proof read the branch's runs and then the matched run's jobs",
+              any("run list" in r and "--branch" in r for r in reqs)
+              and any("run view" in r for r in reqs), ghost_log[:400])
+        check("(issue #1158) every gh --json request the seam built passes the ONE field contract",
+              bool(reqs) and all(not gh_json_fields.check_argv(shlex.split(r)) for r in reqs),
+              ghost_log[:400])
+
+    with tempfile.TemporaryDirectory() as td2:
+        origin_url2, clone2 = _github_clone(Path(td2))
+        healthy, _log2 = _run_seam(clone2, _pr_json(), origin=origin_url2,
+                                   extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        out2 = healthy.stdout + healthy.stderr
+        check("a rebased head whose OWN run carries jobs reports rebased=true and exits 0",
+              healthy.returncode == 0 and "rebased=true" in out2
+              and "carries 1 job(s)" in out2, out2[:300])
+        check("the verified path also names the owner-pat push identity",
+              "push identity: owner-pat" in out2, out2[:300])
+
+
+def test_the_ci_proof_never_reads_a_wrong_shaped_answer_as_scheduled_jobs():
+    """(issue #1616) the proof is a CONTRACT read, not a best-effort parse (the #1158 lesson):
+    gh answers `run view --json jobs` with `{"jobs": […]}`. An answer that is an ARRAY must be
+    UNPROVEN — loudly — never `True`, or a stub-shaped reply would vouch for a ghost."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        origin_url, _seed, clone = _fixture(td)
+        _must(clone, "remote", "set-url", "origin", "https://github.com/o/r.git")
+        _must(clone, "config", f"url.{origin_url}.insteadOf", "https://github.com/o/r.git")
+        _must(clone, "config", "--add", f"url.{origin_url}.insteadOf",
+              "https://oauth2:TESTPAT@github.com/o/r.git")
+        proc, _log = _run_seam(clone, _pr_json(), origin=origin_url, jobs=[],
+                               extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        out = proc.stdout + proc.stderr
+        check("an ARRAY where gh answers an OBJECT is UNPROVEN, exit 1 — never proof",
+              proc.returncode == 1 and "UNPROVEN" in out and "rebased=false" in out, out[:300])
 
 
 def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
@@ -1049,6 +1145,10 @@ def main():
         test_classification_is_pure_and_partitions,
         # (issue #1115) the push-identity fix and the ghost-run alarm it pairs with.
         test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it,
+        # (issue #1616) the push-identity fix is necessary, not sufficient: the rebased head's
+        # OWN run must carry jobs before the seam claims `rebased=true`.
+        test_a_rebased_head_whose_run_has_zero_jobs_is_never_reported_as_a_landed_rebase,
+        test_the_ci_proof_never_reads_a_wrong_shaped_answer_as_scheduled_jobs,
         test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs,
         test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape,
         test_a_missing_gh_is_a_loud_read_failure_not_a_traceback,

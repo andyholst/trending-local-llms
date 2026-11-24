@@ -43,6 +43,15 @@ one. `draft_findings()` is the other half of the classification: a draft that CA
 issue (`closingIssuesReferences`, or the issue its branch encodes) is named with that issue —
 fleet PRs go up READY, never draft; a genuinely unfinished draft binds no issue and stays out
 of the verdict.
+
+THE REBASER PROVES ITS OWN CI (issue #1616): `--rebase` pushes a behind-and-clean bot head back
+to its PR, and since #1115 that push carries the owner PAT — a job-token push is what created
+the 0-job `action_required` ghosts. A PAT push is necessary and NOT sufficient: `rebase_and_push`
+now READS the pushed sha's own `qa-validate` run back from GitHub (`verify_rebased_ci`, through
+the ONE gh field contract) and reports the rebase as verified only when that run carries >0
+jobs. A ghost, an unreadable jobs answer or a run that never appears inside the bounded wait is
+reported as UNVERIFIED, never as a clean `REBASED:` — the caller (`auto_merge_rebase`) then
+refuses to claim `rebased=true` and the loud line names the zero-jobs run.
 """
 from __future__ import annotations
 
@@ -53,10 +62,12 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import gh_json_fields  # noqa: E402  (the ONE gh --json field contract — issue #1158)
 from env_int import env_int  # noqa: E402  (one reading of an integer setting — issue #487)
 
 try:  # the ONE definition of the markers this script writes (scripts/bot_markers.py, rule 6j)
@@ -72,6 +83,21 @@ REBASE_MARKER = marker_name("pr-health", "rebase_failed")
 #: holding the branch's own workflows for approval, so the runs exist and executed nothing.
 APPROVAL_HOLD_REASON = ("pipelines HELD FOR APPROVAL (every run on its head commit is "
                         "`action_required` — GitHub executed no jobs)")
+
+#: The workflow whose JOBS a rebased PR head must schedule (issue #1616). A push that moves a
+#: branch and creates a run with ZERO jobs is the #1115 ghost: `gh pr checks` answers "no
+#: checks reported" and `auto-merge` can never land the head.
+QA_VALIDATE_WORKFLOW = "qa-validate.yml"
+#: Bounded wait for the pushed head's OWN run to appear before CI scheduling is called UNPROVEN.
+#: Short enough to keep a sweep round fast, long enough for a real scheduler to create the run.
+CI_VERIFY_WAIT_SECONDS = 60
+CI_VERIFY_INTERVAL_SECONDS = 3
+#: Built through the ONE gh field contract (rule 6d): `make lint`'s scan reads every
+#: `gh … --json` request in `scripts/`, so a field list this module spells by hand would be a
+#: finding. Assembled HERE, once, for the two requests the CI proof makes.
+_CI_RUN_FIELDS = gh_json_fields.request(
+    "run list", "databaseId,headBranch,headSha,workflowName,status,conclusion,createdAt,url")
+_CI_JOBS_FIELDS = gh_json_fields.request("run view", "jobs")
 
 #: How to get a silent PR moving again, in the order that works: fetch the branch, bring it up
 #: to the base, push to the PR'S HEAD — which is not necessarily the local branch's name.
@@ -423,6 +449,18 @@ def resolve_generated_conflicts(wt: Path) -> tuple[bool, str]:
     return True, ", ".join(kept)
 
 
+def github_repo_slug(origin_url: str) -> str | None:
+    """`owner/name` when the origin is a github.com HTTPS remote, else None (issue #1616).
+
+    The SAME reading `pat_push_url` uses, so the two can never disagree about which remotes are
+    GitHub's: a local fixture remote and an ssh remote answer None, and the CI proof below is
+    skipped for them — there is no GitHub run to read.
+    """
+    m = re.match(r"^https://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$",
+                 str(origin_url or "").strip(), re.I)
+    return f"{m.group(1)}/{m.group(2)}" if m else None
+
+
 def pat_push_url(origin_url: str, pat: str) -> str | None:
     """Rewrite a github.com HTTPS origin into an owner-PAT-authenticated push URL
     (issue #1115). Returns None when the PAT is empty or the origin is not a
@@ -430,13 +468,90 @@ def pat_push_url(origin_url: str, pat: str) -> str | None:
     so the seam cannot silently redirect a push somewhere unverified."""
     if not pat:
         return None
-    m = re.match(r"^https://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", origin_url.strip(), re.I)
-    if not m:
-        return None
-    return f"https://oauth2:{pat}@github.com/{m.group(1)}/{m.group(2)}.git"
+    slug = github_repo_slug(origin_url)
+    return f"https://oauth2:{pat}@github.com/{slug}.git" if slug else None
 
 
-def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
+def _ci_gh_json(argv: list[str], expect: str):
+    """One gh read for the CI proof (rule 6d): the argv is validated against the ONE field
+    contract BEFORE gh runs (issue #1158), and the ANSWER's shape is checked too — gh answers
+    `run list --json …` with an ARRAY and `run view --json jobs` with `{"jobs": […]}`. A wrong
+    shape is a loud failure, never a silent `[]` that would read as "no jobs scheduled"."""
+    problems = gh_json_fields.check_argv(argv)
+    if problems:
+        raise RuntimeError("gh --json asks for a field gh cannot answer: "
+                           + "; ".join(problems) + " (scripts/gh_json_fields.py, issue #1158)")
+    try:
+        r = subprocess.run(["gh", *argv], capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"gh is not runnable: {exc}") from exc
+    if r.returncode != 0:
+        raise RuntimeError(f"gh {' '.join(argv[:2])} failed: {r.stderr.strip()[:200]}")
+    data = json.loads(r.stdout or "null")
+    if expect == "array":
+        if isinstance(data, list):
+            return data
+        raise RuntimeError(f"gh {' '.join(argv[:2])} answered {type(data).__name__}, "
+                           "not the array the CI proof reads")
+    if isinstance(data, dict) and isinstance(data.get(expect), list):
+        return data[expect]
+    raise RuntimeError(f"gh {' '.join(argv[:2])} answered no '{expect}' array "
+                       f"(got {type(data).__name__})")
+
+
+def verify_rebased_ci(repo: str, head: str, head_sha: str, *,
+                      wait_seconds: int = CI_VERIFY_WAIT_SECONDS) -> tuple[bool, str]:
+    """True ONLY when the pushed head's OWN qa-validate run carries >0 jobs (issue #1616).
+
+    The #1115 ghost, measured again on 2026-11-24 (PR #1607 run 45419443908, PR #1608 run
+    45419383942): a rebase push under a credential GitHub will not start jobs for leaves the
+    branch's newest run `action_required` with ZERO jobs. Pushing through the owner PAT is the
+    fix; READING the new head's run back is the PROOF — a green log line is not evidence.
+
+    Polls for a bounded `wait_seconds` (the scheduler is usually seconds behind the push), then
+    answers False with the reason: a matched run with zero jobs (the ghost), a matched run whose
+    jobs could not be read, or no run for this exact sha at all (`UNPROVEN`). Never True on a
+    guess, and never on a DIFFERENT sha's run — a stale head's green run must not vouch for the
+    rebased one.
+    """
+    deadline = time.monotonic() + max(0, int(wait_seconds))
+    pending = ""
+    while True:
+        try:
+            runs = _ci_gh_json(
+                ["run", "list", "--repo", repo, "--workflow", QA_VALIDATE_WORKFLOW,
+                 "--branch", head, "--limit", "20", "--json", _CI_RUN_FIELDS],
+                expect="array")
+        except (RuntimeError, ValueError) as exc:
+            pending = f"could not read the run list ({exc})"
+        else:
+            match = next((r for r in runs if str(r.get("headSha") or "") == str(head_sha)), None)
+            if match is None:
+                seen = ", ".join(str(r.get("headSha") or "?")[:12] for r in runs[:3]) or "none"
+                pending = (f"no {QA_VALIDATE_WORKFLOW} run for {str(head_sha)[:12]} yet "
+                           f"(newest on the branch: {seen})")
+            else:
+                run_id = match.get("databaseId")
+                try:
+                    jobs = _ci_gh_json(
+                        ["run", "view", str(run_id), "--repo", repo, "--json", _CI_JOBS_FIELDS],
+                        expect="jobs")
+                except (RuntimeError, ValueError) as exc:
+                    return False, (f"run {run_id} on {str(head_sha)[:12]} was found but its jobs "
+                                   f"could not be read ({exc}) — CI scheduling is UNPROVEN")
+                if jobs:
+                    return True, (f"{QA_VALIDATE_WORKFLOW} run {run_id} on "
+                                  f"{str(head_sha)[:12]} carries {len(jobs)} job(s)")
+                return False, (f"{QA_VALIDATE_WORKFLOW} run {run_id} on {str(head_sha)[:12]} "
+                               f"carries ZERO jobs "
+                               f"({match.get('conclusion') or match.get('status')}) — the #1115 "
+                               "ghost: nothing scheduled the merge gate")
+        if time.monotonic() >= deadline:
+            return False, f"{pending} after {max(0, int(wait_seconds))}s — CI scheduling is UNPROVEN"
+        time.sleep(CI_VERIFY_INTERVAL_SECONDS)
+
+
+def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
     """Rebase origin/<head> onto origin/master in a scratch worktree and push it back to
     the PR's own HEAD branch (rule 6r: push to the PR's head, which re-triggers its CI).
 
@@ -446,13 +561,19 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
     (issue #1049 for `OPENSPEC.md`, issue #1601 for `ARCHITECTURE.md`'s block: the shared
     rebaser `pr_health.rebase_and_push` does both, so the weekly sweep and qa-validate's
     `auto-merge` gate can never disagree), and a conflict CONFINED to those two generated
-    paths is resolved by regeneration instead of stalling the branch."""
+    paths is resolved by regeneration instead of stalling the branch.
+
+    Returns `(pushed, ci_verified, message)`. `ci_verified` is None when the origin is not a
+    github.com remote (a local fixture — there is no GitHub run to read); otherwise it is the
+    `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that exact
+    head's qa-validate run carries >0 jobs. A push that landed but did not schedule real CI is
+    reported as `pushed=True, ci_verified=False` — never as a clean rebase."""
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         wt = Path(td) / "wt"
         add = _git(cwd, "worktree", "add", "--detach", str(wt), f"refs/remotes/origin/{head}")
         if add.returncode != 0:
-            return False, f"worktree add failed: {add.stderr.strip()[:120]}"
+            return False, None, f"worktree add failed: {add.stderr.strip()[:120]}"
         try:
             rb = _git(wt, "rebase", "refs/remotes/origin/master")
             resolved = ""
@@ -460,18 +581,21 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
                 ok, note = resolve_generated_conflicts(wt)
                 if not ok:
                     _git(wt, "rebase", "--abort")
-                    return False, note
+                    return False, None, note
                 resolved = note
             regen_ok, regen_note = regenerate_index(wt)
             if not regen_ok:
-                return False, f"{regen_note} — branch left untouched (nothing was pushed)"
+                return False, None, f"{regen_note} — branch left untouched (nothing was pushed)"
             arch_ok, arch_note = regenerate_architecture(wt)
             if not arch_ok:
-                return False, f"{arch_note} — branch left untouched (nothing was pushed)"
+                return False, None, f"{arch_note} — branch left untouched (nothing was pushed)"
             # A rebase REWRITES the branch history, so the push must be a lease push:
             # --force-with-lease pinned to the remote tip THIS run just fetched. If anyone
             # moved the branch since the fetch, the lease fails and nothing is overwritten.
             lease = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
+            # The RAW configured URL, not `remote get-url`: git applies insteadOf rewrites
+            # to get-url's output, which would hide a github origin behind a transport alias.
+            origin_cfg = _git(cwd, "config", "--get", "remote.origin.url").stdout.strip()
             # (issue #1115) THE PUSH CARRIES THE OWNER PAT IDENTITY when the CI step provided
             # one. Measured ghost runs (runs/43839409260, 43839409495, 44004650575): this push,
             # done under the job-token checkout credential, left the resulting PR `pull_request`
@@ -485,9 +609,6 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
             push_target, push_identity = "origin", "checkout-credential"
             pat = (os.environ.get("GIT_PUSH_PAT") or "").strip()
             if pat:
-                # The RAW configured URL, not `remote get-url`: git applies insteadOf rewrites
-                # to get-url's output, which would hide a github origin behind a transport alias.
-                origin_cfg = _git(cwd, "config", "--get", "remote.origin.url").stdout.strip()
                 rewritten = pat_push_url(origin_cfg, pat)
                 if rewritten:
                     push_target, push_identity = rewritten, "owner-pat"
@@ -497,12 +618,21 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
                 err = push.stderr.strip()[:120]
                 if pat:
                     err = err.replace(pat, "***")  # rule 3d: the token never reaches a log
-                return False, f"push failed: {err}"
+                return False, None, f"push failed: {err}"
             note = ""
             if resolved:
                 note = f" (resolved the generated conflict in {resolved})"
-            return True, ("rebased onto origin/master and pushed to the PR head" + note
-                          + regen_note + arch_note + f" (push identity: {push_identity})")
+            msg = ("rebased onto origin/master and pushed to the PR head" + note
+                   + regen_note + arch_note + f" (push identity: {push_identity})")
+            # (issue #1616) THE PROOF: a pushed head is only a landed rebase when its OWN
+            # qa-validate run carries jobs. Read it back from GitHub through the ONE gh field
+            # contract; skipped for a non-github origin (a fixture has no run to read).
+            slug = github_repo_slug(origin_cfg)
+            if slug is None:
+                return True, None, msg
+            pushed_sha = _git(wt, "rev-parse", "HEAD").stdout.strip()
+            ci_ok, ci_note = verify_rebased_ci(slug, head, pushed_sha)
+            return True, ci_ok, f"{msg}; {ci_note}"
         finally:
             _git(cwd, "worktree", "remove", "--force", str(wt))
 
@@ -524,8 +654,16 @@ def run_rebaser(cwd: Path, prs: list[dict]) -> list[dict]:
         elif behind is False:
             outcomes.append({**step, "done": "already current"})
         else:
-            ok, msg = rebase_and_push(cwd, step["head"])
-            outcomes.append({**step, "done": ("REBASED: " if ok else "kept: ") + msg})
+            pushed, ci_verified, msg = rebase_and_push(cwd, step["head"])
+            if pushed and ci_verified is False:
+                # (issue #1616) the branch MOVED but its own qa-validate run carries no jobs —
+                # say so plainly instead of reporting a clean `REBASED:` the PR cannot rely on.
+                outcomes.append({**step, "done": f"REBASED but CI UNVERIFIED: {msg}",
+                                 "ci_verified": False})
+            elif pushed:
+                outcomes.append({**step, "done": f"REBASED: {msg}", "ci_verified": True})
+            else:
+                outcomes.append({**step, "done": "kept: " + msg})
     return outcomes
 
 
