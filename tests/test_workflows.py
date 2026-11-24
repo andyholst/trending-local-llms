@@ -3216,6 +3216,27 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
               target_line in make
               and f"$(PYTHON_RUN) {cmd}" in make,
               f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
+    # Slice 4 of #712 (#1494): the remaining PURE utility batch routes through the
+    # SAME seam, each still a pure `python3 scripts/…` command (no per-recipe
+    # docker harness). The two `self-archive-*` targets are deliberately NOT here
+    # — they need a `GIT_COMMON_DIR` mount added to PYTHON_RUN (#712 Slice 4b).
+    slice4 = {
+        "architecture-refresh: python-env-image": "python3 scripts/architecture_bot.py --write",
+        "openspec-record-pr: python-env-image":
+            "python3 scripts/openspec_record_pr.py --issue \"$(ISSUE)\" --pr \"$(PR)\"",
+        "check-agent-skills: python-env-image": "python3 scripts/check_agent_skills.py check",
+        "agent-skills-report: python-env-image": "python3 scripts/check_agent_skills.py report",
+        "cron-install-check: python-env-image": "python3 scripts/cron_install_check.py",
+        "vetted-performance: python-env-image": "python3 scripts/vetted_performance.py $(ARGS)",
+        "secret-output-report: python-env-image": "python3 scripts/check_secret_output.py report",
+        "scrub-log: python-env-image":
+            "python3 scripts/scrub_log.py --in \"$(FILE)\" $(if $(LOG_OUT),--out \"$(LOG_OUT)\",) --tail $(or $(TAIL),40)",
+    }
+    for target_line, cmd in slice4.items():
+        check(f"seam (Slice 4): {target_line.split(':')[0]} routes through $(PYTHON_RUN)",
+              target_line in make
+              and f"$(PYTHON_RUN) {cmd}" in make,
+              f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
     # The gh-bound and pre-image-ensure targets stay HOST-side (documented
     # exceptions) — they must NOT gain a PYTHON_RUN prefix in this slice. The
     # pr-closure.yml message gates join them in Slice 3: that workflow runs them
