@@ -221,7 +221,7 @@ case "$1" in
     if [[ "$2" == *"actions/runs?"* ]]; then
       if [ -e "$d/actions-runs-fail" ]; then echo "stub gh: actions/runs refused (502)" >&2; exit 1; fi
       url="$2"; wf=""; ev=""; page=""
-      q="${url#*\?}"
+      q="${url#*\\?}"
       IFS='&' read -ra parts <<< "$q"
       for p in "${parts[@]}"; do
         case "$p" in
