@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **488**
+Active changes: **1** · archived: **489**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `filer-window-marker-reconcile` | active | #1467 | — | [pipeline-failure-filing](openspec/changes/filer-window-marker-reconcile/specs/pipeline-failure-filing/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/filer-window-marker-reconcile/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -220,6 +219,7 @@ Active changes: **2** · archived: **488**
 | `filer-rediagnosis-log-expiry-986` | archived | #986 | #1011 | [alarms](openspec/changes/archive/filer-rediagnosis-log-expiry-986/specs/alarms/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/filer-rediagnosis-log-expiry-986/proposal.md) |
 | `filer-rediagnosis-seam-969` | archived | #969 | #985 | [alarms](openspec/changes/archive/filer-rediagnosis-seam-969/specs/alarms/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/filer-rediagnosis-seam-969/proposal.md) |
 | `filer-stamps-owed-row` | archived | #765 | #917 | [owed-row-ledger](openspec/changes/archive/filer-stamps-owed-row/specs/owed-row-ledger/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/filer-stamps-owed-row/proposal.md) |
+| `filer-window-marker-reconcile` | archived | #1467 | #1500 | [pipeline-failure-filing](openspec/changes/archive/filer-window-marker-reconcile/specs/pipeline-failure-filing/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/filer-window-marker-reconcile/proposal.md) |
 | `findings-check-shape-gate` | archived | #1454 | #1480 | [findings-enforcement](openspec/changes/archive/findings-check-shape-gate/specs/findings-enforcement/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/findings-check-shape-gate/proposal.md) |
 | `findings-dedup-index-lag` | archived | #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent" | #1193 | [findings-dedup](openspec/changes/archive/findings-dedup-index-lag/specs/findings-dedup/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/findings-dedup-index-lag/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |
