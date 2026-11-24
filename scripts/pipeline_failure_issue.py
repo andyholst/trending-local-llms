@@ -135,6 +135,18 @@ DISPATCH_ONLY_PIPELINES = ("security-scan.yml", "bot-health.yml")
 #: queued-alarm's own alarm, not to this filer).
 BAD_CONCLUSIONS = ("failure", "cancelled")
 
+#: The PR-blockage pass (#1164) spends `failure` runs ONLY (issue #1604). A `cancelled`
+#: PR-triggered run is SUPERSEDED by the newer head that replaced it — the queued/ghost alarms
+#: own that state — and a cancelled job carries no error text, so grouping it would file a
+#: content-free "blockage" issue, which rule 6r forbids. The master/schedule half keeps
+#: `BAD_CONCLUSIONS`: there a cancelled push run IS meaningful (a dropped cron delivery).
+PR_BLOCK_CONCLUSIONS = ("failure",)
+
+#: The digest of an EMPTY signature (`sha1("")[:12]`). A member whose steps, `make` targets and
+#: failing-region lines are ALL absent hashes to this key, so two unrelated branches collapse
+#: into one "blockage" (issue #1604). Such a member is skipped, never grouped.
+EMPTY_SHAPE = hashlib.sha1(b"").hexdigest()[:12]
+
 #: Bounded extraction (the issue must carry a diagnosis, not a log dump).
 MAX_LOG_TAIL_BYTES = 60_000
 MAX_ERROR_LINES = 40
@@ -486,7 +498,7 @@ def pr_block_candidates(runs: list[dict], cutoff: dt.datetime, open_branches: se
     """
     out: list[dict] = []
     for r in runs:
-        if r.get("conclusion") not in BAD_CONCLUSIONS:
+        if r.get("conclusion") not in PR_BLOCK_CONCLUSIONS:
             continue
         if r.get("headBranch") not in open_branches:
             continue
@@ -578,11 +590,18 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
 
     A group forms on EITHER key; groups with the same member set are emitted once, and the stable
     shape is the one recorded (it is the key the second axis exists to serve).
+
+    A member whose signature is EMPTY on BOTH axes (`EMPTY_SHAPE`) is skipped (issue #1604): it
+    carries no failing step, no `make` target and no quoted region line, so it has no error text to
+    file — and digesting `""` made two unrelated branches collapse into ONE content-free
+    "blockage" (`sha1("")`), which rule 6r forbids.
     """
     keyings: dict[str, dict[str, list[dict]]] = {"shape": {}, "exact_shape": {}}
     for it in items:
         branch = it["run"].get("headBranch")
         if branch not in open_branches:
+            continue
+        if it.get("shape") == EMPTY_SHAPE and it.get("exact_shape", it["shape"]) == EMPTY_SHAPE:
             continue
         for axis, table in keyings.items():
             table.setdefault(it.get(axis, it["shape"]), []).append(it)

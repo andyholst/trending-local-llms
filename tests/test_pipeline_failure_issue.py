@@ -1602,6 +1602,75 @@ def test_group_pr_blockages_drops_an_exact_subset_of_the_stable_group() -> None:
           len(gs) == 2, str(gs))
 
 
+def test_cancelled_and_empty_signature_runs_never_form_a_pr_blockage() -> None:
+    print("\nPR-blockage (#1604): a cancelled run and an EMPTY signature file nothing; "
+          "a real shared error still groups")
+    empty = F.failure_shape([], [], [])
+    # `getattr` keeps the RED run a set of named FAILs instead of an AttributeError crash.
+    pinned = getattr(F, "EMPTY_SHAPE", None)
+    check("#1604: the empty signature is the pinned empty digest",
+          empty == pinned == "da39a3ee5e6b", f"shape={empty} EMPTY_SHAPE={pinned}")
+    # (a) cancelled RUNS are not PR-blockage candidates at all — they are superseded by a newer
+    # head and carry no error text. `failure` runs stay candidates.
+    def run(run_id, branch, conclusion):
+        return {"databaseId": run_id, "headBranch": branch, "conclusion": conclusion,
+                "createdAt": NOW}
+    runs = [run(1, "ci/a", "cancelled"), run(2, "ci/b", "cancelled"),
+            run(3, "ci/c", "failure"), run(4, "ci/d", "success")]
+    kept = F.pr_block_candidates(runs, dt.datetime(2026, 11, 11, tzinfo=dt.timezone.utc),
+                                 {"ci/a", "ci/b", "ci/c", "ci/d"})
+    check("#1604: only the `failure` run survives the candidate filter",
+          [r["databaseId"] for r in kept] == [3], str(kept))
+    # (b) two EMPTY-signature failure runs on two open branches group NOTHING.
+    def item(run_id, branch, shape, exact=None):
+        return {"run": {"databaseId": run_id, "headBranch": branch},
+                "shape": shape, "exact_shape": shape if exact is None else exact}
+    open_branches = {"ci/a", "ci/b"}
+    check("#1604: two cancelled runs on two open PRs file nothing",
+          F.group_pr_blockages([item(1, "ci/a", empty), item(2, "ci/b", empty)],
+                               open_branches) == [], "grouped an empty signature")
+    check("#1604: two EMPTY-signature `failure` runs file nothing",
+          F.group_pr_blockages([item(1, "ci/a", empty, empty), item(2, "ci/b", empty, empty)],
+                               open_branches) == [], "grouped an empty signature")
+    # A member with a real step/target/region is never mistaken for the empty one.
+    real = F.failure_shape(["##[error]Process completed with exit code 1"],
+                           ["validate"], ["Run tests"])
+    check("#1604: a real signature is not the empty digest", real != empty, real)
+    grouped = F.group_pr_blockages([item(1, "ci/a", real), item(2, "ci/b", real)], open_branches)
+    check("#1604: two runs sharing a REAL error region still group into ONE blockage",
+          len(grouped) == 1 and grouped[0]["branches"] == ["ci/a", "ci/b"], str(grouped))
+    # An empty member beside a real group must not drag a second branch into it.
+    mixed = F.group_pr_blockages([item(1, "ci/a", real), item(2, "ci/b", real),
+                                  item(3, "ci/c", empty)], {"ci/a", "ci/b", "ci/c"})
+    check("#1604: the empty member is dropped, the real two-PR group survives unchanged",
+          len(mixed) == 1 and mixed[0]["branches"] == ["ci/a", "ci/b"], str(mixed))
+
+
+def test_two_cancelled_open_pr_runs_file_no_pr_blockage_end_to_end() -> None:
+    print("\nPR-blockage (#1604): end to end through the REAL filer, two CANCELLED open-PR runs "
+          "file nothing")
+    cancelled = [dict(r, conclusion="cancelled") for r in PR_RUNS_REST[:2]]  # ci/a, ci/b
+    canned = dict(BASE_CANNED)
+    canned["window-qa-validate_yml-pull_request-p1.json"] = cancelled
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"}]
+    canned["jobs-700.json"] = PR_JOBS_IMAGE
+    canned["jobs-701.json"] = PR_JOBS_IMAGE
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger, "--dry")
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("#1604: the preview files NO pr-blockage issue for cancelled runs",
+              "WOULD FILE pr-blockage" not in proc.stdout, proc.stdout)
+        bodies = [p.read_text() for p in (tmp / "canned").glob("body-*.txt")]
+        check("#1604: no PR-blockage issue body was written",
+              not any("run=700" in b or "run=701" in b for b in bodies), str(bodies))
+        written = ledger.exists() and json.loads(ledger.read_text())["failures"] or []
+        check("#1604: no PR-triggered ledger row was appended",
+              [e for e in written if e.get("trigger") == "pull_request"] == [], str(written))
+
+
 PR_RUNS = [
     {"databaseId": 700, "workflowName": "qa-validate.yml", "name": "validate",
      "headBranch": "ci/a", "headSha": "d" * 40, "event": "pull_request",
@@ -2304,6 +2373,8 @@ def main() -> int:
     test_one_state_gate_defect_on_two_branches_files_once_not_zero()
     test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
     test_group_pr_blockages_drops_an_exact_subset_of_the_stable_group()
+    test_cancelled_and_empty_signature_runs_never_form_a_pr_blockage()
+    test_two_cancelled_open_pr_runs_file_no_pr_blockage_end_to_end()
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
     test_pr_blockage_dry_run_previews_without_writing()
     test_pr_blockage_log_read_budget_is_bounded_and_announced()
