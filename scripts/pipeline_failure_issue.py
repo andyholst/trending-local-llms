@@ -26,6 +26,14 @@ in the ledger `data/pipeline_failures.json` it:
      `make issue-message-check` parses it;
   5. appends the ledger entry (append-only, rule 3b: an entry is never rewritten or removed).
 
+The master/schedule half groups by STABLE ERROR CLASS (issue #1557): a recurring state-gate red
+produced 48 near-identical issues in one sweep (38 naming the SAME `OpenSpec gate` step), because
+the loop keyed on the run id alone. Concluded-bad runs in the window are grouped on the SAME seam
+the PR-blockage half uses (#1476) — `failure_shape`: the failing step names + the `make` targets +
+the FAILING REGION's own lines with every run-specific token collapsed, with `exact_failure_shape`
+as the second axis — and ONE issue is filed per class per window, naming every member run, while
+EACH member still appends its own ledger row (append-only, rule 3b: no existing value is lost).
+
 Dedup is the ledger (run id) plus a scan of issues (open OR closed) carrying the marker: one run
 files once, ever. A log fetch that fails after one retry is recorded in the ledger as UNDIAGNOSED
 with the reason — loudly, never silently — and the issue body then says the log was unreadable
@@ -608,6 +616,42 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
                        for h in out)]
 
 
+def group_failure_classes(items: list[dict]) -> list[dict]:
+    """Group concluded-bad runs by STABLE error class — ONE issue per class per window (#1557).
+
+    The master/schedule half filed one issue PER RUN, so a recurring state-gate red became dozens
+    of near-identical issues: measured 2026-11-24, one sweep opened #1506–#1553 and 38 of them named
+    the SAME `OpenSpec gate` step. The class key is the SAME seam the PR-blockage half already uses
+    (#1476) — `failure_shape`, the failing step names + the `make` targets + the FAILING REGION's
+    own lines with every run-specific token collapsed — with `exact_failure_shape` as the second
+    axis, so a defect whose region is quoted apart on two runs still groups while two defects that
+    share GitHub's boilerplate stay distinct.
+
+    No threshold here (unlike `PR_BLOCK_MIN_PRS`): a class of ONE run files exactly as it did
+    before, a class of N files once. Groups whose member runs are a strict SUBSET of another
+    group's are dropped — ONE defect, ONE issue — the same dedup #1565 added for the PR half.
+    """
+    keyings: dict[str, dict[str, list[dict]]] = {"shape": {}, "exact_shape": {}}
+    for it in items:
+        for axis, table in keyings.items():
+            table.setdefault(it.get(axis, it["shape"]), []).append(it)
+    out: list[dict] = []
+    seen: set[tuple[int, ...]] = set()
+    for axis in ("shape", "exact_shape"):
+        for _key, members in keyings[axis].items():
+            ids = tuple(sorted(int(m["run"]["databaseId"]) for m in members))
+            if ids in seen:
+                continue
+            seen.add(ids)
+            ordered = sorted(members, key=lambda m: int(m["run"]["databaseId"]))
+            out.append({"shape": ordered[0]["shape"], "axis": axis, "members": ordered})
+    out.sort(key=lambda g: int(g["members"][0]["run"]["databaseId"]))
+    return [g for g in out
+            if not any({int(m["run"]["databaseId"]) for m in g["members"]}
+                       < {int(m["run"]["databaseId"]) for m in h["members"]}
+                       for h in out)]
+
+
 def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path: Path,
                         dry: bool, now: dt.datetime, known: set, already: set,
                         markers: dict | None = None,
@@ -1098,7 +1142,8 @@ def step_provenance(job: dict, steps: list[str] | None, region: str | None) -> s
 def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
                  log_error: str | None, when: dt.datetime,
                  steps: list[str] | None = None, region: str | None = None,
-                 branches: list[str] | None = None) -> str:
+                 branches: list[str] | None = None,
+                 members: list[int] | None = None) -> str:
     marker = bot_markers.start_marker(
         "queued-alarm", when, run=run["databaseId"], kind="failure")
     repro = " ".join(f"make {t}" for t in targets[:3]) if targets else \
@@ -1112,6 +1157,13 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
     scope = (f" This failure shape blocks {len(branches)} OPEN pull requests: "
              f"{', '.join('`' + b + '`' for b in branches)} (issue #1476)."
              if branches else "")
+    # Issue #1557: the master/schedule half files ONE issue per STABLE ERROR CLASS, so the body
+    # names every other run the same class was measured on — otherwise the thread records one run
+    # while the ledger alone carries the class scope. Optional and additive: a caller naming no
+    # members composes today's body verbatim.
+    scope += (f" The SAME error class was measured on {len(members)} further run(s) in this "
+              f"window: {', '.join('`' + str(m) + '`' for m in members)} (issue #1557)."
+              if members else "")
 
     parts = [
         pr_body.ISSUE_PATTERN_MARKER,
@@ -1166,11 +1218,13 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
 def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[str],
                log_error: str | None, when: dt.datetime,
                steps: list[str] | None = None, region: str | None = None,
-               branches: list[str] | None = None) -> dict:
+               branches: list[str] | None = None,
+               members: list[int] | None = None) -> dict:
     title = (f"tech-debt: {run.get('workflowName')} / {job.get('name')} failed "
              f"(run {run['databaseId']}"
              + (f", {' + '.join(targets[:3])}" if targets else "") + ")")
-    body = compose_body(run, job, block, targets, log_error, when, steps, region, branches)
+    body = compose_body(run, job, block, targets, log_error, when, steps, region, branches,
+                        members)
     out = _gh("issue", "create", "--repo", repo, "--title", title, "--body", body,
               "--label", LABEL)
     url = out.stdout.strip()
@@ -1959,6 +2013,10 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     runs = _dedupe_runs(runs, reconciled)
 
     filed = 0
+    # Phase 1 — collect the diagnostics of every UNFILED run (issue #1557). The master/schedule
+    # half used to file inside this loop, one issue per run; grouping needs EVERY member's shape
+    # before the first issue is composed, so collection and filing are two phases.
+    items: list[dict] = []
     for run in sorted(runs, key=lambda r: r["databaseId"]):
         rid = int(run["databaseId"])
         if rid in known:
@@ -1992,39 +2050,59 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
             # block, and named on the issue when the block yields no `make` target.
             steps = failing_step_names(job)
             targets = failed_make_targets(block)
-            title_job = job.get("name") or "?"
-            if dry:
-                lines.append(
-                    f"WOULD FILE: run {rid} job {title_job} targets={targets or '-'} "
-                    f"steps={steps or '-'} region={region or '-'} "
-                    f"error_lines={len(block) or log_error}")
-                continue
-            issue = file_issue(repo, run, job, block, targets, log_error, now,
-                               steps=steps, region=region)
+            items.append({
+                "run": run, "job": job, "block": block, "region": region,
+                "targets": targets, "steps": steps, "log_error": log_error,
+                "shape": failure_shape(block, targets, steps),
+                "exact_shape": exact_failure_shape(block, targets, steps),
+            })
+    # Phase 2 — ONE issue per STABLE ERROR CLASS per window (issue #1557), oldest class first;
+    # EVERY member still appends its own ledger row (append-only, rule 3b).
+    for group in group_failure_classes(items):
+        members = group["members"]
+        first = members[0]
+        run = first["run"]
+        job = first["job"]
+        title_job = job.get("name") or "?"
+        member_ids = [int(m["run"]["databaseId"]) for m in members]
+        if dry:
+            lines.append(
+                f"WOULD FILE: class {group['shape']} on {len(member_ids)} run(s) "
+                f"{', '.join(str(i) for i in member_ids)} job {title_job} "
+                f"targets={first['targets'] or '-'} steps={first['steps'] or '-'} "
+                f"region={first['region'] or '-'} "
+                f"error_lines={len(first['block']) or first['log_error']}")
+            continue
+        issue = file_issue(repo, run, job, first["block"], first["targets"],
+                           first["log_error"], now, steps=first["steps"],
+                           region=first["region"], members=member_ids[1:])
+        for m in members:
+            m_run = m["run"]
+            m_job = m["job"]
             append_ledger(ledger_path, ledger, {
-                "run_id": rid, "workflow": run.get("workflowName"),
-                "job": title_job, "head_sha": run.get("headSha"), "run_url": run.get("url"),
-                "created_utc": run.get("createdAt"), "filed_utc": now.isoformat(),
-                "targets": targets, "issue_number": issue["number"],
+                "run_id": int(m_run["databaseId"]), "workflow": m_run.get("workflowName"),
+                "job": m_job.get("name"), "head_sha": m_run.get("headSha"),
+                "run_url": m_run.get("url"),
+                "created_utc": m_run.get("createdAt"), "filed_utc": now.isoformat(),
+                "targets": m["targets"], "issue_number": issue["number"],
                 "issue_url": issue["url"], "fix_pr": None, "guard": None,
-                "undiagnosed": log_error,
+                "undiagnosed": m["log_error"],
                 # Additive keys (rule 3b): the diagnosis names the step GitHub marked bad and the
                 # log region the quoted lines were taken from (issue #1098).
-                "failing_steps": steps, "error_region": region,
+                "failing_steps": m["steps"], "error_region": m["region"],
                 # THE DIAGNOSIS IS RECORDED IN THE ROW, not only in the issue body (issue #1136).
-                # A filed row whose log read succeeded stored `undiagnosed: None` and NO error
-                # block, so the ledger could not say whether ANY reader had ever diagnosed it:
-                # `rediagnose_pending` would re-fetch a row that was already diagnosed in this
-                # very sweep (and annotate its own issue), while a row stamped with `fix_pr` +
-                # `guard` and no block looked complete. Scrubbed through the SAME redactor as the
-                # issue body (rule 3f) — the ledger is a tracked file.
-                "error_excerpt": redact("\n".join(block))[0] if block else None,
+                # Scrubbed through the SAME redactor as the issue body (rule 3f).
+                "error_excerpt": redact("\n".join(m["block"]))[0] if m["block"] else None,
+                # Additive keys (rule 3b): the STABLE error class this row belongs to, and every
+                # member run of that class in the window (issue #1557).
+                "failure_class": group["shape"], "class_runs": member_ids,
             })
-            known.add(rid)
-            filed += 1
-            lines.append(f"FILED {issue['url']} (run {rid}, job {title_job}, "
-                         f"targets={targets or '-'}, steps={steps or '-'}, "
-                         f"region={region or '-'}, log_error={log_error or 'no'})")
+            known.add(int(m_run["databaseId"]))
+        filed += 1
+        lines.append(f"FILED {issue['url']} (class {group['shape']}, {len(member_ids)} run(s): "
+                     f"{', '.join(str(i) for i in member_ids)}, job {title_job}, "
+                     f"targets={first['targets'] or '-'}, steps={first['steps'] or '-'}, "
+                     f"region={first['region'] or '-'}, log_error={first['log_error'] or 'no'})")
     # The re-diagnosis pass (issue #969): every still-undiagnosed row gets its log re-read on
     # THIS sweep — including a row filed UNDIAGNOSED moments ago above (the in-memory ledger
     # already holds it), so a transient log outage is repaired within the same sweep.
