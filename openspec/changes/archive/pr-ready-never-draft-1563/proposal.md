@@ -1,6 +1,7 @@
 # Proposal: pr-ready-never-draft-1563
 
 Issue: #1563 — "Fleet: never open a draft PR — every fleet PR is ready for review"
+PR: #1570
 
 ## Why
 
