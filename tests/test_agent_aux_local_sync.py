@@ -307,6 +307,38 @@ def test_default_names_the_hermes_homes_own_config_and_all_profiles_covers_every
               "already clean" in out)
 
 
+def test_all_profiles_skips_hidden_directories_but_explicit_hidden_name_still_refused():
+    """A retired `.deleted/` home is archive, not a live profile (issue #1217).
+
+    The shipped enumerator took EVERY child directory of the profiles home, so
+    a host that kept retired profiles under `.deleted/` could never run
+    `--all-profiles`: the seam refused with `not a profile name: '.deleted'`
+    and nothing was synced. Hidden dirs are skipped in the sweep; naming one
+    EXPLICITLY is still refused, so the guard does not silently accept it.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        home.mkdir(parents=True)
+        live = _plant(home, "architect", stale_text())
+        retired = _plant(home, ".deleted", stale_text())
+        proc = run_sync("--all-profiles", "--profiles-home", str(home), root=root)
+        out = proc.stdout + proc.stderr
+        check("--all-profiles is green with a hidden archive directory",
+              proc.returncode == 0, out[-300:])
+        check("the live profile was synced",
+              STALE not in live.read_text(encoding="utf-8"), out[-200:])
+        check("the hidden home was NOT read or rewritten",
+              retired.read_text(encoding="utf-8") == stale_text(),
+              out[-200:])
+        check("the refusal does not mention the hidden name",
+              ".deleted" not in out, out[-200:])
+        explicit = run_sync("--profile", ".deleted", "--profiles-home", str(home), root=root)
+        check("an explicit hidden name is still refused (exit 2)",
+              explicit.returncode == 2 and "not a profile name" in explicit.stderr,
+              explicit.stderr[-200:])
+
+
 def test_a_lane_shaped_home_without_the_auxiliary_blocks_is_skipped_not_rewritten():
     with tempfile.TemporaryDirectory() as td:
         root = _scratch(Path(td))
@@ -403,6 +435,7 @@ def main() -> int:
     test_a_models_map_with_two_distinct_stale_keys_is_refused()
     test_one_refusal_writes_nothing_anywhere_even_when_other_homes_are_clean_syncs()
     test_default_names_the_hermes_homes_own_config_and_all_profiles_covers_every_home()
+    test_all_profiles_skips_hidden_directories_but_explicit_hidden_name_still_refused()
     test_a_lane_shaped_home_without_the_auxiliary_blocks_is_skipped_not_rewritten()
     test_no_target_and_a_missing_home_are_refusals()
     test_no_credential_is_required_and_none_is_ever_read()
