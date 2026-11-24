@@ -1,6 +1,7 @@
 # Proposal: findings-mixed-none-refusal
 
 Issue: #1662
+PR: #1663
 
 ## Why
 

@@ -7,4 +7,4 @@
 - [~] AGENTS.md §8 row extended to name the mixed-shape guard — blocked: rule 3c human sign-off (AGENTS.md protected in a headless leg); declared via the owed-row finding in `findings/1662.md`
 - [x] `make openspec-index` regenerated; `make openspec-check` green
 - [x] fast offline gates green (`make lint` rc 0, the targeted module 91/0) and the findings file `findings/1662.md` written
-- [ ] PR opened with the five-section body and `Closes #1662`; the change archived/recorded on the branch; CI monitored
+- [x] PR #1663 opened with the five-section body and `Closes #1662`; the change recorded/archived on the branch; CI monitored
