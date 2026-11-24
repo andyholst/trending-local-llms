@@ -89,6 +89,9 @@ GATES: dict[str, tuple[str, str]] = {
     # The comment/CI/merge monitor is deterministic repo-owned code (issue #1266).
     # No keeper regenerates its protocol, so a red master goes to the alarm.
     "watch-monitor": ("alarm", "master-alarm"),
+    # Issue #1610 (report-only seam): the offline contract runs in `validate`; it writes
+    # nothing, so a red master goes to the alarm — no keeper regenerates a protocol.
+    "stale-claim-sweep": ("alarm", "master-alarm"),
     "lint": ("alarm", "master-alarm"),
     "check-commit-authorship": ("alarm", "master-alarm"),
     "pr-closure": ("alarm", "master-alarm"),
