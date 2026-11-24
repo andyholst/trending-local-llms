@@ -89,6 +89,31 @@ LOG_TEXT = """2026-11-11T20:04:00Z ##[group]Run make validate
 2026-11-11T20:06:03Z ##[error]Process completed with exit code 2.
 """
 
+#: The measured shape of qa-validate run 45240782844, which filed #1459: earlier regions hold a
+#: PASSING module's chatter, and the LAST `##[error]` region — a thin CI shell step, not a test
+#: module — holds only the two lines that diagnose the run. Issue #1466: those two lines must be
+#: quoted FIRST, with the chatter after an explicit filler marker.
+THIN_REGION_LOG = "\n".join([
+    "2026-11-23T18:50:40Z ##[group]Run make test",
+    "2026-11-23T18:50:41Z   FAIL: m1: engines not ordered newest-date-first",
+    "2026-11-23T18:50:42Z PASSED 199 | FAILED 0",
+    "2026-11-23T18:50:43Z ##[endgroup]",
+    "2026-11-23T18:50:44Z ##[group]Run set -euo pipefail",
+    '2026-11-23T18:50:45Z echo "[merge-tree-index] FAIL: the index is stale on master + this PR."',
+    "2026-11-23T18:50:46Z ##[error]Process completed with exit code 1.",
+    "2026-11-23T18:50:47Z ##[endgroup]",
+]) + "\n"
+
+#: A failing region that genuinely HOLDS the diagnosis: EVERY error-shaped line is inside it, so
+#: nothing is filler and the block keeps today's order byte-for-byte.
+REGION_HOLDS_LOG = "\n".join([
+    "2026-11-23T18:50:44Z ##[group]Run make openspec-check",
+    "2026-11-23T18:50:45Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active)",
+    "2026-11-23T18:50:46Z make: *** [Makefile:367: openspec-index-check] Error 1",
+    "2026-11-23T18:50:47Z ##[error]Process completed with exit code 2.",
+    "2026-11-23T18:50:48Z ##[endgroup]",
+]) + "\n"
+
 STUB_GH = """#!/usr/bin/env bash
 # Stub `gh` for tests/test_pipeline_failure_issue.py: canned answers keyed off the subcommand,
 # everything it files captured under $PIPESTUB_DIR. The product under test never sees a mock —
@@ -465,6 +490,42 @@ def test_pure_halves_extract_targets_dedupe_and_cap() -> None:
     check("a make: *** [name] line yields the target name",
           F.failed_make_targets(["make: *** [architecture-check] Error 2"]) == ["architecture-check"],
           "")
+
+
+def test_a_thin_failing_region_is_quoted_before_earlier_chatter() -> None:
+    print("\n#1466: the failing region's own lines come FIRST; filler is marked, never ahead")
+    block = F.extract_error_block(THIN_REGION_LOG)
+    check("the two diagnosing lines open the block",
+          len(block) >= 2 and "merge-tree-index" in block[0] and "##[error]" in block[1],
+          str(block[:3]))
+    check("no passing-module chatter precedes the diagnosis",
+          not any(("PASSED 199" in line or "FAIL: m1" in line) for line in block[:2]), str(block[:2]))
+    marker = next((i for i, line in enumerate(block) if line.startswith("[filer]")), None)
+    check("an explicit [filer] filler marker separates the region from the rest",
+          marker == 2, str(block))
+    check("the marker names how many filler lines follow and the region they are NOT from",
+          marker is not None and "2 further error-shaped line(s)" in block[marker]
+          and "Run set -euo pipefail" in block[marker],
+          block[marker] if marker is not None else "")
+    check("every chatter line sits AFTER the marker",
+          marker is not None and all(i > marker for i, line in enumerate(block)
+                                     if "PASSED 199" in line or "FAIL: m1" in line), str(block))
+    check("the block stays within the cap", len(block) <= F.MAX_ERROR_LINES, str(len(block)))
+    check("the filler marker is never read as a reproduction command",
+          F.failed_make_targets(block) == [], str(F.failed_make_targets(block)))
+
+
+def test_a_region_holding_the_diagnosis_keeps_today_s_order() -> None:
+    print("\n#1466: a region that genuinely holds the diagnosis keeps today's order, no filler")
+    block = F.extract_error_block(REGION_HOLDS_LOG)
+    expected = [
+        "2026-11-23T18:50:45Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active)",
+        "2026-11-23T18:50:46Z make: *** [Makefile:367: openspec-index-check] Error 1",
+        "2026-11-23T18:50:47Z ##[error]Process completed with exit code 2.",
+    ]
+    check("the block is exactly the region's lines in log order", block == expected, str(block))
+    check("no filler marker and no drop note are invented",
+          not any(line.startswith("[filer]") for line in block), str(block))
 
 
 def test_ledger_pr_body_is_generated_and_carries_no_closing_keyword() -> None:
@@ -1656,6 +1717,8 @@ def main() -> int:
     test_read_failures_exit_2_never_a_fake_clean()
     test_dry_run_previews_without_writing_anything()
     test_pure_halves_extract_targets_dedupe_and_cap()
+    test_a_thin_failing_region_is_quoted_before_earlier_chatter()
+    test_a_region_holding_the_diagnosis_keeps_today_s_order()
     test_the_makefile_line_target_form_normalises_to_the_bare_target()
     test_a_sweep_normalises_stored_rows_and_leaves_a_uniform_ledger_untouched()
     test_a_raise_renormalises_the_row_s_existing_warped_targets()

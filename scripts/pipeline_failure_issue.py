@@ -149,6 +149,14 @@ ANCHORED_DROP_NOTE = ("[filer] {kept}/{want} error-shaped line(s) of the failing
                       "MAX_ERROR_LINES={cap} (issue #1098).")
 DROP_NOTE = ("[filer] {dropped} further error-shaped line(s) were not quoted "
              "(cap MAX_ERROR_LINES={cap}); the failing step's own region was kept whole")
+#: The line `extract_error_block` inserts BETWEEN the failing step's own lines and the lines it
+#: quotes from OTHER step regions (issue #1466). A thin failing region (a CI shell step, not a test
+#: module) used to be padded with earlier passing-module chatter printed ABOVE the two lines that
+#: diagnose the run (#1459, filed from run 45240782844), so the filler is now announced as filler
+#: instead of being merged silently into log order. It starts with `[filer]`, so
+#: `failed_make_targets` never reads it as a reproduction command.
+FILLER_MARKER = ("[filer] --- {n} further error-shaped line(s) from OTHER step regions "
+                 "(not `{region}`) follow as FILLER context; they did not end the job ---")
 
 
 def _gh(*args: str, check: bool = True, stdin: str | None = None) -> subprocess.CompletedProcess:
@@ -621,12 +629,16 @@ def extract_error_block(log_text: str, job: dict | None = None) -> list[str]:
     The budget is filled in TIERS: (0) a strong shape inside the failing region, (1) a soft shape
     there, (2) a strong shape anywhere else, (3) a soft shape anywhere else — which is what a
     PASSING module prints (`FAIL: m1: engines not ordered newest-date-first`, `PASSED 199 | FAILED
-    0`), quoted only when room is left. Selection is by tier; presentation is log order; lines are
+    0`), quoted only when room is left. Selection is by tier; PRESENTATION is region-first (issue
+    #1466): the failing region's own lines come first (log order), then strong shapes elsewhere,
+    then chatter, and everything after the region is preceded by ONE `[filer] … FILLER …` marker so
+    filler is announced rather than merged silently into log order above the diagnosis. Lines are
     de-duped and each capped to 500 characters. When the cap forces lines out the block ENDS with a
     `DROP_NOTE` line naming how many were left out, so a truncated diagnosis is loud (rule 2).
-    Measured before this existed: 43 chatter lines consumed the whole 40-line budget on job
-    132845951479 and the `openspec-index-check` refusal — hits #43-#45 — was never quoted, so the
-    filed issue carried no reproduction command.
+    Measured before the region anchor existed: 43 chatter lines consumed the whole 40-line budget on
+    job 132845951479 and the `openspec-index-check` refusal — hits #43-#45 — was never quoted. The
+    anchor fixed SELECTION but not ORDER (#1466): run 45240782844 filed #1459 with a thin shell-step
+    region whose two diagnosis lines landed BELOW 25 earlier chatter lines.
 
     `job` is accepted so a caller that also wants `failing_step_names(job)` extracts in the same
     call; the extraction never depends on it and the one-argument call is unchanged. An empty block
@@ -653,7 +665,7 @@ def extract_error_block(log_text: str, job: dict | None = None) -> list[str]:
     in_fail_lines = {c[2] for c in candidates if c[0] in (0, 1)}
     limit = MAX_ERROR_LINES - 1 if unique_all > MAX_ERROR_LINES else MAX_ERROR_LINES
     seen: set[str] = set()
-    chosen: list[tuple[int, str]] = []
+    chosen: list[tuple[int, int, str]] = []
     for tier in (0, 1, 2):
         for cand_tier, idx, line in candidates:
             if cand_tier != tier or line in seen:
@@ -661,18 +673,49 @@ def extract_error_block(log_text: str, job: dict | None = None) -> list[str]:
             if len(chosen) >= limit:
                 break
             seen.add(line)
-            chosen.append((idx, line))
-    for _cand_tier, idx, line in chatter:
+            chosen.append((cand_tier, idx, line))
+    for cand_tier, idx, line in chatter:
         if len(chosen) >= limit or line in seen:
             continue
         seen.add(line)
-        chosen.append((idx, line))
-    chosen.sort(key=lambda c: c[0])
-    out = [line for _idx, line in chosen]
-    dropped = unique_all - len(seen)
+        chosen.append((cand_tier, idx, line))
+    if fail is None:
+        # No region to prefer (a truncated log): today's shape is kept byte-for-byte — every quoted
+        # line in log order, then the drop note.
+        out = [line for _tier, idx, line in sorted(chosen, key=lambda c: c[1])]
+    else:
+        # PRESENTATION is region-first (issue #1466). Selection above is unchanged; only the ORDER
+        # changes: the failing step's OWN lines first (log order), then strong shapes elsewhere,
+        # then chatter, with ONE marker announcing the filler.
+        core = sorted((c for c in chosen if c[0] in (0, 1)), key=lambda c: c[1])
+        rest_strong = sorted((c for c in chosen if c[0] == 2), key=lambda c: c[1])
+        rest_soft = sorted((c for c in chosen if c[0] == 3), key=lambda c: c[1])
+        presented: list[tuple[int, int, str]] = (
+            [(0, idx, line) for _tier, idx, line in core]
+            + [(1, idx, line) for _tier, idx, line in rest_strong]
+            + [(2, idx, line) for _tier, idx, line in rest_soft])
+        # Keep the block within MAX_ERROR_LINES once the marker and the drop note are counted; the
+        # lowest-priority filler tail is what loses room.
+        while True:
+            has_filler = any(rank > 0 for rank, _idx, _line in presented)
+            quoted_now = {line for _rank, _idx, line in presented}
+            reserve = (1 if has_filler else 0) + (1 if unique_all > len(quoted_now) else 0)
+            if len(presented) + reserve <= MAX_ERROR_LINES:
+                break
+            presented.pop()
+        out = []
+        inserted = False
+        for rank, _idx, line in presented:
+            if rank > 0 and not inserted:
+                out.append(FILLER_MARKER.format(
+                    n=sum(1 for r, _i, _l in presented if r > 0), region=fail["label"]))
+                inserted = True
+            out.append(line)
+    quoted = {line for line in out if not line.startswith("[filer]")}
+    dropped = unique_all - len(quoted)
     if dropped > 0:
         if fail is not None:
-            kept = len(in_fail_lines & seen)
+            kept = len(in_fail_lines & quoted)
             out.append(ANCHORED_DROP_NOTE.format(kept=kept, want=len(in_fail_lines),
                                                  region=fail["label"], dropped=dropped,
                                                  cap=MAX_ERROR_LINES))
