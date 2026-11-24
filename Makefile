@@ -501,8 +501,8 @@ openspec-index-drift: python-env-image ## Print the ONE root-index drift measure
 openspec-index-repair: python-env-image ## Classify a stale OPENSPEC.md against THIS tree and regenerate it when the drift is index-only (DRIFT=none|index-only; issue #304)
 	$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --classify-and-write
 
-openspec-index-repair-pr-body: python-env-image ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304)
-	@$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
+openspec-index-repair-pr-body: python-env-image ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304; RUN_GREEN=1/INDEX_DRIFT=<n> state the run's real conclusion, #1651)
+	@$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)" $(if $(filter 1,$(RUN_GREEN)),--run-green,) $(if $(INDEX_DRIFT),--index-drift "$(INDEX_DRIFT)",)
 
 # The sibling keeper for the OTHER way the OpenSpec gate goes red (issue #962,
 # measured on run 43610043055): an ACTIVE change that reached `master` as a bare

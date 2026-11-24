@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **535**
+Active changes: **1** · archived: **536**
 
 ## Active changes
 
@@ -301,6 +301,7 @@ Active changes: **1** · archived: **535**
 | `issue-queue-open-pr-window-1324` | archived | #1324 | #1325 | [issue-queue](openspec/changes/archive/issue-queue-open-pr-window-1324/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/issue-queue-open-pr-window-1324/proposal.md) |
 | `issue-review-bot` | archived | #179 | — | [issue-review](openspec/changes/archive/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/issue-review-bot/proposal.md) |
 | `issue-triage` | archived | #210 | — | [issue-triage](openspec/changes/archive/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/issue-triage/proposal.md) |
+| `keeper-body-reports-the-run-conclusion` | archived | #1651 | #1658 | [openspec-index](openspec/changes/archive/keeper-body-reports-the-run-conclusion/specs/openspec-index/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/keeper-body-reports-the-run-conclusion/proposal.md) |
 | `keeper-branch-closure-shape` | archived | #872 | #875 | [pr-lifecycle](openspec/changes/archive/keeper-branch-closure-shape/specs/pr-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-branch-closure-shape/proposal.md) |
 | `keeper-dedup-mergeable-960` | archived | #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it | #961 | [keeper-repair](openspec/changes/archive/keeper-dedup-mergeable-960/specs/keeper-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-dedup-mergeable-960/proposal.md) |
 | `keeper-dedupe-liveness` | archived | #1303 | #1306 | [keepers](openspec/changes/archive/keeper-dedupe-liveness/specs/keepers/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/keeper-dedupe-liveness/proposal.md) |

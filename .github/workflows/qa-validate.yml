@@ -720,7 +720,7 @@ jobs:
       group: index-repair
       cancel-in-progress: false
     steps:
-      - name: Checkout the exact master commit that went red
+      - name: Checkout the exact master commit the run validated (red or drifted-green)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 1
@@ -747,6 +747,12 @@ jobs:
           REPO: ${{ github.repository }}
           MASTER_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Issue #1651: the body must say what the cited run ACTUALLY concluded.
+          # A GREEN `validate` that only reported drift fires the drift clause;
+          # a red/skipped one fires `failure()`. Pass that verdict through the
+          # ONE output key the gate above publishes (rules 3d/6d — re-decide nothing).
+          RUN_GREEN: ${{ needs.validate.result == 'success' && '1' || '0' }}
+          INDEX_DRIFT: ${{ needs.validate.outputs.index_drift || '0' }}
         # ONE landing sequence (issue #869): the nothing-to-land case, the extra-changes
         # refusal, the #960 mergeable-only keeper dedupe, the agent-identity commit/push and
         # the body from `make openspec-index-repair-pr-body` all live in scripts/keeper_pr.py;
@@ -754,11 +760,12 @@ jobs:
         # Both generated files are owned so the keeper passes BOTH generated gates (#1339).
         run: |
           set -euo pipefail
+          BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL INDEX_DRIFT=$INDEX_DRIFT RUN_GREEN=$RUN_GREEN"
           make keeper-pr FILE="OPENSPEC.md ARCHITECTURE.md" BRANCH_PREFIX=ci/openspec-index-repair DEDUPE=1 \
             COMMIT_MESSAGE="chore(keeper): regenerate both generated artifacts after a master merge left them stale (refs #304)" \
             PR_TITLE="chore(keeper): repair both generated artifacts left stale by a master merge" \
             BODY_TARGET=openspec-index-repair-pr-body \
-            BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"
+            BODY_ARGS="$BODY_ARGS"
 
   # The keeper for the THIRD way the OpenSpec gate goes red (issue #962, measured on
   # run 43610043055 / push aec1410): an ACTIVE change reached `master` structurally

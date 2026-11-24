@@ -39,9 +39,16 @@ went red (the workflow carries the branch; the decision lives here, rule 6d):
       issue and carries NO closing keyword (rule 6e): the tracking issue is
       referenced (`refs #304`), never closed here.
 
+      The body names what the cited run ACTUALLY concluded, so it is true for both
+      of the keeper's triggers (issue #1651). `RUN_GREEN=1` means the run's
+      `validate` job stayed GREEN and only REPORTED drift, so the body says the run
+      was green; without it the run red at the OpenSpec gate. The drift number is
+      read from the same `index_drift` output key the `if:` clause reads — never
+      re-decided here (rule 6d).
+
 Local equivalent:
   make openspec-index-repair
-  make openspec-index-repair-pr-body MASTER_SHA=<sha> RUN_URL=<url>
+  make openspec-index-repair-pr-body MASTER_SHA=<sha> RUN_URL=<url> [RUN_GREEN=1]
 """
 from __future__ import annotations
 
@@ -140,21 +147,39 @@ def classify_and_write() -> int:
     return 3
 
 
-def compose_pr_body(master_sha: str, run_url: str) -> str:
+def compose_pr_body(master_sha: str, run_url: str, *, run_green: bool = False,
+                    index_drift: int | None = None) -> str:
     """Body for the index-repair keeper PR. It implements no issue, so it carries
-    NO closing keyword (rule 6e) — the tracking issue is referenced, never closed."""
+    NO closing keyword (rule 6e) — the tracking issue is referenced, never closed.
+
+    The FIRST sentence names what the cited run actually concluded (issue #1651):
+    a red `validate` (`run_green=False`) versus a GREEN `validate` that only
+    reported drift (`run_green=True`). Both are true of one of this keeper's two
+    triggers — `failure()` and the drift clause — so the record never claims a red
+    the run did not have (rules 2/6g). `index_drift` is the number the run's
+    `validate.outputs.index_drift` key carried; it is REPORTED, never decided here.
+    """
+    if run_green:
+        lead = (f"A `push`-to-`master` `qa-validate` run ({run_url}) stayed GREEN at the "
+                f"OpenSpec gate and only REPORTED index drift")
+        if index_drift is not None:
+            lead += f" (`drift={index_drift}`)"
+        lead += (" because `master` merged changes whose rows/archive state the committed "
+                 "`OPENSPEC.md` never learned about.")
+    else:
+        lead = (f"A `push`-to-`master` `qa-validate` run ({run_url}) went red at the "
+                f"OpenSpec gate because `master` merged changes whose rows/archive state "
+                f"the committed `OPENSPEC.md` never learned about.")
     parts = [
         "Generated index repair (issue #304).",
         "",
-        f"A `push`-to-`master` `qa-validate` run ({run_url}) went red at the OpenSpec gate "
-        f"because `master` merged changes whose rows/archive state the committed `OPENSPEC.md` "
-        f"never learned about. This branch carries exactly the regenerated file "
+        lead + f" This branch carries exactly the regenerated file "
         f"(`make openspec-index-repair` ran `scripts/openspec_index.py`'s generator against "
         f"the merged tree `{master_sha[:10]}` and classified the drift `index-only`).",
         "",
         "The job refuses to land unless the regenerated index is current by the generator's "
-        "own verdict and `OPENSPEC.md` is the ONLY changed file — a red with any other cause "
-        "keeps this PR from opening at all.",
+        "own verdict and `OPENSPEC.md` is the ONLY changed file — a validate with any other "
+        "cause keeps this PR from opening at all.",
         "",
         "This PR records generated-artifact drift; it implements no issue, so it closes none "
         "(rule 6e). The repair path itself is tracked in refs #304.",
@@ -170,14 +195,19 @@ def main(argv: list[str] | None = None) -> int:
                     help="print the keeper PR body (no closing keyword)")
     ap.add_argument("--master-sha", default=None, help="required for --print-pr-body")
     ap.add_argument("--run-url", default=None, help="required for --print-pr-body")
+    ap.add_argument("--run-green", action="store_true",
+                    help="the cited run's validate stayed GREEN and only reported drift (issue #1651)")
+    ap.add_argument("--index-drift", type=int, default=None,
+                    help="the drift count the run's validate reported (issue #1651)")
     a = ap.parse_args(argv)
 
     if a.print_pr_body:
         if not a.master_sha or not a.run_url:
             print("[index-repair] --print-pr-body needs --master-sha AND --run-url "
-                  "(the PR must name the exact red run it repairs)", file=sys.stderr)
+                  "(the PR must name the exact run it repairs)", file=sys.stderr)
             return 2
-        sys.stdout.write(compose_pr_body(a.master_sha, a.run_url))
+        sys.stdout.write(compose_pr_body(a.master_sha, a.run_url,
+                                         run_green=a.run_green, index_drift=a.index_drift))
         return 0
 
     if a.classify_and_write:
