@@ -1,6 +1,7 @@
 # Proposal: red-first-skill-discipline
 
 Issue: #1497
+PR: #1499
 
 ## Why
 
