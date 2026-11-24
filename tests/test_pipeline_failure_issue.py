@@ -1557,6 +1557,40 @@ def test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches() -> No
           F.group_pr_blockages([item(1, "ci/a", "s1")], {"ci/a"}) == [], "")
 
 
+def test_group_pr_blockages_drops_an_exact_subset_of_the_stable_group() -> None:
+    print("\ngrouping (#1565): an exact-shape group that is a strict subset of the stable group "
+          "must not become a SECOND issue for ONE defect")
+    def item(run_id, branch, shape, exact):
+        return {"run": {"databaseId": run_id, "headBranch": branch},
+                "shape": shape, "exact_shape": exact}
+    # ONE defect on THREE open branches: runs 1 and 2 quote a byte-identical whole block, so the
+    # exact axis groups them as {1, 2}; run 3 differs only in the chatter around the SAME failing
+    # region, so the stable axis groups all three as {1, 2, 3}. BOTH clear PR_BLOCK_MIN_PRS.
+    open_branches = {"ci/a", "ci/b", "ci/c"}
+    items = [item(1, "ci/a", "stable-defect", "exact-block-1"),
+             item(2, "ci/b", "stable-defect", "exact-block-1"),
+             item(3, "ci/c", "stable-defect", "exact-block-2")]
+    groups = F.group_pr_blockages(items, open_branches)
+    check("#1565: exactly ONE group survives, not the stable + exact pair",
+          len(groups) == 1, str(groups))
+    g = groups[0]
+    check("#1565: the survivor is the STABLE-shape group", g["axis"] == "shape", g["axis"])
+    check("#1565: it names ALL THREE blocked branches",
+          g["branches"] == ["ci/a", "ci/b", "ci/c"], str(g["branches"]))
+    check("#1565: its members are the three runs, oldest first",
+          [m["run"]["databaseId"] for m in g["members"]] == [1, 2, 3], str(g["members"]))
+    # A genuinely DIFFERENT defect (different run ids) is never collapsed into another group just
+    # because it shares an open branch: both survive. This is why the discriminator is the MEMBER
+    # RUN set, not the branch-name set.
+    two_defects = [item(1, "ci/a", "stable-a", "exact-a"),
+                   item(2, "ci/b", "stable-a", "exact-a"),
+                   item(3, "ci/c", "stable-b", "exact-b"),
+                   item(4, "ci/d", "stable-b", "exact-b")]
+    gs = F.group_pr_blockages(two_defects, {"ci/a", "ci/b", "ci/c", "ci/d"})
+    check("#1565: two DISTINCT defects over four branches stay TWO groups",
+          len(gs) == 2, str(gs))
+
+
 PR_RUNS = [
     {"databaseId": 700, "workflowName": "qa-validate.yml", "name": "validate",
      "headBranch": "ci/a", "headSha": "d" * 40, "event": "pull_request",
@@ -2100,6 +2134,7 @@ def main() -> int:
     test_failure_shape_groups_the_same_defect_and_separates_others()
     test_one_state_gate_defect_on_two_branches_files_once_not_zero()
     test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
+    test_group_pr_blockages_drops_an_exact_subset_of_the_stable_group()
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
     test_pr_blockage_dry_run_previews_without_writing()
     test_pr_blockage_log_read_budget_is_bounded_and_announced()
