@@ -106,6 +106,16 @@ LOG_TEXT = """2026-11-11T20:04:00Z ##[group]Run make validate
 2026-11-11T20:06:03Z ##[error]Process completed with exit code 2.
 """
 
+#: The scheduled cancellation's OWN log (job 904). It is deliberately DISTINCT from `LOG_TEXT`:
+#: under issue #1557's error-class grouping two runs whose diagnostics are identical are ONE
+#: class, so the push-to-master failure (run 100) and the schedule failure (run 104) must carry
+#: different failing steps/targets for the "each files its own issue" assertion below to stay true.
+LOG_ALARM = """2026-11-11T19:04:00Z ##[group]Run make sweep-alarm
+2026-11-11T19:04:01Z [sweep-alarm] FAIL: no delivery owed this window
+2026-11-11T19:05:00Z make: *** [Makefile:1384: sweep-alarm] Error 1
+2026-11-11T19:05:01Z ##[error]Process completed with exit code 1.
+"""
+
 #: The measured shape of qa-validate run 45240782844, which filed #1459: earlier regions hold a
 #: PASSING module's chatter, and the LAST `##[error]` region — a thin CI shell step, not a test
 #: module — holds only the two lines that diagnose the run. Issue #1466: those two lines must be
@@ -312,6 +322,7 @@ BASE_CANNED = {
     "window-qa-validate_yml-none-p1.json": RUNS_QA_REST,
     "jobs-100.json": JOBS_100,
     "jobs-104.json": JOBS_104,
+    "log-job-904.txt": LOG_ALARM,
     "log.txt": LOG_TEXT,
     "issues.json": [],
 }
@@ -2089,6 +2100,124 @@ def test_the_marker_scan_has_one_implementation() -> None:
               states == {"800": {"number": 1450, "state": "OPEN"}}, str(states))
 
 
+#: Issue #1557: N concluded-bad runs of ONE recurring state-gate defect in a single window. The
+#: logs differ ONLY in run-specific tokens and passing-module chatter — the exact shape a
+#: master-move race produces — so the STABLE failing-region anchor must make them ONE class.
+CLASS_LOG_A = "\n".join([
+    "2026-11-11T20:10:40Z ##[group]Run make test",
+    "2026-11-11T20:10:41Z   FAIL: m1: engines not ordered newest-date-first",
+    "2026-11-11T20:10:42Z PASSED 199 | FAILED 0",
+    "2026-11-11T20:10:43Z ##[endgroup]",
+    "2026-11-11T20:10:44Z ##[group]Run set -euo pipefail",
+    '2026-11-11T20:10:45Z echo "[merge-tree-index] FAIL: the index is stale on master + this PR."',
+    "2026-11-11T20:10:46Z ##[error]Process completed with exit code 1.",
+    "2026-11-11T20:10:47Z ##[endgroup]",
+]) + "\n"
+
+#: The SAME defect on another head: only the chatter line's count differs, which the skeleton
+#: collapses — one class, not two.
+CLASS_LOG_B = "\n".join([
+    "2026-11-11T20:20:40Z ##[group]Run make test",
+    "2026-11-11T20:20:41Z   FAIL: m1: engines not ordered newest-date-first",
+    "2026-11-11T20:20:42Z PASSED 211 | FAILED 0",
+    "2026-11-11T20:20:43Z ##[endgroup]",
+    "2026-11-11T20:20:44Z ##[group]Run set -euo pipefail",
+    '2026-11-11T20:20:45Z echo "[merge-tree-index] FAIL: the index is stale on master + this PR."',
+    "2026-11-11T20:20:46Z ##[error]Process completed with exit code 1.",
+    "2026-11-11T20:20:47Z ##[endgroup]",
+]) + "\n"
+
+#: A DIFFERENT defect (a different failing region/target) — must stay a SECOND class.
+OTHER_CLASS_LOG = "\n".join([
+    "2026-11-11T20:30:44Z ##[group]Run make openspec-check",
+    "2026-11-11T20:30:45Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active)",
+    "2026-11-11T20:30:46Z make: *** [Makefile:367: openspec-index-check] Error 1",
+    "2026-11-11T20:30:47Z ##[error]Process completed with exit code 2.",
+    "2026-11-11T20:30:48Z ##[endgroup]",
+]) + "\n"
+
+
+def _class_runs() -> list[dict]:
+    """Four concluded-bad push-to-master runs: 200/201/202 ONE class, 203 a second one."""
+    out = []
+    for rid, sha, ts in ((200, "a" * 40, "2026-11-11T20:00:00Z"),
+                         (201, "b" * 40, "2026-11-11T20:10:00Z"),
+                         (202, "c" * 40, "2026-11-11T20:20:00Z"),
+                         (203, "d" * 40, "2026-11-11T20:30:00Z")):
+        out.append({"databaseId": rid, "workflowName": "qa-validate.yml", "name": f"r{rid}",
+                    "headBranch": "master", "headSha": sha, "event": "push",
+                    "createdAt": ts, "conclusion": "failure", "status": "completed",
+                    "url": f"https://github.com/octo/repo/actions/runs/{rid}"})
+    return out
+
+
+def test_the_master_schedule_half_files_one_issue_per_error_class() -> None:
+    print("\nerror classes (#1557): N runs of ONE recurring defect file ONE issue + N ledger rows")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = {"window-qa-validate_yml-none-p1.json": [_rest(r) for r in _class_runs()],
+                  "issues.json": []}
+        for rid, jid in ((200, 930), (201, 931), (202, 932), (203, 933)):
+            canned[f"jobs-{rid}.json"] = {"jobs": [{"databaseId": jid, "name": "validate",
+                                                    "conclusion": "failure"}]}
+            canned[f"log-job-{jid}.txt"] = (OTHER_CLASS_LOG if rid == 203
+                                            else (CLASS_LOG_B if rid == 201 else CLASS_LOG_A))
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip())
+        check("exactly TWO issues: the 3-run class + the 1-run class", created == 2,
+              f"create-count={created}\n{proc.stdout}")
+        data = json.loads(ledger.read_text())
+        rows = {e["run_id"]: e for e in data["failures"]}
+        check("EVERY member run appends its OWN ledger row (append-only, rule 3b)",
+              set(rows) == {200, 201, 202, 203}, str(sorted(rows)))
+        check("the three same-class runs share ONE issue number",
+              len({rows[r]["issue_number"] for r in (200, 201, 202)}) == 1, str(rows[200]))
+        check("the different class is a DIFFERENT issue",
+              rows[203]["issue_number"] not in {rows[r]["issue_number"] for r in (200, 201, 202)},
+              str(rows[203]))
+        check("each row names its STABLE class and every class member (additive keys)",
+              all(rows[r].get("failure_class") and rows[r].get("class_runs") == [200, 201, 202]
+                  for r in (200, 201, 202)), str(rows[200]))
+        body = next(p.read_text() for p in (tmp / "canned").glob("body-*.txt")
+                    if "run=200" in p.read_text())
+        check("the class body names the OTHER member runs (#1557)",
+              "SAME error class was measured on 2 further run(s)" in body
+              and "`201`" in body and "`202`" in body, body[:400])
+        check("the FILED line names the whole class, not one run",
+              "class " in proc.stdout and "3 run(s): 200, 201, 202" in proc.stdout, proc.stdout)
+        # A re-run over the same ledger files NOTHING: every member run id is now known.
+        second = run_filer(env, ledger)
+        check("re-run over the appended ledger files NOTHING",
+              second.returncode == 0
+              and int((tmp / "canned" / "create-count").read_text().strip()) == 2, second.stdout)
+
+
+def test_the_error_class_dry_run_previews_without_writing() -> None:
+    print("\nerror classes dry-run: the class is previewed with its member count, nothing written")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = {"window-qa-validate_yml-none-p1.json": [_rest(r) for r in _class_runs()],
+                  "issues.json": []}
+        for rid, jid in ((200, 930), (201, 931), (202, 932), (203, 933)):
+            canned[f"jobs-{rid}.json"] = {"jobs": [{"databaseId": jid, "name": "validate",
+                                                    "conclusion": "failure"}]}
+            canned[f"log-job-{jid}.txt"] = (OTHER_CLASS_LOG if rid == 203
+                                            else (CLASS_LOG_B if rid == 201 else CLASS_LOG_A))
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger, "--dry")
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("dry run previews BOTH classes with their member counts",
+              "WOULD FILE: class " in proc.stdout and "3 run(s) 200, 201, 202" in proc.stdout
+              and "1 run(s) 203" in proc.stdout, proc.stdout)
+        check("dry run writes NO ledger and NO issue",
+              not ledger.exists()
+              and not (tmp / "canned" / "create-count").exists(), "")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -2145,6 +2274,8 @@ def main() -> int:
     test_the_main_pipeline_scan_walks_the_window_past_the_thirty_cap()
     test_the_pr_blockage_scan_uses_the_same_window_walk()
     test_the_marker_scan_has_one_implementation()
+    test_the_master_schedule_half_files_one_issue_per_error_class()
+    test_the_error_class_dry_run_previews_without_writing()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
