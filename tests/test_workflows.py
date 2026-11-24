@@ -139,7 +139,9 @@ def test_the_refresh_search_job_forwards_every_credential_its_leg_uses():
     back to the Firecrawl key alone, both fail here.
     """
     make = (ROOT / "Makefile").read_text()
-    pre = re.search(r"\n_search-preflight:\n((?:\t.*\n)+)", make)
+    # `#712 Slice 5 gave the pre-flight a `python-env-image` prerequisite, so tolerate a target
+    # line that carries one before the recipe block.
+    pre = re.search(r"\n_search-preflight:[^\n]*\n((?:\t.*\n)+)", make)
     declared = re.search(r'AGENT_SHELL_CHECK_KEYS="([A-Z_ ]+)"', pre.group(1)) if pre else None
     keys = declared.group(1).split() if declared else []
     check("refresh: the pre-flight declares the credentials the leg uses, and proves them",
