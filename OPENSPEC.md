@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **492**
+Active changes: **1** · archived: **493**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `os-agnostic-make-self-archive-seam` | active | #1495 | — | [python-env-self-archive-seam](openspec/changes/os-agnostic-make-self-archive-seam/specs/python-env-self-archive-seam/spec.md) | 10/10 | [proposal.md](openspec/changes/os-agnostic-make-self-archive-seam/proposal.md) |
 
 ## Archived changes
 
@@ -357,6 +356,7 @@ Active changes: **2** · archived: **492**
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
 | `os-agnostic-make-pr-body-batch-seam` | archived | #1399 | #1417 | [os-agnostic-make-pr-body-batch-seam](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/specs/os-agnostic-make-pr-body-batch-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/proposal.md) |
+| `os-agnostic-make-self-archive-seam` | archived | #1495 | #1556 | [python-env-self-archive-seam](openspec/changes/archive/os-agnostic-make-self-archive-seam/specs/python-env-self-archive-seam/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/os-agnostic-make-self-archive-seam/proposal.md) |
 | `owed-row-close-quote` | archived | #766 | #922 | [agents-guard-registry](openspec/changes/archive/owed-row-close-quote/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-row-close-quote/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
