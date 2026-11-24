@@ -577,6 +577,28 @@ def test_existing_refusals_keep_firing_alongside_the_thread_check() -> None:
               and any("another host" in r for r in both["reasons"]), str(both["reasons"]))
 
 
+# -------------------------------------------------------------------- rulebook pin
+def test_rulebook_section_7b_carries_the_dispatch_guard_bullet() -> None:
+    print("\nRulebook: §7b names the dispatch guard (#1416/#1458/#1569, #1586)")
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    region = text[text.index("## 7b."):text.index("## 8.")]
+    for needle in ("make dispatch-check", "already MERGED", "ACTIVE_LANE_CEILING",
+                   "another ACTIVE lane", "ANOTHER host"):
+        check(f"§7b names {needle!r}", needle in region,
+              "AGENTS.md §7b dropped the dispatch guard rule")
+
+
+def test_rulebook_section_8_carries_the_dispatch_guard_row() -> None:
+    print("\nRulebook: §8 carries the dispatch guard row (#1586)")
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    sec8 = text[text.index("## 8."):]
+    row = next((ln for ln in sec8.splitlines() if "tests/test_dispatch_guard.py" in ln), "")
+    check("§8 carries the tests/test_dispatch_guard.py row", bool(row),
+          "AGENTS.md §8 dropped the dispatch guard row")
+    for needle in ("make dispatch-check", "#1416", "#1569"):
+        check(f"§8 row names {needle!r}", needle in row, row)
+
+
 def main() -> int:
     test_open_issue_is_allowed()
     test_closed_issue_is_refused()
@@ -595,6 +617,8 @@ def main() -> int:
     test_cli_reads_a_recorded_thread_offline()
     test_make_forwards_the_machine_and_the_recorded_thread()
     test_existing_refusals_keep_firing_alongside_the_thread_check()
+    test_rulebook_section_7b_carries_the_dispatch_guard_bullet()
+    test_rulebook_section_8_carries_the_dispatch_guard_row()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
