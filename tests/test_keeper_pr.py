@@ -463,17 +463,20 @@ def test_a_current_mergeable_index_repair_keeper_is_live() -> None:
 def test_the_supersede_guard_is_red_on_the_base_revision() -> None:
     print("\n#1438 Done-when: the pre-change keeper_pr.py has no supersede path; a guard "
           "failing against it proves the new shape is real")
-    base_src = subprocess.run(
-        ["git", "show", "origin/master:scripts/keeper_pr.py"], cwd=ROOT,
-        capture_output=True, text=True, check=False)
-    if base_src.returncode != 0 or not base_src.stdout.strip():
-        check("base revision readable: source exists and is non-empty",
-              False, base_src.stderr)
-        return
+    # The pre-change module, PINNED as an immutable fixture recorded from
+    # origin/master @ ea823544. Reading it through `git show` answers EMPTY inside the
+    # test container for a linked worktree (the worktree's `.git` file points at a host
+    # path the container does not mount), which would make the negative assertion pass
+    # vacuously (rule 6c).
+    base_src = (ROOT / "tests" / "fixtures" / "keeper_pr_base_ea823544.py").read_text(encoding="utf-8")
+    check("base fixture readable: source exists and is non-empty", bool(base_src.strip()), "")
+    check("the base source has no supersede path (this guard is RED without the change)",
+          "superseded" not in base_src.lower(), "")
+    check("the head seam carries the supersede path", "superseded" in KEEPER.read_text(encoding="utf-8").lower(), "")
     root = Path(tempfile.mkdtemp())
     try:
         (root / "scripts").mkdir()
-        (root / "scripts" / "keeper_pr.py").write_text(base_src.stdout, encoding="utf-8")
+        (root / "scripts" / "keeper_pr.py").write_text(base_src, encoding="utf-8")
         (root / "agent_identity.py").write_text(
             "AGENT_NAME = 'Seed'\nAGENT_EMAIL = 'seed@example.com'\n", encoding="utf-8")
         sys.path.insert(0, str(root / "scripts"))
