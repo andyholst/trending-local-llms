@@ -3288,6 +3288,7 @@ def main() -> int:
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
     test_the_closure_check_reruns_when_the_pr_body_is_edited()
+    test_every_workflow_declares_an_explicit_scoped_concurrency_group()
     test_qa_validate()
     test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate()
     test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate()
@@ -3809,6 +3810,149 @@ def test_the_failure_filer_watches_the_bot_health_pipeline():
           "bot-health.yml" in pfi.MAIN_PIPELINES, pfi.MAIN_PIPELINES)
     check("bot-health.yml is declared dispatch-only in the filer",
           "bot-health.yml" in pfi.DISPATCH_ONLY_PIPELINES, pfi.DISPATCH_ONLY_PIPELINES)
+
+
+# ---------------------------------------------------------------------------
+# Issue #1560 — every workflow declares an explicit, scoped concurrency group
+# ---------------------------------------------------------------------------
+
+#: The two PR pipelines: a re-push CANCELS that PR's superseded run. Every other
+#: pipeline SERIALISES (queues) its own runs — dropping one would lose its work.
+PR_PIPELINES = ("qa-validate.yml", "pr-closure.yml")
+
+
+def _comment_above_concurrency(path: Path) -> str:
+    """The `#` comment block attached directly above a workflow's `concurrency:` key."""
+    lines = path.read_text().splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("concurrency:"):
+            out: list[str] = []
+            j = i - 1
+            while j >= 0 and (not lines[j].strip() or lines[j].lstrip().startswith("#")):
+                if lines[j].lstrip().startswith("#"):
+                    out.append(lines[j])
+                j -= 1
+            return "\n".join(reversed(out))
+    return ""
+
+
+_GROUP_TOKEN = re.compile(r"\$\{\{\s*(.*?)\s*\}\}")
+
+
+def _eval_group(template: str, ctx: dict) -> str:
+    """Resolve the flat `${{ a }}-${{ b }}-${{ c || d }}` group shape #1560 documents.
+
+    Only the shapes this repo writes are supported: a bare dotted path, or
+    `<path> || <path>` (the pull_request-number / github.ref fallback). An
+    unsupported expression is left unresolved on purpose, so a drifted template
+    FAILS the test instead of quietly testing a stale string.
+    """
+
+    def one(expr: str):
+        cur = ctx
+        for part in expr.split("."):
+            cur = cur.get(part) if isinstance(cur, dict) else None
+            if cur is None:
+                return None
+        return str(cur)
+
+    def sub(m: "re.Match[str]") -> str:
+        expr = m.group(1).strip()
+        if "||" in expr:
+            left, right = (x.strip() for x in expr.split("||", 1))
+            val = one(left) or one(right)
+        else:
+            val = one(expr)
+        return val if val is not None else ""
+
+    return _GROUP_TOKEN.sub(sub, template)
+
+
+def _group_ctx(workflow: str, event: str, *, pr: int | None = None,
+               ref: str = "refs/heads/master") -> dict:
+    """A minimal `github` context for the ONE group expression shape."""
+    ev: dict = {}
+    if pr is not None:
+        ev["pull_request"] = {"number": pr}
+    return {"github": {"workflow": workflow, "event_name": event, "event": ev, "ref": ref}}
+
+
+def test_every_workflow_declares_an_explicit_scoped_concurrency_group():
+    """Issue #1560 — the owner directive that a new push stops the previous CI run.
+
+    Every `.github/workflows/*.yml` must carry a top-level `concurrency:` block
+    with an explicit group and a real boolean `cancel-in-progress`, and that group
+    must be DOCUMENTED (a comment attached directly above it naming its scope and
+    its cancel choice). `qa-validate`/`pr-closure` are keyed per PR with
+    `cancel-in-progress: true`; the other ten serialise their own runs with false,
+    and no group reaches into another pipeline's or another purpose's runs.
+    """
+    files = sorted(WF.glob("*.yml"))
+    check("workflows: all 12 pipelines are scanned", len(files) == 12, [f.name for f in files])
+
+    groups: dict[str, str] = {}
+    for f in files:
+        wf = load(f.name)
+        conc = wf.get("concurrency")
+        check(f"{f.name}: carries a top-level concurrency block", isinstance(conc, dict), wf.get("concurrency"))
+        group = str((conc or {}).get("group", "")).strip()
+        check(f"{f.name}: group is explicit and non-empty", bool(group), group)
+        check(f"{f.name}: cancel-in-progress is a boolean, not a string",
+              isinstance((conc or {}).get("cancel-in-progress"), bool), conc)
+        doc = _comment_above_concurrency(f)
+        check(f"{f.name}: the group is documented where it is declared",
+              "cancel-in-progress" in doc and any(w in doc for w in ("group", "key", "scope")),
+              doc[-120:])
+        groups[f.name] = group
+
+    # --- the two PR pipelines: cancel a superseded run, per PR -----------------
+    for name in PR_PIPELINES:
+        wf = load(name)
+        g = groups[name]
+        check(f"{name}: the group is keyed by this workflow", "github.workflow" in g, g)
+        check(f"{name}: a pull_request is keyed by its PR number",
+              "github.event.pull_request.number" in g, g)
+        check(f"{name}: a non-PR event falls back to github.ref", "github.ref" in g and "||" in g, g)
+        check(f"{name}: a re-push cancels the superseded run",
+              wf["concurrency"]["cancel-in-progress"] is True, wf["concurrency"])
+
+    # --- the other ten: serialise, and never reach another purpose -------------
+    for f in files:
+        if f.name in PR_PIPELINES:
+            continue
+        wf = load(f.name)
+        check(f"{f.name}: cancel-in-progress stays FALSE (serialise, never drop a run)",
+              wf["concurrency"]["cancel-in-progress"] is False, wf["concurrency"])
+        g = groups[f.name]
+        if f.name == "issue-bot.yml":
+            check("issue-bot: the group is keyed per issue, with a sweep fallback",
+                  "github.event.issue.number" in g and "inputs.issue_number" in g and "'sweep'" in g, g)
+        else:
+            label = str(wf.get("name", ""))
+            check(f"{f.name}: the group is this workflow alone (never another pipeline's)",
+                  g == label, (g, label))
+
+    # Static groups are unique across the tree: no two purposes share one.
+    static = {f.name: groups[f.name] for f in files if "${{" not in groups[f.name]}
+    seen: dict[str, str] = {}
+    for name, g in static.items():
+        check(f"{name}: its static group is not shared with another workflow", g not in seen, (g, seen.get(g)))
+        seen[g] = name
+
+    # --- the property itself, resolved from the REAL templates -----------------
+    qa, pc = groups["qa-validate.yml"], groups["pr-closure.yml"]
+    r1560 = _eval_group(qa, _group_ctx("qa-validate", "pull_request", pr=1560, ref="refs/pull/1560/merge"))
+    r1561 = _eval_group(qa, _group_ctx("qa-validate", "pull_request", pr=1561, ref="refs/pull/1561/merge"))
+    push = _eval_group(qa, _group_ctx("qa-validate", "push"))
+    disp = _eval_group(qa, _group_ctx("qa-validate", "workflow_dispatch"))
+    other_pr = _eval_group(pc, _group_ctx("pr-closure", "pull_request", pr=1560, ref="refs/pull/1560/merge"))
+    resolved = r1560 + r1561 + push + disp + other_pr
+    check("qa-validate: a PR run resolves to a group named for that PR",
+          r1560.endswith("-pull_request-1560"), r1560)
+    check("no group expression is left unresolved", "${{" not in resolved, resolved)
+    check("a re-push cancels ONLY its own PR: another PR's group differs", r1560 != r1561, (r1560, r1561))
+    check("another purpose is never cancelled: push != dispatch", push != disp, (push, disp))
+    check("another pipeline is never cancelled: pr-closure != qa-validate", other_pr != r1560, (other_pr, r1560))
 
 
 if __name__ == "__main__":

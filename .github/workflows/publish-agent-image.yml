@@ -53,6 +53,9 @@ permissions:
   packages: write
 
 # One publish at a time; a second dispatch queues instead of racing the first.
+# The key is this workflow's own name — no other pipeline shares it — and
+# `cancel-in-progress` stays FALSE: a build already pushing an image must finish,
+# never be dropped mid-publish.
 concurrency:
   group: publish-agent-image
   cancel-in-progress: false

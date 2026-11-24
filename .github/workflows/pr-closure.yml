@@ -40,6 +40,23 @@ on:
 permissions:
   contents: read
 
+# ---- run cancellation: a re-push stops this PR's superseded run (#1560) -----
+#
+# Owner directive (2026-11-24): a new push must STOP the previous CI run for that
+# PR. Like `qa-validate`, this pipeline had NO `concurrency:` block, so a
+# re-push (or a body edit) left the previous check running.
+#
+# `cancel-in-progress: true` cancels THIS group's in-flight run when the next
+# one starts. The key carries the event name and the target: a `pull_request`
+# is keyed by its PR NUMBER, while `issues` and `push` fall back to
+# `github.ref` under their own event name — so an issue-body check never
+# cancels a PR check or a master push check, and no other PR's run is ever in
+# this group. Every run here is seconds long and read-only, so nothing of value
+# is lost when a superseded one is dropped.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Rule 6j: the guard is the FIRST job of every bot pipeline, before any secret is read.
   # `pull_request` is a repository event — GitHub starts it for the repository itself, so

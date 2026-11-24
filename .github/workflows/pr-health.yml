@@ -32,6 +32,11 @@ permissions:
   actions: read
   pull-requests: write
 
+# One sweep at a time: it reads EVERY open PR and repairs behind-and-clean bot
+# branches, so a second dispatch QUEUES instead of racing the first over the same
+# PR heads. The key is this workflow's own name — no other pipeline shares it —
+# and `cancel-in-progress` stays FALSE because a started sweep must finish rather
+# than leave a half-applied repair behind.
 concurrency:
   group: pr-health
   cancel-in-progress: false
