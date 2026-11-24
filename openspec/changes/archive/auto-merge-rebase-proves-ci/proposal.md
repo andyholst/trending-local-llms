@@ -1,6 +1,7 @@
 # Proposal: auto-merge-rebase-proves-ci
 
 Issue: #1616
+PR: #1631
 
 ## Why
 
