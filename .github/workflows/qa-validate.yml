@@ -578,6 +578,12 @@ jobs:
       # skips the squash — its event head is now stale (`--match-head-commit` could only refuse
       # it) — and the PR's CI on the new, index-current head lands the merge. Skipping is
       # green and honest: the step names it in the log.
+      #
+      # (#1646) The seam's OWN output is printed on FAILURE too. `OUT=$(make …)` under
+      # `set -euo pipefail` died AT the assignment, so a failing seam's diagnosis never reached
+      # the log — the step was red with nothing to read. The rc is captured beside the command
+      # (never by disabling errexit), the output is echoed, and only then does the step fail
+      # with the seam's own exit code.
       - name: Rebase a behind-and-clean bot branch and regenerate its index before the squash (#1049)
         if: steps.dnm-check.outputs.hold != 'true'
         id: auto-merge-rebase
@@ -590,13 +596,23 @@ jobs:
           # job-token checkout credential, and the PR's next pull_request runs were action_required
           # with ZERO jobs. Reads stay on the default token; only the git push gets the PAT, through
           # the scripts/pr_health.py rebaser seam, which never prints it (rule 3d).
+          #
+          # (#1646) that intent is NOT evidence: the seam also asserts from GitHub's OWN run record
+          # which credential class the push really used (actor/triggering_actor -> owner-pat vs
+          # checkout-credential) and prints `push_identity_proved=` beside it.
           GIT_PUSH_PAT: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
           # rule 3f: this step commits the regenerated index — set the agent identity first.
           make git-identity
-          OUT=$(make auto-merge-rebase PR="$PR_NUM" REPO="$REPO")
+          # (#1646) capture the rc beside the command: errexit must not swallow the seam's text.
+          SEAM_RC=0
+          OUT=$(make auto-merge-rebase PR="$PR_NUM" REPO="$REPO") || SEAM_RC=$?
           printf '%s\n' "$OUT"
+          if [ "$SEAM_RC" -ne 0 ]; then
+            echo "[auto-merge-rebase] FAILED with exit $SEAM_RC — the seam output above is the diagnosis (#1646)."
+            exit "$SEAM_RC"
+          fi
           # rule 3d: parse an allowlist of keys, never the whole stdout
           rebased=$(printf '%s\n' "$OUT" | sed -n 's/^rebased=//p' | tail -1)
           printf 'rebased=%s\n' "${rebased:-false}" >> "$GITHUB_OUTPUT"

@@ -58,10 +58,18 @@ _FAIL = 0
 #: A stub `gh`: `pr view` answers from $FAKE_PR; `run list`/`run view` answer the CI proof
 #: (issue #1616) from $FAKE_JOBS, with the branch's CURRENT sha read out of the fixture's bare
 #: origin ($STUB_ORIGIN) — i.e. exactly what the seam pushed, so a planted run matches or does
-#: not by the test's choice. Every `gh` argv is recorded in $GH_LOG so the request construction
-#: is asserted, and any other subcommand is loud.
+#: not by the test's choice; and `api repos/<o>/<r>/actions/runs/<id>` answers the push-identity
+#: read (issue #1646) from $FAKE_IDENTITY_FILE as `actor|type|triggering_actor`. Every `gh`
+#: argv is recorded in $GH_LOG so the request construction is asserted, and any other
+#: subcommand is loud.
 STUB_GH = """#!/bin/sh
 echo "gh $*" >> "$GH_LOG"
+case "$1" in
+  api)
+    if [ -n "$FAKE_IDENTITY_FAIL" ]; then echo "gh: no such run" >&2; exit 1; fi
+    cat "$FAKE_IDENTITY_FILE"
+    exit 0 ;;
+esac
 case "$1 $2" in
   "pr view") cat "$FAKE_PR" ;;
   "run list")
@@ -283,6 +291,8 @@ def _pr_json(*, head: str = HEAD_BRANCH, state: str = "open", draft: bool = Fals
 
 def _run_seam(clone: Path, pr_obj: dict, extra_env: dict | None = None, *,
               jobs: dict | list | None = None, origin: str | Path | None = None,
+              identity: tuple[str, str] | None = ("asimov-agent", "User"),
+              identity_fail: bool = False,
               ) -> tuple[subprocess.CompletedProcess, str]:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -294,12 +304,19 @@ def _run_seam(clone: Path, pr_obj: dict, extra_env: dict | None = None, *,
         (td / "jobs.json").write_text(json.dumps(
             jobs if jobs is not None
             else {"jobs": [{"id": 1, "status": "completed", "conclusion": "success"}]}))
+        # (issue #1646) GitHub's OWN record of who started that run, as the REST endpoint
+        # answers it: `actor.login|actor.type|triggering_actor.login`.
+        actor, actor_type = identity if identity is not None else ("", "")
+        (td / "identity.txt").write_text(f"{actor}|{actor_type}|{actor}\n")
         log = td / "gh.log"
         log.write_text("")
         env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
                "FAKE_PR": str(td / "pr.json"), "FAKE_JOBS": str(td / "jobs.json"),
+               "FAKE_IDENTITY_FILE": str(td / "identity.txt"),
                "GH_LOG": str(log),
                "STUB_ORIGIN": str(origin if origin is not None else clone)}
+        if identity_fail:
+            env["FAKE_IDENTITY_FAIL"] = "1"
         env.update(extra_env or {})
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--pr", "77", "--repo", "o/r", "--dir", str(clone)],
@@ -1312,6 +1329,170 @@ def test_ghost_run_and_push_identity_wiring():
           and "ghost_verdict" not in qa_text, "")
 
 
+# ---------------------------------------------------------------- issue #1646 guards --
+
+def _run_rebase_step(*, seam_rc: int, seam_out: str) -> tuple[int, str, str]:
+    """Execute the REAL qa-validate `auto-merge-rebase` step shell (issue #1646).
+
+    Only the `make` boundary is stood in for (rule 6m: the Makefile invocation is the
+    pipeline's own external tool call; the SHELL control flow under test is the shipped
+    artifact, byte for byte). The stub fails (or succeeds) with a distinctive diagnosis so a
+    guard can tell whether that text reached the job log.
+    """
+    doc = yaml.safe_load(WORKFLOW.read_text())
+    am = doc["jobs"]["auto-merge"]
+    step = next(s for s in am["steps"] if s.get("id") == "auto-merge-rebase")
+    td = Path(tempfile.mkdtemp())
+    try:
+        (td / "seam-out.txt").write_text(seam_out + "\n")
+        make = td / "make"
+        make.write_text(
+            "#!/bin/sh\n"
+            'echo "make $*" >> "$MAKE_LOG"\n'
+            'if [ "$1" = "git-identity" ]; then echo "[agent-identity] Asimov Agent"; exit 0; fi\n'
+            'cat "$SEAM_OUT_FILE"\n'
+            'exit "$FAKE_SEAM_RC"\n')
+        make.chmod(0o755)
+        out = td / "github-output.txt"
+        env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
+               "MAKE_LOG": str(td / "make.log"), "SEAM_OUT_FILE": str(td / "seam-out.txt"),
+               "FAKE_SEAM_RC": str(seam_rc),
+               "PR_NUM": "77", "REPO": "o/r", "GITHUB_OUTPUT": str(out)}
+        p = subprocess.run(["bash", "-e", "-c", step["run"]], env=env,
+                           capture_output=True, text=True)
+        ghout = out.read_text() if out.exists() else ""
+        return p.returncode, p.stdout + p.stderr, ghout
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_a_failing_rebase_seam_shows_its_own_output_in_the_job_log():
+    """(issue #1646) `OUT=$(make auto-merge-rebase …)` under `set -euo pipefail` died AT the
+    assignment, so a failing seam's diagnosis never reached the log — the step was red with
+    nothing to read (measured on PR #1631). The step now captures the rc beside the command,
+    echoes the seam's OWN output, and only then fails with that rc."""
+    diag = ("[auto-merge-rebase] FAIL: the rebase of ci/data-gap-77-x LANDED but "
+            "qa-validate.yml run 45453080984 carries ZERO jobs (action_required)")
+    rc, out, _gh = _run_rebase_step(seam_rc=1, seam_out=diag)
+    check("a failing seam step exits NON-ZERO (it does not launder the failure)", rc == 1,
+          f"rc={rc} out={out[-200:]}")
+    check("the seam's OWN diagnosis text reaches the job log", diag in out, out[-400:])
+    check("the step says it failed and with which rc", "FAILED with exit 1" in out, out[-400:])
+
+    rc0, out0, gh0 = _run_rebase_step(seam_rc=0, seam_out="verdict=rebased\nrebased=true")
+    check("a green seam still exits 0 and prints its output", rc0 == 0 and "rebased=true" in out0,
+          f"rc={rc0} {out0[-200:]}")
+    check("a green seam still publishes the allowlisted rebased= key (rule 3d)",
+          gh0.strip() == "rebased=true", gh0)
+
+
+def test_the_recorded_actor_selects_the_push_identity_label():
+    """(issue #1646) the label is chosen from GitHub's OWN actor, by ONE pure function — the
+    measured classes: a Bot actor is the Actions credential path (whichever token rode in),
+    a User of this repository is an outside-runner (owner/agent) push."""
+    import pr_health as PH
+
+    check("github-actions[bot] (Bot) -> checkout-credential",
+          PH.classify_push_identity("github-actions[bot]", "Bot") == PH.PUSH_IDENTITY_CHECKOUT)
+    check("the host owner-identity actor asimov-agent (User) -> owner-pat",
+          PH.classify_push_identity("asimov-agent", "User") == PH.PUSH_IDENTITY_OWNER)
+    check("the owner account login -> owner-pat",
+          PH.classify_push_identity("andyholst", "User") == PH.PUSH_IDENTITY_OWNER)
+    check("an unknown login is UNKNOWN — never guessed into a known class",
+          PH.classify_push_identity("some-outside-account", "User") == PH.PUSH_IDENTITY_UNKNOWN)
+    check("no actor at all is UNKNOWN", PH.classify_push_identity("", "") == PH.PUSH_IDENTITY_UNKNOWN)
+
+
+def _identity_probe(*, identity: tuple[str, str] | None = ("asimov-agent", "User"),
+                    fail: bool = False) -> subprocess.CompletedProcess:
+    """Drive the REAL `pr_health.read_run_identity` with only the external `gh` stood in
+    (rule 6m)."""
+    import pr_health as PH  # noqa: F401  (import resolves the module path for the child)
+    td = Path(tempfile.mkdtemp())
+    try:
+        (td / "gh").write_text(STUB_GH)
+        (td / "gh").chmod(0o755)
+        actor, actor_type = identity if identity is not None else ("", "")
+        (td / "identity.txt").write_text(f"{actor}|{actor_type}|{actor}\n")
+        env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
+               "PYTHONPATH": str(ROOT / "scripts"),
+               "FAKE_IDENTITY_FILE": str(td / "identity.txt"),
+               "GH_LOG": str(td / "gh.log"), "STUB_ORIGIN": str(td)}
+        if fail:
+            env["FAKE_IDENTITY_FAIL"] = "1"
+        code = ("import json, pr_health; "
+                "print(json.dumps(pr_health.read_run_identity('o/r', 99)))")
+        return subprocess.run([sys.executable, "-c", code], cwd=str(ROOT), env=env,
+                              capture_output=True, text=True)
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_the_identity_read_uses_githubs_own_record_and_never_guesses():
+    """(issue #1646) `gh run view --json` answers NO actor field at all (measured on gh
+    2.105.0), so the identity read goes through the REST run endpoint and REFUSES a silent
+    guess: a failed read raises, loudly, instead of returning a fabricated label."""
+    import pr_health as PH
+
+    ok = _identity_probe(identity=("github-actions[bot]", "Bot"))
+    check("the Bot record reads back with the checkout-credential label",
+          ok.returncode == 0
+          and json.loads(ok.stdout.strip())["recorded"] == PH.PUSH_IDENTITY_CHECKOUT
+          and json.loads(ok.stdout.strip())["actor"] == "github-actions[bot]",
+          (ok.stdout + ok.stderr)[:300])
+    user = _identity_probe(identity=("asimov-agent", "User"))
+    check("the User record reads back as owner-pat and names triggering_actor",
+          user.returncode == 0
+          and json.loads(user.stdout.strip())["recorded"] == PH.PUSH_IDENTITY_OWNER
+          and json.loads(user.stdout.strip())["triggering_actor"] == "asimov-agent",
+          (user.stdout + user.stderr)[:300])
+
+    bad = _identity_probe(fail=True)
+    check("an unreadable identity is a LOUD non-zero read, never a label",
+          bad.returncode != 0 and "no actor" not in bad.stdout
+          and "recorded" not in bad.stdout, (bad.stdout + bad.stderr)[-300:])
+
+
+def test_the_seam_proves_the_pushed_identity_from_githubs_own_run():
+    """(issue #1646) end to end over the REAL seam: the local step intends `owner-pat`
+    (GIT_PUSH_PAT is set) while GitHub's OWN record attributes the run to `github-actions[bot]`
+    — the exact PR #1631 shape. Both identities are printed, machine-readably, with a
+    `push_identity_proved=` verdict, so the two classes cannot be mistaken for each other."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        origin_url, _seed, clone = _fixture(td)
+        _must(clone, "remote", "set-url", "origin", "https://github.com/o/r.git")
+        _must(clone, "config", f"url.{origin_url}.insteadOf", "https://github.com/o/r.git")
+        _must(clone, "config", "--add", f"url.{origin_url}.insteadOf",
+              "https://oauth2:TESTPAT@github.com/o/r.git")
+        proc, _log = _run_seam(clone, _pr_json(), origin=origin_url,
+                               jobs={"jobs": []}, extra_env={"GIT_PUSH_PAT": "TESTPAT"},
+                               identity=("github-actions[bot]", "Bot"))
+        out = proc.stdout + proc.stderr
+        check("the #1646 shape: intent owner-pat, PROVEN checkout-credential, proved=false",
+              "push_identity=checkout-credential" in out
+              and "push_identity_intended=owner-pat" in out
+              and "push_identity_proved=false" in out, out[:500])
+        check("the proven identity line names GitHub's own actor and triggering_actor",
+              "actor=github-actions[bot] (Bot)" in out
+              and "triggering_actor=github-actions[bot]" in out, out[:500])
+        check("the ghost still refuses `rebased=true`", "rebased=false" in out, out[:500])
+
+    with tempfile.TemporaryDirectory() as td2:
+        td2 = Path(td2)
+        origin_url2, _seed2, clone2 = _fixture(td2, head="ci/data-gap-79-x")
+        _must(clone2, "remote", "set-url", "origin", "https://github.com/o/r.git")
+        _must(clone2, "config", f"url.{origin_url2}.insteadOf", "https://github.com/o/r.git")
+        _must(clone2, "config", "--add", f"url.{origin_url2}.insteadOf",
+              "https://oauth2:TESTPAT@github.com/o/r.git")
+        proc2, _log2 = _run_seam(clone2, _pr_json(head="ci/data-gap-79-x"),
+                                 origin=origin_url2,
+                                 extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        out2 = proc2.stdout + proc2.stderr
+        check("a User-recorded run matches the owner-pat intent -> proved=true",
+              "push_identity=owner-pat" in out2 and "push_identity_proved=true" in out2, out2[:500])
+
+
 def main():
     tests = [
         test_behind_clean_bot_branch_is_rebased_with_a_current_index,
@@ -1340,6 +1521,12 @@ def main():
         test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape,
         test_a_missing_gh_is_a_loud_read_failure_not_a_traceback,
         test_ghost_run_and_push_identity_wiring,
+        # (issue #1646) the CI rebase step's failure is diagnosable, and the push identity is
+        # asserted from GitHub's OWN run record — not from the local intent variable.
+        test_a_failing_rebase_seam_shows_its_own_output_in_the_job_log,
+        test_the_recorded_actor_selects_the_push_identity_label,
+        test_the_identity_read_uses_githubs_own_record_and_never_guesses,
+        test_the_seam_proves_the_pushed_identity_from_githubs_own_run,
     ]
     for t in tests:
         print(f"\n[{t.__name__}]")

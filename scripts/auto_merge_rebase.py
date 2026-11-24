@@ -52,8 +52,17 @@ generators actually changes its file. It prints `verdict=regenerated` and the SA
 stays `current`. A human-owned head is untouched either way: both regeneration verdicts are
 returned by `classify` only for a BOT-owned head (the §6s partition).
 
+AND THE PUSH IDENTITY IS ASSERTED FROM GITHUB'S OWN RECORD (issue #1646): the local intent
+variable (`push identity: owner-pat`) is not evidence — measured on PR #1631, a push made
+inside the job is recorded by GitHub as `github-actions[bot]` and still yields a 0-job
+`action_required` run. So every landed push also prints the actor/triggering_actor GitHub
+recorded for that run (`pr_health.read_run_identity`), the credential class it PROVES
+(`checkout-credential` vs `owner-pat`), the intended class beside it, and a machine-readable
+`push_identity_proved=true|false` — on BOTH the rebase and the regenerate-in-place path.
+
 Machine-readable output (the workflow parses an allowlist of keys, rule 3d): `verdict=<name>`
-and `rebased=true|false`. Exit codes: 0 for every report-only verdict and for a PROVED rebase;
+and `rebased=true|false` (plus `push_identity=`/`push_identity_intended=`/`push_identity_proved=`
+on any landed push). Exit codes: 0 for every report-only verdict and for a PROVED rebase;
 1 for a rebase that landed without scheduling real CI; 2 only when the PR itself could not be
 read.
 """
@@ -124,6 +133,23 @@ def fetch_merge_refs(cwd: Path, head: str) -> bool:
     return r.returncode == 0
 
 
+def _print_push_identity(identity: dict | None) -> None:
+    """(issue #1646) ASSERT the push identity from GitHub's OWN run record, beside the class
+    the local push claimed. Both are printed and both are machine-readable, so a
+    `checkout-credential`-class push can never be mistaken for an `owner-pat` one."""
+    if identity is None:
+        return
+    print(f"[auto-merge-rebase] push identity asserted from GitHub's own run "
+          f"{identity['run_id']}: actor={identity['actor']} "
+          f"({identity['actor_type']}), "
+          f"triggering_actor={identity['triggering_actor']} -> PROVED "
+          f"{identity['recorded']} (local intent: {identity['intended']})")
+    print(f"push_identity={identity['recorded']}")
+    print(f"push_identity_intended={identity['intended']}")
+    print("push_identity_proved="
+          + ("true" if identity["recorded"] == identity["intended"] else "false"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="qa-validate auto-merge pre-squash gate: classify the PR against the "
@@ -163,7 +189,8 @@ def main() -> int:
     rc = 0
 
     if verdict == "behind-and-clean-bot":
-        pushed, ci_verified, msg = rebase_and_push(cwd, head)
+        pushed, ci_verified, msg, identity = rebase_and_push(cwd, head)
+        _print_push_identity(identity)
         if pushed and ci_verified is not False:
             rebased = True
             new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
@@ -191,7 +218,8 @@ def main() -> int:
         # can archive a change while the PR waits and nothing refreshed the file. The squash
         # would land that drift green, so run the SAME regeneration core with no rebase — it
         # pushes ONLY when one of the two generators actually changes its file.
-        pushed, ci_verified, msg = regenerate_current(cwd, head)
+        pushed, ci_verified, msg, identity = regenerate_current(cwd, head)
+        _print_push_identity(identity)
         if pushed and ci_verified is not False:
             rebased = True
             new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
