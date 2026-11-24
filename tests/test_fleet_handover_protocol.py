@@ -137,6 +137,37 @@ def test_pr_rebase_soul_names_the_generated_artifact_pair() -> int:
     return failed
 
 
+def test_section_8_row_names_the_1361_generated_artifact_guard() -> int:
+    """Issue #1363: §8's fleet-handover row must name the #1361 generated-artifact guard."""
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    sec8 = text[text.index("## 8. Regression guards"):]
+    rows = [ln for ln in sec8.splitlines() if "tests/test_fleet_handover_protocol.py" in ln]
+    failed = 0
+    if len(rows) == 1:
+        print("ok   AGENTS.md §8 carries exactly one fleet-handover row")
+    else:
+        print(f"FAIL AGENTS.md §8 fleet-handover row count is {len(rows)}, expected 1")
+        failed += 1
+    row = rows[0] if rows else ""
+    for needle, why in (
+        ("test_pr_rebase_soul_names_the_generated_artifact_pair",
+         "the #1361 generated-artifact guard name"),
+        ("#1361", "issue #1361"),
+        ("#1362", "PR #1362"),
+    ):
+        if needle in row:
+            print(f"ok   §8 row names {why}")
+        else:
+            print(f"FAIL §8 row dropped {why}")
+            failed += 1
+    if row.startswith("| `") and row.endswith(" |"):
+        print("ok   §8 row keeps its two-cell table shape")
+    else:
+        print("FAIL §8 row lost its two-cell table shape")
+        failed += 1
+    return failed
+
+
 STATUS_RULE = "While a test or CI gate runs, post a status comment on the ISSUE"
 HOST_STAMP = "user@hostname"
 
@@ -195,6 +226,7 @@ def main() -> int:
     failed += test_next_issue_duty_is_documented()
     failed += test_the_planner_board_note_names_prs_awaiting_review()
     failed += test_pr_rebase_soul_names_the_generated_artifact_pair()
+    failed += test_section_8_row_names_the_1361_generated_artifact_guard()
     if failed:
         print(f"FAIL {failed}")
         return 1
