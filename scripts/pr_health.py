@@ -52,6 +52,15 @@ the ONE gh field contract) and reports the rebase as verified only when that run
 jobs. A ghost, an unreadable jobs answer or a run that never appears inside the bounded wait is
 reported as UNVERIFIED, never as a clean `REBASED:` — the caller (`auto_merge_rebase`) then
 refuses to claim `rebased=true` and the loud line names the zero-jobs run.
+
+AND IT NAMES WHICH CREDENTIAL CLASS ACTUALLY PUSHED (issue #1646): the local intent variable is
+not evidence. `read_run_identity` reads the run's OWN actor/`triggering_actor` from GitHub's
+REST record (`gh run view --json` has no actor field at all), `classify_push_identity` maps it
+to `checkout-credential` (a Bot actor — the Actions credential path, whichever token rode in)
+or `owner-pat` (a User of this repository, pushed from outside the runner), and every sync
+verdict prints the PROVEN identity beside the intended one with a `push_identity_proved=`
+verdict — so a reader can no longer mistake a checkout-credential-class push for the owner-PAT
+path the issue #1616 premise assumed.
 """
 from __future__ import annotations
 
@@ -72,10 +81,10 @@ from env_int import env_int  # noqa: E402  (one reading of an integer setting �
 
 try:  # the ONE definition of the markers this script writes (scripts/bot_markers.py, rule 6j)
     from bot_markers import marker_name, parse_markers, start_marker
-    from agent_identity import AGENT_LOGINS  # the ONE definition of the agent login (#1349)
+    from agent_identity import AGENT_LOGINS, person_of  # the ONE identity set (#1349/#445)
 except ImportError:  # run from the repo root
     from scripts.bot_markers import marker_name, parse_markers, start_marker
-    from scripts.agent_identity import AGENT_LOGINS
+    from scripts.agent_identity import AGENT_LOGINS, person_of
 
 MARKER = marker_name("pr-health", "alarm")
 REBASE_MARKER = marker_name("pr-health", "rebase_failed")
@@ -98,6 +107,17 @@ CI_VERIFY_INTERVAL_SECONDS = 3
 _CI_RUN_FIELDS = gh_json_fields.request(
     "run list", "databaseId,headBranch,headSha,workflowName,status,conclusion,createdAt,url")
 _CI_JOBS_FIELDS = gh_json_fields.request("run view", "jobs")
+
+#: The two push-credential classes this repository names (issues #1115/#1646). A sync push has
+#: TWO identities that must never be conflated: the one the LOCAL step INTENDED (`GIT_PUSH_PAT`
+#: set -> `owner-pat`, else `checkout-credential`) and the one GitHub's OWN run record PROVES
+#: for the run that push created. Issue #1646 measured that they disagree: a push made inside a
+#: CI job is recorded by GitHub as `github-actions[bot]` whatever the local intent variable said,
+#: so an operator reading `push identity: owner-pat` believed checks would run while the head's
+#: run sat `action_required` with zero jobs.
+PUSH_IDENTITY_CHECKOUT = "checkout-credential"
+PUSH_IDENTITY_OWNER = "owner-pat"
+PUSH_IDENTITY_UNKNOWN = "unknown"
 
 #: How to get a silent PR moving again, in the order that works: fetch the branch, bring it up
 #: to the base, push to the PR'S HEAD — which is not necessarily the local branch's name.
@@ -472,6 +492,61 @@ def pat_push_url(origin_url: str, pat: str) -> str | None:
     return f"https://oauth2:{pat}@github.com/{slug}.git" if slug else None
 
 
+def classify_push_identity(actor_login: str, actor_type: str) -> str:
+    """GitHub's OWN recorded run actor -> the push-credential class it PROVES (pure, rule 6d).
+
+    Measured on the issue #1646 heads through `gh api repos/…/actions/runs/<id>`:
+
+        run 45453080984 (PAT push inside the job)   actor=github-actions[bot] (Bot)
+        run 45462716032 (job-token push)             actor=github-actions[bot] (Bot)
+        run 45454578526 (host owner-identity push)   actor=asimov-agent      (User)
+
+    A run GitHub attributes to a **Bot** was created by the Actions credential path — the
+    job-token checkout credential OR a PAT forwarded INTO the runner are indistinguishable
+    from the outside, and both are what a 0-job `action_required` head looks like. A run
+    attributed to a **User** of this repository (decided by `agent_identity.person_of`, the
+    ONE definition of who a person is — rule 3f/§7) was pushed with a real account
+    credential from OUTSIDE the runner. Anything else (no actor, an unknown login) is
+    `unknown`: reported, never guessed.
+    """
+    login = str(actor_login or "").strip()
+    kind = str(actor_type or "").strip().lower()
+    if kind == "bot" or login.endswith("[bot]"):
+        return PUSH_IDENTITY_CHECKOUT
+    if login and person_of(login) is not None:
+        return PUSH_IDENTITY_OWNER
+    return PUSH_IDENTITY_UNKNOWN
+
+
+def read_run_identity(repo: str, run_id) -> dict:
+    """GitHub's OWN record of WHO started a run — `{"actor", "actor_type",
+    "triggering_actor", "recorded"}` (issue #1646).
+
+    `gh run view --json` answers NO identity field: measured on this repo's CLI (gh
+    2.105.0), its `Available fields:` list for `run view` carries attempt/conclusion/…/jobs
+    but no `actor`, so an identity read built on it would die at RUN time. The REST run
+    endpoint answers `actor` and `triggering_actor`; that is the read used here.
+
+    Raises RuntimeError when the read fails or names no actor — never a silent guess, and
+    never a fabricated label: an unreadable identity is reported as such.
+    """
+    url = f"repos/{repo}/actions/runs/{run_id}"
+    argv = ["api", url, "--jq",
+            '.actor.login + "|" + (.actor.type // "") + "|" + '
+            '(.triggering_actor.login // "")']
+    try:
+        r = subprocess.run(["gh", *argv], capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"gh is not runnable: {exc}") from exc
+    if r.returncode != 0:
+        raise RuntimeError(f"gh api {url} failed: {r.stderr.strip()[:200]}")
+    parts = [p.strip() for p in (r.stdout or "").split("|")]
+    if len(parts) != 3 or not parts[0] or parts[0] == "null":
+        raise RuntimeError(f"gh api {url} answered no actor: {(r.stdout or '').strip()[:120]!r}")
+    return {"actor": parts[0], "actor_type": parts[1], "triggering_actor": parts[2],
+            "recorded": classify_push_identity(parts[0], parts[1])}
+
+
 def _ci_gh_json(argv: list[str], expect: str):
     """One gh read for the CI proof (rule 6d): the argv is validated against the ONE field
     contract BEFORE gh runs (issue #1158), and the ANSWER's shape is checked too — gh answers
@@ -500,7 +575,9 @@ def _ci_gh_json(argv: list[str], expect: str):
 
 
 def verify_rebased_ci(repo: str, head: str, head_sha: str, *,
-                      wait_seconds: int = CI_VERIFY_WAIT_SECONDS) -> tuple[bool, str]:
+                      wait_seconds: int = CI_VERIFY_WAIT_SECONDS,
+                      intended_identity: str | None = None
+                      ) -> tuple[bool, str, int | None, dict | None]:
     """True ONLY when the pushed head's OWN qa-validate run carries >0 jobs (issue #1616).
 
     The #1115 ghost, measured again on 2026-11-24 (PR #1607 run 45419443908, PR #1608 run
@@ -513,6 +590,12 @@ def verify_rebased_ci(repo: str, head: str, head_sha: str, *,
     jobs could not be read, or no run for this exact sha at all (`UNPROVEN`). Never True on a
     guess, and never on a DIFFERENT sha's run — a stale head's green run must not vouch for the
     rebased one.
+
+    Returns `(ok, note, run_id, identity)`: the matched run's id, and — issue #1646 — the
+    identity GitHub's OWN record proves for that run (`pr_health.read_run_identity`), which
+    the caller compares against `intended_identity` so a `checkout-credential`-class push can
+    never be mistaken for an `owner-pat` one. An unreadable identity is reported in the note
+    and returned as None, never guessed.
     """
     deadline = time.monotonic() + max(0, int(wait_seconds))
     pending = ""
@@ -532,26 +615,37 @@ def verify_rebased_ci(repo: str, head: str, head_sha: str, *,
                            f"(newest on the branch: {seen})")
             else:
                 run_id = match.get("databaseId")
+                identity = None
+                if intended_identity is not None:
+                    try:
+                        identity = read_run_identity(repo, run_id)
+                    except RuntimeError as exc:
+                        # loud, once (this branch returns below), never a silent guess
+                        print(f"[pr-health] note: could not read run {run_id}'s recorded "
+                              f"identity: {exc}", file=sys.stderr)
                 try:
                     jobs = _ci_gh_json(
                         ["run", "view", str(run_id), "--repo", repo, "--json", _CI_JOBS_FIELDS],
                         expect="jobs")
                 except (RuntimeError, ValueError) as exc:
                     return False, (f"run {run_id} on {str(head_sha)[:12]} was found but its jobs "
-                                   f"could not be read ({exc}) — CI scheduling is UNPROVEN")
+                                   f"could not be read ({exc}) — CI scheduling is UNPROVEN"), \
+                        run_id, identity
                 if jobs:
                     return True, (f"{QA_VALIDATE_WORKFLOW} run {run_id} on "
-                                  f"{str(head_sha)[:12]} carries {len(jobs)} job(s)")
+                                  f"{str(head_sha)[:12]} carries {len(jobs)} job(s)"), \
+                        run_id, identity
                 return False, (f"{QA_VALIDATE_WORKFLOW} run {run_id} on {str(head_sha)[:12]} "
                                f"carries ZERO jobs "
                                f"({match.get('conclusion') or match.get('status')}) — the #1115 "
-                               "ghost: nothing scheduled the merge gate")
+                               f"ghost: nothing scheduled the merge gate"), run_id, identity
         if time.monotonic() >= deadline:
-            return False, f"{pending} after {max(0, int(wait_seconds))}s — CI scheduling is UNPROVEN"
+            return False, f"{pending} after {max(0, int(wait_seconds))}s — CI scheduling is " \
+                         f"UNPROVEN", None, None
         time.sleep(CI_VERIFY_INTERVAL_SECONDS)
 
 
-def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
+def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str, dict | None]:
     """Rebase origin/<head> onto origin/master in a scratch worktree and push it back to
     the PR's own HEAD branch (rule 6r: push to the PR's head, which re-triggers its CI).
 
@@ -567,15 +661,17 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
     `auto-merge` gate can never disagree), and a conflict CONFINED to those two generated
     paths is resolved by regeneration instead of stalling the branch.
 
-    Returns `(pushed, ci_verified, message)`. `ci_verified` is None when the origin is not a
-    github.com remote (a local fixture — there is no GitHub run to read); otherwise it is the
-    `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that exact
-    head's qa-validate run carries >0 jobs. A push that landed but did not schedule real CI is
-    reported as `pushed=True, ci_verified=False` — never as a clean rebase."""
+    Returns `(pushed, ci_verified, message, identity)`. `ci_verified` is None when the origin
+    is not a github.com remote (a local fixture — there is no GitHub run to read); otherwise it
+    is the `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that
+    exact head's qa-validate run carries >0 jobs. A push that landed but did not schedule real
+    CI is reported as `pushed=True, ci_verified=False` — never as a clean rebase. `identity`
+    (issue #1646) is the pair a reader needs: what the LOCAL push claimed (`intended`) beside
+    what GitHub's OWN run record PROVES (`recorded`), or None when there was no push to read."""
     return sync_branch(cwd, head, rebase=True)
 
 
-def regenerate_current(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
+def regenerate_current(cwd: Path, head: str) -> tuple[bool, bool | None, str, dict | None]:
     """Regenerate the generated artifacts on an ALREADY-CURRENT bot head (#1645).
 
     A head that carries `origin/master` can still carry a generated file rendered against an
@@ -586,8 +682,9 @@ def regenerate_current(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
     seam (rule 6d) — which pushes ONLY when one of the two generators actually changes its
     file. An already-current pair pushes nothing.
 
-    Returns the SAME `(pushed, ci_verified, message)` shape as `rebase_and_push`, so the
-    caller's #1616 CI proof is identical on both paths."""
+    Returns the SAME `(pushed, ci_verified, message, identity)` shape as `rebase_and_push`, so
+    the caller's #1616 CI proof — and the #1646 identity assertion — are identical on both
+    paths."""
     return sync_branch(cwd, head, rebase=False)
 
 
@@ -630,7 +727,7 @@ def _push_to_pr_head(cwd: Path, wt: Path, head: str) -> tuple[str, str, str]:
     return origin_cfg, push_identity, ""
 
 
-def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | None, str]:
+def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | None, str, dict | None]:
     """The ONE sync core behind `rebase_and_push` and `regenerate_current`.
 
     A scratch worktree at `origin/<head>`, OPTIONALLY rebased onto `origin/master`, then BOTH
@@ -642,17 +739,19 @@ def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | Non
     two generated paths is resolved by taking the branch's side and regenerating instead of
     stalling the branch (issue #1601). Any other unmerged path is fix-loop/human work.
 
-    Returns `(pushed, ci_verified, message)`. `ci_verified` is None when the origin is not a
-    github.com remote (a local fixture — there is no GitHub run to read); otherwise it is the
-    `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that exact
-    head's qa-validate run carries >0 jobs. A push that landed but did not schedule real CI is
-    reported as `pushed=True, ci_verified=False` — never as a clean rebase."""
+    Returns `(pushed, ci_verified, message, identity)`. `ci_verified` is None when the origin
+    is not a github.com remote (a local fixture — there is no GitHub run to read); otherwise it
+    is the `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that
+    exact head's qa-validate run carries >0 jobs. A push that landed but did not schedule real
+    CI is reported as `pushed=True, ci_verified=False` — never as a clean rebase. `identity`
+    (issue #1646) carries what the LOCAL push claimed beside what GitHub's OWN run record
+    PROVES, or None when nothing was pushed."""
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         wt = Path(td) / "wt"
         add = _git(cwd, "worktree", "add", "--detach", str(wt), f"refs/remotes/origin/{head}")
         if add.returncode != 0:
-            return False, None, f"worktree add failed: {add.stderr.strip()[:120]}"
+            return False, None, f"worktree add failed: {add.stderr.strip()[:120]}", None
         try:
             resolved = ""
             if rebase:
@@ -661,21 +760,24 @@ def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | Non
                     ok, note = resolve_generated_conflicts(wt)
                     if not ok:
                         _git(wt, "rebase", "--abort")
-                        return False, None, note
+                        return False, None, note, None
                     resolved = note
             regen_ok, regen_note = regenerate_index(wt)
             if not regen_ok:
-                return False, None, f"{regen_note} — branch left untouched (nothing was pushed)"
+                return False, None, f"{regen_note} — branch left untouched (nothing was pushed)", \
+                    None
             arch_ok, arch_note = regenerate_architecture(wt)
             if not arch_ok:
-                return False, None, f"{arch_note} — branch left untouched (nothing was pushed)"
+                return False, None, f"{arch_note} — branch left untouched (nothing was pushed)", \
+                    None
             if not regen_note and not arch_note and not rebase:
                 # Nothing changed: the head is already merge-time-current. Never churn a
                 # branch for a regeneration that reproduced its own committed bytes.
-                return False, None, "the generated artifacts were already current on this head"
+                return False, None, "the generated artifacts were already current on this head", \
+                    None
             origin_cfg, push_identity, err = _push_to_pr_head(cwd, wt, head)
             if err:
-                return False, None, err
+                return False, None, err, None
             note = ""
             if resolved:
                 note = f" (resolved the generated conflict in {resolved})"
@@ -688,10 +790,21 @@ def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | Non
             # contract; skipped for a non-github origin (a fixture has no run to read).
             slug = github_repo_slug(origin_cfg)
             if slug is None:
-                return True, None, msg
+                return True, None, msg, None
             pushed_sha = _git(wt, "rev-parse", "HEAD").stdout.strip()
-            ci_ok, ci_note = verify_rebased_ci(slug, head, pushed_sha)
-            return True, ci_ok, f"{msg}; {ci_note}"
+            ci_ok, ci_note, run_id, read_identity = verify_rebased_ci(
+                slug, head, pushed_sha, intended_identity=push_identity)
+            identity = None
+            if read_identity is not None:
+                # (issue #1646) BOTH identities travel together: what the local push claimed
+                # and what GitHub's OWN record proves, so a reader sees a disagreement instead
+                # of guessing which credential class produced the run.
+                identity = {**read_identity, "intended": push_identity, "run_id": run_id}
+                msg += (f"; GitHub's own record of run {run_id}: "
+                        f"actor={identity['actor']} ({identity['actor_type']}), "
+                        f"triggering_actor={identity['triggering_actor']} -> push identity "
+                        f"{identity['recorded']} (local intent: {push_identity})")
+            return True, ci_ok, f"{msg}; {ci_note}", identity
         finally:
             _git(cwd, "worktree", "remove", "--force", str(wt))
 
@@ -713,14 +826,23 @@ def run_rebaser(cwd: Path, prs: list[dict]) -> list[dict]:
         elif behind is False:
             outcomes.append({**step, "done": "already current"})
         else:
-            pushed, ci_verified, msg = rebase_and_push(cwd, step["head"])
+            pushed, ci_verified, msg, identity = rebase_and_push(cwd, step["head"])
             if pushed and ci_verified is False:
                 # (issue #1616) the branch MOVED but its own qa-validate run carries no jobs —
                 # say so plainly instead of reporting a clean `REBASED:` the PR cannot rely on.
-                outcomes.append({**step, "done": f"REBASED but CI UNVERIFIED: {msg}",
-                                 "ci_verified": False})
+                # (issue #1646) carry BOTH identities: the intent and GitHub's own record.
+                outcome = {**step, "done": f"REBASED but CI UNVERIFIED: {msg}",
+                           "ci_verified": False}
+                if identity is not None:
+                    outcome["push_identity"] = identity["recorded"]
+                    outcome["push_identity_intended"] = identity["intended"]
+                outcomes.append(outcome)
             elif pushed:
-                outcomes.append({**step, "done": f"REBASED: {msg}", "ci_verified": True})
+                outcome = {**step, "done": f"REBASED: {msg}", "ci_verified": True}
+                if identity is not None:
+                    outcome["push_identity"] = identity["recorded"]
+                    outcome["push_identity_intended"] = identity["intended"]
+                outcomes.append(outcome)
             else:
                 outcomes.append({**step, "done": "kept: " + msg})
     return outcomes
