@@ -178,14 +178,17 @@ def merge_rendered(existing: str, rendered: str) -> tuple[str, list[str]]:
     return merged, problems
 
 
-def provision_one(root: Path, lane: str, home: Path, chain: AMC.Chain) -> tuple[int, Path | None]:
+def provision_one(root: Path, lane: str, home: Path, chain_or_rendered: AMC.Chain | str) -> tuple[int, Path | None]:
     """Copy ONE lane's rendered config into its profile home, backing up whatever was there."""
     src = root / "agents" / lane / CONFIG_REL
     if not src.is_file():
         print(f"[profile-provision] FATAL: agents/{lane}/{CONFIG_REL} does not exist — run "
               f"`make agent-profile-model-render` first (the chain renders it)", file=sys.stderr)
         return EXIT_UNDECIDABLE, None
-    rendered = AMC.render_lane(root, chain, lane)
+    # A caller that already rendered the bytes (issue #1229's prompt probe) still works; a chain
+    # caller gets the lane's declared append too (issue #1618). Additive, never a breaking switch.
+    rendered = (chain_or_rendered if isinstance(chain_or_rendered, str)
+                else AMC.render_lane(root, chain_or_rendered, lane))
     if src.read_text() != rendered:
         # The gate would red this lane; a live home must never receive what the gate refuses.
         print(f"[profile-provision] REFUSED: agents/{lane}/{CONFIG_REL} is not what the chain "

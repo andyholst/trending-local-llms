@@ -76,7 +76,7 @@ needed to move the board.
   lanes running them at once contend for one container VM). Owner directive 2026-11-23, tracked on #1423.
 - The planner still NEVER writes the tree and NEVER merges. Starting a lane is dispatch, not
   implementation; only `tll-implementer` writes, and `qa-validate` merges green.
-- The directive changes who starts the lanes, not the cadence: no new blind cron and no Actions schedule.
+- No cron and no Actions schedule: the directive changes who starts the lanes, not the cadence. Blind LLM dispatch is never scheduled; the owner-authorized, marker-gated watcher pair is the sole exception (see `references/watcher-trigger.md`).
 - **Pitfalls.** Pass `--yolo --accept-hooks`, or the lane hits `approvals.single_query_mode: deny` on
   `git push --force`. After a lane run, check the owner's checkout with `git status` — a lane's shell cwd
   is not automatically its worktree. A lane runs 30–70 min; monitor it with `process_manage` and do not
