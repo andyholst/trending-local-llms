@@ -92,7 +92,8 @@ sits at ~0% CPU in `sleep` polls.
 5. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
 6. Make the change in the worktree, run ONLY the fast offline checks (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module), PUSH, and confirm CI registered on the new SHA (`gh pr checks <n>`, `gh run view <id> --json jobs`). Full `make validate`, the whole `make test` and `make live-smoke` are CI-ONLY — never pre-run them locally. See `## Delivery procedure`.
 6. Do the lane work in `SOUL.md` and stop. Coordination lanes file or comment. Only `tll-implementer` writes the tree, and only after the planner names the issue.
-7. Post the result on the issue. The comment is the record.
+7. RED-first: every acceptance criterion the change adds is locked by a test that FAILS on `git show origin/master:<product-file>` and PASSES on the fixed head. RED-verify in a scratch tree cut at the fetched base with the new test overlaid, then a driver that imports only the new test functions, and run it against BOTH heads before committing. A test that cannot fail on the old code proves nothing; a local green that cannot fail on the base is a dead test (see the `test_*` never called from `main()` pitfall).
+8. Post the result on the issue. The comment is the record.
 
 ## This lane
 
