@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **515**
+Active changes: **2** · archived: **511**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `rulebook-findings-seam-row-1602` | active | #1602 | — | [rulebook](openspec/changes/rulebook-findings-seam-row-1602/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/rulebook-findings-seam-row-1602/proposal.md) |
 
 ## Archived changes
 
@@ -301,7 +302,6 @@ Active changes: **1** · archived: **515**
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
 | `land-forward-implementer-notes-1487` | archived | #1487 | #1489 | [forward-notes](openspec/changes/archive/land-forward-implementer-notes-1487/specs/forward-notes/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/land-forward-implementer-notes-1487/proposal.md) |
 | `land-forward-notes-1446` | archived | #1446 | #1448 | [fleet-host-sync-check](openspec/changes/archive/land-forward-notes-1446/specs/fleet-host-sync-check/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/land-forward-notes-1446/proposal.md) |
-| `land-forward-skill-notes-1559` | archived | #1559 | #1561 | [fleet-skills](openspec/changes/archive/land-forward-skill-notes-1559/specs/fleet-skills/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-forward-skill-notes-1559/proposal.md) |
 | `land-host-ahead-mirror-residual-1456` | archived | #1456 | #1465 | [fleet-lane-skill-mirrors](openspec/changes/archive/land-host-ahead-mirror-residual-1456/specs/fleet-lane-skill-mirrors/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/land-host-ahead-mirror-residual-1456/proposal.md) |
 | `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
@@ -317,7 +317,6 @@ Active changes: **1** · archived: **515**
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `live-smoke-merge-gate-claim` | archived | #1033 | #1135 | [architecture-job-behaviour-claim](openspec/changes/archive/live-smoke-merge-gate-claim/specs/architecture-job-behaviour-claim/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/live-smoke-merge-gate-claim/proposal.md) |
 | `local-endpoint-probe-1352` | archived | #1352 | #1353 | [local-endpoint-probe](openspec/changes/archive/local-endpoint-probe-1352/specs/local-endpoint-probe/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/local-endpoint-probe-1352/proposal.md) |
-| `make-hop-reachability-both-spellings-1596` | archived | #1596 | #1614 | [no-bare-host-python](openspec/changes/archive/make-hop-reachability-both-spellings-1596/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/make-hop-reachability-both-spellings-1596/proposal.md) |
 | `mark-untraceable-engine-build-prose-unverified` | archived | #883 | #1101 | [data-gap-analysis](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
 | `master-alarm-gate-extractor` | archived | #1281 | #1285 | [master-alarm-gate-extractor](openspec/changes/archive/master-alarm-gate-extractor/specs/master-alarm-gate-extractor/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/master-alarm-gate-extractor/proposal.md) |
@@ -450,11 +449,9 @@ Active changes: **1** · archived: **515**
 | `repair-a-conflicted-pr` | archived | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/archive/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/repair-a-conflicted-pr/proposal.md) |
 | `repair-in-flight-is-visible` | archived | #386 (a repair in flight is invisible in the job log) | — | [bot-agent-run-safety](openspec/changes/archive/repair-in-flight-is-visible/specs/bot-agent-run-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/repair-in-flight-is-visible/proposal.md) |
 | `review-pick-parse` | archived | #344 | — | [issue-review-queue](openspec/changes/archive/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/review-pick-parse/proposal.md) |
-| `rulebook-dispatch-guard-1586` | archived | #1586 | #1600 | [dispatch-guard](openspec/changes/archive/rulebook-dispatch-guard-1586/specs/dispatch-guard/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-dispatch-guard-1586/proposal.md) |
 | `rulebook-names-the-conflict-repair` | archived | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/archive/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-names-the-conflict-repair/proposal.md) |
 | `rulebook-pipelines-read-bullets-only` | archived | #660 | #909 | [rulebook](openspec/changes/archive/rulebook-pipelines-read-bullets-only/specs/rulebook/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/rulebook-pipelines-read-bullets-only/proposal.md) |
 | `rulebook-push-and-verify-1589` | archived | #1589 | #1598 | [rulebook](openspec/changes/archive/rulebook-push-and-verify-1589/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-push-and-verify-1589/proposal.md) |
-| `rulebook-store-note-pin-order-1612` | archived | #1612 | #1600 | [rulebook-store-note-pin-order](openspec/changes/archive/rulebook-store-note-pin-order-1612/specs/rulebook-store-note-pin-order/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-store-note-pin-order-1612/proposal.md) |
 | `s8-row-r-marker-pr` | archived | #1336 | #1338 | [rulebook](openspec/changes/archive/s8-row-r-marker-pr/specs/rulebook/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/s8-row-r-marker-pr/proposal.md) |
 | `scope-gate-total-vram` | archived | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/archive/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/scope-gate-total-vram/proposal.md) |
 | `scratch-auth-flake-1177` | archived | #1177 | #1254 | [ci-reliability](openspec/changes/archive/scratch-auth-flake-1177/specs/ci-reliability/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/scratch-auth-flake-1177/proposal.md) |
@@ -487,7 +484,6 @@ Active changes: **1** · archived: **515**
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stale-cadence-docstring-1291` | archived | #1291 | #1308 | [pipeline-failure-filer](openspec/changes/archive/stale-cadence-docstring-1291/specs/pipeline-failure-filer/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-cadence-docstring-1291/proposal.md) |
-| `stale-claim-sweep-seam` | archived | #1610 | #1617 | [fleet-claims](openspec/changes/archive/stale-claim-sweep-seam/specs/fleet-claims/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/stale-claim-sweep-seam/proposal.md) |
 | `stale-last-seen-gap` | archived | #1183 | #1216 | [data-gap-analysis](openspec/changes/archive/stale-last-seen-gap/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-last-seen-gap/proposal.md) |
 | `stale-smoke-budget-prose` | archived | #1228 | #1230 | [search-contract](openspec/changes/archive/stale-smoke-budget-prose/specs/search-contract/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/stale-smoke-budget-prose/proposal.md) |
 | `stamp-fix-pr-in-ledger` | archived | #1099 | #1130 | [alarms](openspec/changes/archive/stamp-fix-pr-in-ledger/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/stamp-fix-pr-in-ledger/proposal.md) |
@@ -535,7 +531,6 @@ Active changes: **1** · archived: **515**
 | `workflow-concurrency-groups-1560` | archived | #1560 | #1564 | [ci-concurrency](openspec/changes/archive/workflow-concurrency-groups-1560/specs/ci-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/workflow-concurrency-groups-1560/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
-| `wrapped-aside-union-pin` | archived | #1605 | #1607 | [fleet-union-aside-normalisation](openspec/changes/archive/wrapped-aside-union-pin/specs/fleet-union-aside-normalisation/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/wrapped-aside-union-pin/proposal.md) |
 | `write-raw-snapshot-copy-payload` | archived | #646 | #898 | [write-raw-payload-immutability](openspec/changes/archive/write-raw-snapshot-copy-payload/specs/write-raw-payload-immutability/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/write-raw-snapshot-copy-payload/proposal.md) |
 | `write-raw-verifies-links` | archived | #644 | #850 | [write-raw-link-verification](openspec/changes/archive/write-raw-verifies-links/specs/write-raw-link-verification/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/write-raw-verifies-links/proposal.md) |
 

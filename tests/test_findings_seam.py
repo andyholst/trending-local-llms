@@ -222,6 +222,21 @@ def test_this_repository_is_on_the_per_issue_seam():
     check("wiring: this suite is in the `_test` chain", wired(__file__), "")
 
 
+# -------------------------------------------------------------------- rulebook pin
+def test_rulebook_section_8_carries_the_analysis_seam_row() -> None:
+    """#1602: the §8 row naming THIS module must exist; dropping it reds `make test`."""
+    print("\nRulebook: §8 carries the analysis-seam guard row (#1493/#1602)")
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    sec8 = text[text.index("## 8."):]
+    row = next((ln for ln in sec8.splitlines() if "tests/test_findings_seam.py" in ln), "")
+    check("§8 carries the tests/test_findings_seam.py row", bool(row),
+          "AGENTS.md §8 dropped the analysis-seam guard row")
+    for needle in ("test_two_sibling_branches_touching_different_issues_do_not_collide",
+                   "test_the_old_shared_append_point_was_the_conflict",
+                   "#1493", "#1602"):
+        check(f"§8 row names {needle!r}", needle in row, row)
+
+
 def main() -> int:
     print("the analysis seam is per issue (issue #1493)")
     test_each_issue_resolves_to_its_own_file()
@@ -229,6 +244,7 @@ def main() -> int:
     test_two_sibling_branches_touching_different_issues_do_not_collide()
     test_the_old_shared_append_point_was_the_conflict()
     test_this_repository_is_on_the_per_issue_seam()
+    test_rulebook_section_8_carries_the_analysis_seam_row()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
