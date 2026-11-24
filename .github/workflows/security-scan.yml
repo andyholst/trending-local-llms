@@ -27,6 +27,11 @@ on:
 permissions:
   contents: read
 
+# One scan at a time: the sweep scans the whole tree and files one issue per
+# finding, so a second dispatch QUEUES instead of racing the first. The key is
+# this workflow's own name — no other pipeline shares it — and
+# `cancel-in-progress` stays FALSE because a started scan must complete and
+# report its findings rather than be dropped silently.
 concurrency:
   group: security-scan
   cancel-in-progress: false

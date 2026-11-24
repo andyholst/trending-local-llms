@@ -49,6 +49,11 @@ permissions:
   actions: read
   issues: write
 
+# One sweep at a time: the alarm reads the CURRENTLY queued runs and names them,
+# so a second dispatch QUEUES instead of racing the first over GitHub's live view.
+# The key is this workflow's own name — no other pipeline shares it — and
+# `cancel-in-progress` stays FALSE because an in-flight read must finish rather
+# than be dropped with its alarm unwritten.
 concurrency:
   group: queued-alarm
   cancel-in-progress: false

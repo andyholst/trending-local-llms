@@ -45,7 +45,10 @@ permissions:
   packages: write
 
 # One refresh at a time: a scheduled run and a manual run queue instead of
-# racing to open competing PRs over the same generated files.
+# racing to open competing PRs over the same generated files. The key is this
+# workflow's own name — no other pipeline shares it — and `cancel-in-progress`
+# stays FALSE because the gatherer WRITES the data store: a run in progress must
+# finish, never be dropped half-written.
 concurrency:
   group: refresh-bot
   cancel-in-progress: false
