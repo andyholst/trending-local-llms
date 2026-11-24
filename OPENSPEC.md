@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **505**
+Active changes: **1** · archived: **506**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `findings-seam-per-issue-1493` | active | #1493 | — | [findings-analysis](openspec/changes/findings-seam-per-issue-1493/specs/findings-analysis/spec.md) | 7/9 · 2 blocked | [proposal.md](openspec/changes/findings-seam-per-issue-1493/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -230,6 +229,7 @@ Active changes: **2** · archived: **505**
 | `findings-check-shape-gate` | archived | #1454 | #1480 | [findings-enforcement](openspec/changes/archive/findings-check-shape-gate/specs/findings-enforcement/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/findings-check-shape-gate/proposal.md) |
 | `findings-dedup-index-lag` | archived | #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent" | #1193 | [findings-dedup](openspec/changes/archive/findings-dedup-index-lag/specs/findings-dedup/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/findings-dedup-index-lag/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |
+| `findings-seam-per-issue-1493` | archived | #1493 | #1592 | [findings-analysis](openspec/changes/archive/findings-seam-per-issue-1493/specs/findings-analysis/spec.md) | 7/9 · 2 blocked | [proposal.md](openspec/changes/archive/findings-seam-per-issue-1493/proposal.md) |
 | `fix-bot-announces-its-window` | archived | #198 | — | [bot-coordination](openspec/changes/archive/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-bot-announces-its-window/proposal.md) |
 | `fix-bot-guard-own-job` | archived | #259 | — | [bot-dispatch-guards](openspec/changes/archive/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/fix-bot-guard-own-job/proposal.md) |
 | `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |

@@ -1,6 +1,7 @@
 # Proposal: findings-seam-per-issue-1493
 
 Issue: #1493
+PR: #1592
 
 ## Why
 
