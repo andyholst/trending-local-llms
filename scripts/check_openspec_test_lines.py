@@ -28,6 +28,11 @@ skim gate output. A change whose specs carry no `- **Test:**` lines at all is
 likewise a failure — nothing locks its scenarios. Archived changes are excluded
 (they keep the shape they were reviewed with).
 
+Issue #1477: a tree can carry an ACTIVE dir whose name is ALREADY archived (a
+branch cut before its record commit, or from an unmerged PR's head). The twin is
+diagnosed by naming BOTH paths and the exact remedy instead of reading as "no
+active change (archived/missing)".
+
 Wired into `make openspec-spec-tests-check`, which `make openspec-check` runs
 and `qa-validate` calls on every PR (rule 6d: reachable from a make target CI
 runs).
@@ -64,6 +69,14 @@ def _spec_files(change: Path) -> list[Path]:
     if not base.is_dir():
         return []
     return sorted(base.glob("*/spec.md"))
+
+
+def _rel(path: Path, root: Path) -> str:
+    """*path* relative to *root* when possible — the form a remedy is run from."""
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def _reference(line: str) -> str | None:
@@ -183,11 +196,32 @@ def active_change_names(base: Path = CHANGES_DIR) -> list[str]:
 
 
 def change_for(name: str, base: Path = CHANGES_DIR) -> Path | None:
-    """The ACTIVE change dir for *name*; None if archived or missing."""
-    if (base / "archive" / name).exists():
-        return None
+    """The ACTIVE change dir for *name*; None only when no active copy exists.
+
+    An ARCHIVED twin of the same name does NOT hide the active copy (issue #1477):
+    a branch cut before its record commit — or from an unmerged PR's head — carries
+    BOTH directories, and answering "no active change (archived/missing)" while the
+    active dir sits in the tree is the defect. Callers that must distinguish use
+    `archived_twin`.
+    """
     p = base / name
     return p if p.is_dir() else None
+
+
+def archived_twin(name: str, base: Path = CHANGES_DIR) -> Path | None:
+    """The ARCHIVED dir for *name* when one exists (the #1477 twin shape).
+
+    An archive is written either as `archive/<name>` or as the dated
+    `archive/<UTC-date>-<name>` (`make openspec-archive`), so BOTH spellings count —
+    matching only the bare name would miss every archive the current seam writes.
+    """
+    arc = base / "archive"
+    if not arc.is_dir():
+        return None
+    for p in sorted(arc.iterdir()):
+        if p.is_dir() and (p.name == name or p.name.endswith("-" + name)):
+            return p
+    return None
 
 
 def check_all(
@@ -212,6 +246,23 @@ def check_all(
     failures = 0
     for name in targets:
         change = change_for(name, base)
+        twin = archived_twin(name, base)
+        if change is not None and twin is not None:
+            # The #1477 shape: an ACTIVE dir whose name is ALREADY archived. The old
+            # `change_for` returned None here, so the gate said "no active change
+            # (archived/missing)" while the active copy sat in the tree; name BOTH
+            # paths and the exact remedy instead.
+            if verbose:
+                print(
+                    f"[openspec-test-lines] FAIL {name}: ACTIVE copy "
+                    f"{_rel(change, root)} duplicates ARCHIVED copy {_rel(twin, root)} "
+                    f"— an ACTIVE change may not survive its own archive; remove the "
+                    f"active twin (`git rm -r openspec/changes/{name}` then "
+                    f"`make openspec-index`) (issue #1477)",
+                    flush=True,
+                )
+            failures += 1
+            continue
         if change is None:
             if verbose:
                 print(f"[openspec-test-lines] FAIL {name}: no active change (archived/missing)")
