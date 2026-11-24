@@ -16,6 +16,7 @@ Active changes: **1** · archived: **555**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `stale-claim-check-summary-1657` | active | #1657 | — | [fleet-claims](openspec/changes/stale-claim-check-summary-1657/specs/fleet-claims/spec.md) | 5/5 | [proposal.md](openspec/changes/stale-claim-check-summary-1657/proposal.md) |
 
 ## Archived changes
 

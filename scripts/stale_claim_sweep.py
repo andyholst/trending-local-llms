@@ -582,7 +582,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[stale-claim-sweep] OK: {MARKER_PREFIX}<issue>:<claim-id>:<stale|released>, "
               f"grace silent stale={args.stale_after}s release={args.release_after}s, "
               f"live-run stale={args.live_stale_after}s release={args.live_release_after}s "
-              f"(x{LIVE_RUN_MULTIPLIER} when the claim carries a run id), floors "
+              f"(x{LIVE_RUN_MULTIPLIER} when the claim carries a run id, "
+              f"unless its evidence is still LIVE, #1265 §3B), floors "
               f"{STALE_FLOOR_SECONDS}/{RELEASE_FLOOR_SECONDS}/"
               f"{LIVE_RUN_STALE_FLOOR_SECONDS}/{LIVE_RUN_RELEASE_FLOOR_SECONDS}s, "
               f"read-only, no state")
