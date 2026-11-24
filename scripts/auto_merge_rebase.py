@@ -19,7 +19,8 @@ through ONE pure function (`classify`):
   conflicting            — GitHub builds no merge commit: report-only, the branch is never rewritten
   human-owned            — a human's branch: reported, never rewritten (the §6s partition)
   refs-unreadable        — behindness is never guessed: report-only, merge proceeds as before
-  current                — the head already carries the fetched tip: merge proceeds as before
+  current                — the head already carries the fetched tip: its generated artifacts are
+                           regenerated if they differ from this tree's own generators (#1645)
   behind-and-clean-bot   — rebase onto the fetched master, REGENERATE the generated artifacts
                            (`OPENSPEC.md`, and `ARCHITECTURE.md`'s §10 block since issue #1601) ON
                            the rebased tree (the shared rebaser `pr_health.rebase_and_push` does
@@ -41,6 +42,16 @@ skips the squash — is reported ONLY on that proof. A push whose run has ZERO j
 ghost: this seam prints `verdict=ci-unverified`, leaves `rebased=false` (the head-moved gate
 #1184 still skips the stale squash) and exits 1, naming the zero-jobs run.
 
+**A CURRENT bot head gets the same regeneration (issue #1645).** Carrying `master` does not make
+a generated file current: a merge wave can archive a change while the PR waits and the file still
+renders an older tree, so the squash would land that drift green (`openspec-index-check` only
+WARNs inside `MAX_OPENSPEC_INDEX_DRIFT`). So the `current` verdict runs the SAME sync core with
+no rebase — `pr_health.regenerate_current` — which lease-pushes ONLY when one of the two
+generators actually changes its file. It prints `verdict=regenerated` and the SAME
+`rebased=true` squash skip (with the #1616 CI proof); an already-current pair pushes nothing and
+stays `current`. A human-owned head is untouched either way: both regeneration verdicts are
+returned by `classify` only for a BOT-owned head (the §6s partition).
+
 Machine-readable output (the workflow parses an allowlist of keys, rule 3d): `verdict=<name>`
 and `rebased=true|false`. Exit codes: 0 for every report-only verdict and for a PROVED rebase;
 1 for a rebase that landed without scheduling real CI; 2 only when the PR itself could not be
@@ -61,6 +72,7 @@ try:  # the ONE ownership/behindness/rebase implementation (scripts/pr_health.py
         branch_behind,
         is_bot_owned,
         is_conflicting,
+        regenerate_current,
         rebase_and_push,
     )
 except ImportError:  # run from the repo root
@@ -70,6 +82,7 @@ except ImportError:  # run from the repo root
         branch_behind,
         is_bot_owned,
         is_conflicting,
+        regenerate_current,
         rebase_and_push,
     )
 
@@ -116,7 +129,9 @@ def main() -> int:
         description="qa-validate auto-merge pre-squash gate: classify the PR against the "
                     "fetched master; rebase a behind-and-clean bot branch onto it and "
                     "regenerate the generated artifacts (OPENSPEC.md, ARCHITECTURE.md) on the "
-                    "rebased tree before any push (issues #1049/#1601)")
+                    "rebased tree before any push — and regenerate them on an already-current "
+                    "bot head whose generated files differ from that tree's own generators "
+                    "(issues #1049/#1601/#1645)")
     ap.add_argument("--pr", required=True, type=int, help="pull request number")
     ap.add_argument("--repo", default=None, help="owner/name (default: gh's own resolution)")
     ap.add_argument("--dir", default=None,
@@ -172,8 +187,32 @@ def main() -> int:
                   "validated; residual index drift goes to the index keeper")
             verdict = "kept"
     elif verdict == "current":
-        print(f"[auto-merge-rebase] {head} already carries the fetched master — "
-              "merge proceeds as before")
+        # (issue #1645) Carrying `master` does not make a generated file current: a merge wave
+        # can archive a change while the PR waits and nothing refreshed the file. The squash
+        # would land that drift green, so run the SAME regeneration core with no rebase — it
+        # pushes ONLY when one of the two generators actually changes its file.
+        pushed, ci_verified, msg = regenerate_current(cwd, head)
+        if pushed and ci_verified is not False:
+            rebased = True
+            new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
+            print(f"[auto-merge-rebase] {head} already carries the fetched master, but its "
+                  f"generated artifacts were regenerated on that tree ({new_oid[:12]}); the new "
+                  f"head's own qa-validate run PROVES real CI — {msg}. This run will NOT merge "
+                  "(its event head is now stale); CI on the new head will land it.")
+            verdict = "regenerated"
+        elif pushed and ci_verified is False:
+            print(f"[auto-merge-rebase] FAIL: the regeneration of {head} LANDED but {msg} — this "
+                  "run will NOT claim it. The head-moved gate (#1184) skips the stale squash; CI "
+                  "on the new head decides.")
+            verdict = "ci-unverified"
+            rc = 1
+        elif "already current on this head" in msg:
+            print(f"[auto-merge-rebase] {head} already carries the fetched master and its "
+                  "generated artifacts are current — merge proceeds as before")
+        else:
+            print(f"[auto-merge-rebase] kept {head}: {msg} — this merge proceeds exactly as "
+                  "validated; residual index drift goes to the index keeper")
+            verdict = "kept"
     elif verdict == "human-owned":
         print(f"[auto-merge-rebase] {head} is human-owned: reported, never rewritten "
               "(§6s); merge allowed only as GitHub already validated it")

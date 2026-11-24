@@ -368,7 +368,7 @@ def regenerate_index(wt: Path) -> tuple[bool, str]:
              "-m", "chore(openspec): regenerate the index on the rebased tree (issue #1049)")
     if c.returncode != 0:
         return False, f"index commit failed: {c.stderr.strip()[:120]}"
-    return True, " + OPENSPEC.md regenerated on the rebased tree"
+    return True, " + OPENSPEC.md regenerated on this head's tree"
 
 
 def regenerate_architecture(wt: Path) -> tuple[bool, str]:
@@ -404,7 +404,7 @@ def regenerate_architecture(wt: Path) -> tuple[bool, str]:
                    "(issue #1601)")
     if c.returncode != 0:
         return False, f"architecture commit failed: {c.stderr.strip()[:120]}"
-    return True, " + ARCHITECTURE.md regenerated on the rebased tree"
+    return True, " + ARCHITECTURE.md regenerated on this head's tree"
 
 
 def _unmerged_paths(wt: Path) -> list[str]:
@@ -555,6 +555,10 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
     """Rebase origin/<head> onto origin/master in a scratch worktree and push it back to
     the PR's own HEAD branch (rule 6r: push to the PR's head, which re-triggers its CI).
 
+    The `rebase=True` entry point of the ONE sync core; `regenerate_current` below is the
+    SAME core with no rebase (issue #1645), so the pre-squash gate's current-bot-head case
+    and the §6s sweep can never drift apart.
+
     The scratch worktree keeps the checkout untouched; a conflict ABORTS the rebase and the
     branch is left byte-identical — the rebaser never force-pushes a conflicted result. A
     CLEAN rebase regenerates BOTH generated artifacts on the rebased tree before the push
@@ -568,6 +572,81 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
     `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that exact
     head's qa-validate run carries >0 jobs. A push that landed but did not schedule real CI is
     reported as `pushed=True, ci_verified=False` — never as a clean rebase."""
+    return sync_branch(cwd, head, rebase=True)
+
+
+def regenerate_current(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
+    """Regenerate the generated artifacts on an ALREADY-CURRENT bot head (#1645).
+
+    A head that carries `origin/master` can still carry a generated file rendered against an
+    older tree: a merge wave archived a change while the PR waited, and nothing refreshed it.
+    The squash would land that stale index green (`openspec-index-check` only WARNs inside
+    `MAX_OPENSPEC_INDEX_DRIFT`) and a keeper PR would pay for it minutes later. So the
+    pre-squash gate runs the SAME sync core with no rebase — one implementation, one push
+    seam (rule 6d) — which pushes ONLY when one of the two generators actually changes its
+    file. An already-current pair pushes nothing.
+
+    Returns the SAME `(pushed, ci_verified, message)` shape as `rebase_and_push`, so the
+    caller's #1616 CI proof is identical on both paths."""
+    return sync_branch(cwd, head, rebase=False)
+
+
+def _push_to_pr_head(cwd: Path, wt: Path, head: str) -> tuple[str, str, str]:
+    """Lease-push the worktree's HEAD to the PR's own head branch. Returns
+    `(origin_cfg, push_identity, "")`, or `("", "", <reason>)` when the push failed.
+
+    A rebase REWRITES the branch history and even a regeneration-only commit MOVES the head,
+    so every push through this seam is a lease push: `--force-with-lease` pinned to the remote
+    tip THIS run just fetched. If anyone moved the branch since the fetch, the lease fails and
+    nothing is overwritten.
+
+    THE PUSH CARRIES THE OWNER PAT IDENTITY when the CI step provided one (issue #1115).
+    Measured ghost runs (runs/43839409260, 43839409495, 44004650575): this push, done under
+    the job-token checkout credential, left the resulting PR `pull_request` runs
+    `action_required` with ZERO jobs — the owner sees `no checks reported`, auto-merge is
+    UNSTABLE forever, and qa-validate never runs at all. When GIT_PUSH_PAT is set (the
+    qa-validate auto-merge-rebase step and the pr-health sweep step both provide it), the
+    github.com origin is pushed through an owner-PAT-authenticated URL — the credential class
+    every landed rebase in this repo demonstrably used. A non-github origin (a local fixture
+    remote) is never rewritten: the lease push stays on `origin`.
+    """
+    lease = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
+    # The RAW configured URL, not `remote get-url`: git applies insteadOf rewrites
+    # to get-url's output, which would hide a github origin behind a transport alias.
+    origin_cfg = _git(cwd, "config", "--get", "remote.origin.url").stdout.strip()
+    push_target, push_identity = "origin", "checkout-credential"
+    pat = (os.environ.get("GIT_PUSH_PAT") or "").strip()
+    if pat:
+        rewritten = pat_push_url(origin_cfg, pat)
+        if rewritten:
+            push_target, push_identity = rewritten, "owner-pat"
+    push = _git(wt, "push", f"--force-with-lease=refs/heads/{head}:{lease}",
+                push_target, f"HEAD:refs/heads/{head}")
+    if push.returncode != 0:
+        err = push.stderr.strip()[:120]
+        if pat:
+            err = err.replace(pat, "***")  # rule 3d: the token never reaches a log
+        return "", "", f"push failed: {err}"
+    return origin_cfg, push_identity, ""
+
+
+def sync_branch(cwd: Path, head: str, *, rebase: bool) -> tuple[bool, bool | None, str]:
+    """The ONE sync core behind `rebase_and_push` and `regenerate_current`.
+
+    A scratch worktree at `origin/<head>`, OPTIONALLY rebased onto `origin/master`, then BOTH
+    generated artifacts regenerated through the tree's OWN generators on the resulting tree
+    and the head lease-pushed — but ONLY when a regeneration actually changed something
+    (#1645: a head whose pair already matches its tree is never churned).
+
+    A rebase conflict ABORTS and the branch is left byte-identical; a conflict CONFINED to the
+    two generated paths is resolved by taking the branch's side and regenerating instead of
+    stalling the branch (issue #1601). Any other unmerged path is fix-loop/human work.
+
+    Returns `(pushed, ci_verified, message)`. `ci_verified` is None when the origin is not a
+    github.com remote (a local fixture — there is no GitHub run to read); otherwise it is the
+    `verify_rebased_ci` verdict on the PUSHED sha (issue #1616): True only when that exact
+    head's qa-validate run carries >0 jobs. A push that landed but did not schedule real CI is
+    reported as `pushed=True, ci_verified=False` — never as a clean rebase."""
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         wt = Path(td) / "wt"
@@ -575,54 +654,34 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, bool | None, str]:
         if add.returncode != 0:
             return False, None, f"worktree add failed: {add.stderr.strip()[:120]}"
         try:
-            rb = _git(wt, "rebase", "refs/remotes/origin/master")
             resolved = ""
-            if rb.returncode != 0:
-                ok, note = resolve_generated_conflicts(wt)
-                if not ok:
-                    _git(wt, "rebase", "--abort")
-                    return False, None, note
-                resolved = note
+            if rebase:
+                rb = _git(wt, "rebase", "refs/remotes/origin/master")
+                if rb.returncode != 0:
+                    ok, note = resolve_generated_conflicts(wt)
+                    if not ok:
+                        _git(wt, "rebase", "--abort")
+                        return False, None, note
+                    resolved = note
             regen_ok, regen_note = regenerate_index(wt)
             if not regen_ok:
                 return False, None, f"{regen_note} — branch left untouched (nothing was pushed)"
             arch_ok, arch_note = regenerate_architecture(wt)
             if not arch_ok:
                 return False, None, f"{arch_note} — branch left untouched (nothing was pushed)"
-            # A rebase REWRITES the branch history, so the push must be a lease push:
-            # --force-with-lease pinned to the remote tip THIS run just fetched. If anyone
-            # moved the branch since the fetch, the lease fails and nothing is overwritten.
-            lease = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
-            # The RAW configured URL, not `remote get-url`: git applies insteadOf rewrites
-            # to get-url's output, which would hide a github origin behind a transport alias.
-            origin_cfg = _git(cwd, "config", "--get", "remote.origin.url").stdout.strip()
-            # (issue #1115) THE PUSH CARRIES THE OWNER PAT IDENTITY when the CI step provided
-            # one. Measured ghost runs (runs/43839409260, 43839409495, 44004650575): this push,
-            # done under the job-token checkout credential, left the resulting PR `pull_request`
-            # runs `action_required` with ZERO jobs — the owner sees `no checks reported`,
-            # auto-merge is UNSTABLE forever, and qa-validate never runs at all. When
-            # GIT_PUSH_PAT is set (the qa-validate auto-merge-rebase step and the pr-health
-            # sweep step both provide it), the github.com origin is pushed through an
-            # owner-PAT-authenticated URL — the credential class every landed rebase in this
-            # repo demonstrably used. A non-github origin (a local fixture remote) is never
-            # rewritten: the lease push stays on `origin`.
-            push_target, push_identity = "origin", "checkout-credential"
-            pat = (os.environ.get("GIT_PUSH_PAT") or "").strip()
-            if pat:
-                rewritten = pat_push_url(origin_cfg, pat)
-                if rewritten:
-                    push_target, push_identity = rewritten, "owner-pat"
-            push = _git(wt, "push", f"--force-with-lease=refs/heads/{head}:{lease}",
-                        push_target, f"HEAD:refs/heads/{head}")
-            if push.returncode != 0:
-                err = push.stderr.strip()[:120]
-                if pat:
-                    err = err.replace(pat, "***")  # rule 3d: the token never reaches a log
-                return False, None, f"push failed: {err}"
+            if not regen_note and not arch_note and not rebase:
+                # Nothing changed: the head is already merge-time-current. Never churn a
+                # branch for a regeneration that reproduced its own committed bytes.
+                return False, None, "the generated artifacts were already current on this head"
+            origin_cfg, push_identity, err = _push_to_pr_head(cwd, wt, head)
+            if err:
+                return False, None, err
             note = ""
             if resolved:
                 note = f" (resolved the generated conflict in {resolved})"
-            msg = ("rebased onto origin/master and pushed to the PR head" + note
+            action = ("rebased onto origin/master and pushed" if rebase
+                      else "regenerated in place and pushed")
+            msg = (action + " to the PR head" + note
                    + regen_note + arch_note + f" (push identity: {push_identity})")
             # (issue #1616) THE PROOF: a pushed head is only a landed rebase when its OWN
             # qa-validate run carries jobs. Read it back from GitHub through the ONE gh field

@@ -237,6 +237,43 @@ def _fixture(td: Path, *, head: str = HEAD_BRANCH, move_master: bool = True,
     return origin_url, seed, clone
 
 
+def _fixture_current_stale(td: Path, *, head: str = HEAD_BRANCH):
+    """(issue #1645) A CURRENT bot head whose committed `OPENSPEC.md` is STALE against its
+    own tree: the branch archives a change WITHOUT regenerating the index. It carries
+    `origin/master` exactly (`move_master` never runs), so `branch_behind` answers False —
+    the shape the pre-squash gate used to pass through as `current`, squashing the drift."""
+    origin_url, seed = _seed(td)
+    _must(seed, "checkout", "-q", "-b", head)
+    (seed / "openspec" / "changes" / "archive").mkdir(parents=True, exist_ok=True)
+    _write(seed / "openspec" / "changes" / "archive" / "2026-11-24-branch-only" / "proposal.md",
+           "# Branch archive\n\nIssue: #999\n\n## Why\n\nAn archive the branch made without refreshing the index.\n")
+    _git_commit(seed, "feat: the PR archives a change without refreshing its index")
+    _must(seed, "push", "-q", "origin", head)
+    clone = td / "clone"
+    _must(td, "clone", "-q", origin_url, "clone")
+    return origin_url, seed, clone
+
+
+def _fixture_current_both_stale(td: Path, *, head: str = HEAD_BRANCH):
+    """(issue #1645) A CURRENT bot head stale in BOTH generated artifacts: the branch adds a
+    script (which moves `ARCHITECTURE.md`'s §10 block) and archives a change (which moves
+    `OPENSPEC.md`), regenerating NEITHER. Carries `origin/master`, so the verdict is
+    `current` — the #1601 pair must be refreshed together by the no-rebase path."""
+    origin_url, seed = _seed_generated(td)
+    _must(seed, "checkout", "-q", "-b", head)
+    (seed / "openspec" / "changes" / "archive").mkdir(parents=True, exist_ok=True)
+    _must(seed, "mv", "openspec/changes/change-alpha",
+          f"openspec/changes/archive/{ARCHIVE_SLUG}")
+    _write(seed / "scripts" / "zz_branch_tool.py",
+           '#!/usr/bin/env python3\n"""The branch added this tool."""\n')
+    _write(seed / "feature.txt", "feat\n")
+    _git_commit(seed, "feat: the PR archives a change and adds a script, refreshing neither")
+    _must(seed, "push", "-q", "origin", head)
+    clone = td / "clone"
+    _must(td, "clone", "-q", origin_url, "clone")
+    return origin_url, seed, clone
+
+
 def _pr_json(*, head: str = HEAD_BRANCH, state: str = "open", draft: bool = False,
              mergeable: str = "MERGEABLE", state_status: str = "BEHIND") -> dict:
     return {"repository": {"nameWithOwner": "o/r"}, "number": 77, "state": state,
@@ -451,7 +488,7 @@ def test_behind_clean_bot_branch_is_rebased_with_a_current_index():
         check("seam: verdict=rebased", "verdict=rebased" in proc.stdout, proc.stdout)
         check("seam: rebased=true (the squash if-gate input)", "rebased=true" in proc.stdout,
               proc.stdout)
-        check("seam: it names the regenerated index", "regenerated on the rebased tree" in proc.stdout,
+        check("seam: it names the regenerated index", "regenerated on this head's tree" in proc.stdout,
               proc.stdout)
         check("seam: this run lands nothing, honestly",
               "will NOT merge" in proc.stdout, proc.stdout)
@@ -489,6 +526,151 @@ def test_current_head_reports_current_and_pushes_nothing():
         check("current: nothing was pushed", _head_oid(clone, HEAD_BRANCH) == old)
         check("current: the merge path is stated unchanged",
               "already carries the fetched master" in proc.stdout, proc.stdout)
+
+
+def test_a_current_bot_head_with_a_stale_index_is_regenerated_before_the_squash():
+    """(issue #1645) A head that CARRIES `master` can still carry a generated file rendered
+    against an older tree — a merge wave archived a change while the PR waited and nothing
+    refreshed it. The pre-squash gate used to answer `current`, squash that drift green
+    (`openspec-index-check` only WARNs inside MAX_OPENSPEC_INDEX_DRIFT) and leave a keeper to
+    repair master. Now the no-rebase path regenerates through the tree's OWN generators,
+    lease-pushes, prints `regenerated` + `rebased=true`, and the new head's index is green.
+
+    RED on the pre-#1645 seam: `verdict=current`, `rebased=false`, the branch oid unchanged
+    and the committed index still missing the archive row."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _, _, clone = _fixture_current_stale(td)
+        old = _head_oid(clone, HEAD_BRANCH)
+
+        stale_doc = _show(clone, HEAD_BRANCH, "OPENSPEC.md")
+        check("stale-current premise: the committed index does NOT list the branch's archive",
+              "2026-11-24-branch-only" not in stale_doc, stale_doc[:300])
+        chk = _ref_script_check(clone, f"refs/remotes/origin/{HEAD_BRANCH}", td, "pre",
+                                "openspec_index.py", "--check")
+        check("stale-current premise: the committed index differs from the tree's render "
+              "(the generator reports it)", chk.returncode == 0, chk.stdout + chk.stderr)
+        check("stale-current premise: the head CARRIES origin/master (behind=False)",
+              _git(clone, "merge-base", "--is-ancestor", "refs/remotes/origin/master",
+                   f"refs/remotes/origin/{HEAD_BRANCH}").returncode == 0)
+
+        proc, _ = _run_seam(clone, _pr_json(state_status="CLEAN"))
+        out = proc.stdout + proc.stderr
+        check("stale-current: exit 0 (report-only semantics)", proc.returncode == 0, out)
+        check("stale-current: verdict=regenerated", "verdict=regenerated" in proc.stdout,
+              proc.stdout)
+        check("stale-current: rebased=true (the squash if-gate input)",
+              "rebased=true" in proc.stdout, proc.stdout)
+        check("stale-current: the report names the regeneration",
+              "regenerated on this head's tree" in proc.stdout, proc.stdout)
+        check("stale-current: it says this run will not merge", "will NOT merge" in proc.stdout,
+              proc.stdout)
+
+        _must(clone, "fetch", "-q", "origin",
+              f"+refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
+        new = _head_oid(clone, HEAD_BRANCH)
+        check("stale-current: the remote branch MOVED (a regeneration commit landed)",
+              new != old, (old, new))
+        doc = _show(clone, HEAD_BRANCH, "OPENSPEC.md")
+        check("stale-current: the new head's index lists the branch's archive",
+              "2026-11-24-branch-only" in doc, doc[:300])
+        log = _git(clone, "log", "--format=%s", f"refs/remotes/origin/{HEAD_BRANCH}").stdout
+        check("stale-current: the PR's own commit survives (no rebase rewrote it)",
+              "feat: the PR archives a change without refreshing its index" in log, log)
+        check("stale-current: the regeneration commit landed",
+              "regenerate the index on the rebased tree (issue #1049)" in log, log)
+        check("stale-current: openspec-index-check is GREEN on the new head",
+              _worktree_check(clone, f"refs/remotes/origin/{HEAD_BRANCH}", td, "green") == 0)
+
+
+def test_a_current_bot_head_regenerates_the_architecture_block_too():
+    """(issues #1645/#1601) The current-head regeneration runs BOTH generators: a head stale
+    in `OPENSPEC.md` AND `ARCHITECTURE.md`'s §10 block must land both refreshed, so the #1601
+    pair holds on the no-rebase path exactly as it does on a rebased one."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _, _, clone = _fixture_current_both_stale(td)
+        old = _head_oid(clone, HEAD_BRANCH)
+
+        arch_doc = _show(clone, HEAD_BRANCH, "ARCHITECTURE.md")
+        check("both-stale premise: the committed block predates the branch's script",
+              "zz_branch_tool.py" not in arch_doc, arch_doc[-200:])
+        idx_doc = _show(clone, HEAD_BRANCH, "OPENSPEC.md")
+        check("both-stale premise: the committed index predates the branch's archive",
+              ARCHIVE_SLUG not in idx_doc, idx_doc[:200])
+
+        proc, _ = _run_seam(clone, _pr_json(state_status="CLEAN"))
+        out = proc.stdout + proc.stderr
+        check("both-stale: exit 0", proc.returncode == 0, out)
+        check("both-stale: verdict=regenerated", "verdict=regenerated" in proc.stdout, proc.stdout)
+        check("both-stale: rebased=true", "rebased=true" in proc.stdout, proc.stdout)
+        check("both-stale: the report names BOTH regenerations",
+              "OPENSPEC.md regenerated on this head's tree" in proc.stdout
+              and "ARCHITECTURE.md regenerated on this head's tree" in proc.stdout, proc.stdout)
+
+        _must(clone, "fetch", "-q", "origin",
+              f"+refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
+        new = _head_oid(clone, HEAD_BRANCH)
+        check("both-stale: the remote branch MOVED", new != old, (old, new))
+        ref = f"refs/remotes/origin/{HEAD_BRANCH}"
+        doc = _show(clone, HEAD_BRANCH, "ARCHITECTURE.md")
+        check("both-stale: the new head's block lists the branch's script",
+              "`scripts/zz_branch_tool.py`" in doc, doc[-300:])
+        check("both-stale: the new head's index lists the archive", ARCHIVE_SLUG in
+              _show(clone, HEAD_BRANCH, "OPENSPEC.md"), "")
+        idx = _ref_script_check(clone, ref, td, "idx", "openspec_index.py", "--check")
+        check("both-stale: openspec-index-check GREEN on the new head",
+              idx.returncode == 0, idx.stdout + idx.stderr)
+        arch = _ref_script_check(clone, ref, td, "arch", "architecture_bot.py", "--check")
+        check("both-stale: the architecture generator is GREEN on the new head",
+              arch.returncode == 0, arch.stdout + arch.stderr)
+
+
+def test_a_human_owned_stale_index_head_is_reported_and_untouched():
+    """(issue #1645, Option B) A HUMAN-owned head is report-only even when its index is stale:
+    narrowing the §6s/#1089 refusal to allow a regeneration write is an OWNER RULING, not an
+    implementer's choice. The seam must not touch the branch; the residual goes to the §6q
+    event-driven index keeper.
+
+    It also pins the seam's SHAPE (#1645): the current-bot-head regeneration lives behind ONE
+    shared core (`pr_health.sync_branch`) with `rebase_and_push` as its `rebase=True` wrapper,
+    so a second pusher cannot appear. That half is RED on the pre-#1645 seam."""
+    import pr_health as PH
+
+    check("human-stale: the seam exposes ONE sync core (rule 6d)",
+          callable(getattr(PH, "sync_branch", None))
+          and callable(getattr(PH, "regenerate_current", None)),
+          "pr_health carries no sync_branch/regenerate_current")
+    src = PR_HEALTH.read_text()
+    check("human-stale: rebase_and_push delegates to the shared core",
+          "return sync_branch(cwd, head, rebase=True)" in src, src[:120])
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        origin_url, seed = _seed(td)
+        human = "andy/human-feature"
+        _must(seed, "checkout", "-q", "-b", human)
+        (seed / "openspec" / "changes" / "archive").mkdir(parents=True, exist_ok=True)
+        _write(seed / "openspec" / "changes" / "archive" / "2026-11-24-human-only" / "proposal.md",
+               "# Human archive\n\nIssue: #999\n\n## Why\n\nA human's branch, stale on purpose.\n")
+        _git_commit(seed, "feat: a human archives a change without refreshing the index")
+        _must(seed, "push", "-q", "origin", human)
+        clone = td / "clone"
+        _must(td, "clone", "-q", origin_url, "clone")
+        old = _head_oid(clone, human)
+        check("human-stale premise: the human head's index is stale against its own tree",
+              "2026-11-24-human-only" not in _show(clone, human, "OPENSPEC.md"), "")
+
+        proc, _ = _run_seam(clone, _pr_json(head=human))
+        out = proc.stdout + proc.stderr
+        check("human-stale: exit 0", proc.returncode == 0, out)
+        check("human-stale: verdict=human-owned", "verdict=human-owned" in proc.stdout,
+              proc.stdout)
+        check("human-stale: rebased=false", "rebased=false" in proc.stdout, proc.stdout)
+        _must(clone, "fetch", "-q", "origin", f"+refs/heads/{human}:refs/remotes/origin/{human}")
+        check("human-stale: the remote branch is byte-identical",
+              _head_oid(clone, human) == old, (old, _head_oid(clone, human)))
+        check("human-stale: the stale index is untouched (no regeneration write)",
+              "2026-11-24-human-only" not in _show(clone, human, "OPENSPEC.md"), "")
 
 
 def test_human_owned_behind_branch_is_reported_and_untouched():
@@ -584,7 +766,7 @@ def test_rebase_regenerates_the_architecture_block_too():
         check("clean-arch: verdict=rebased", "verdict=rebased" in proc.stdout, proc.stdout)
         check("clean-arch: rebased=true", "rebased=true" in proc.stdout, proc.stdout)
         check("clean-arch: the report names the architecture regeneration",
-              "ARCHITECTURE.md regenerated on the rebased tree" in proc.stdout, proc.stdout)
+              "ARCHITECTURE.md regenerated on this head's tree" in proc.stdout, proc.stdout)
 
         _must(clone, "fetch", "-q", "origin",
               f"+refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
@@ -1134,6 +1316,11 @@ def main():
     tests = [
         test_behind_clean_bot_branch_is_rebased_with_a_current_index,
         test_current_head_reports_current_and_pushes_nothing,
+        # (issue #1645) a CURRENT bot head whose generated files are stale is regenerated
+        # before the squash; a human-owned stale head stays report-only (Option B).
+        test_a_current_bot_head_with_a_stale_index_is_regenerated_before_the_squash,
+        test_a_current_bot_head_regenerates_the_architecture_block_too,
+        test_a_human_owned_stale_index_head_is_reported_and_untouched,
         test_human_owned_behind_branch_is_reported_and_untouched,
         test_conflicting_branches_are_never_rewritten,
         test_regeneration_failure_keeps_the_branch_untouched,
