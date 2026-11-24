@@ -593,7 +593,19 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
             out.append({"shape": ordered[0]["shape"], "axis": axis,
                         "members": ordered, "branches": branches})
     out.sort(key=lambda g: int(g["members"][0]["run"]["databaseId"]))
-    return out
+    # ONE defect, ONE issue (issue #1565). The two axes can BOTH clear PR_BLOCK_MIN_PRS for the
+    # same defect when a master-move race reds >= 3 open branches and two of those runs are
+    # byte-identical across their whole quoted block while a third differs only in chatter: the
+    # stable axis then yields {ci/a, ci/b, ci/c} and the exact axis yields the strict SUBSET
+    # {ci/a, ci/b}. Neither member-id tuple equals the other, so both were emitted and
+    # `record_pr_blockages` filed TWO issues for ONE defect. Drop a group whose MEMBER RUNS are
+    # a strict subset of another group's — the same runs filed twice — keeping the group that
+    # names every blocked branch. Member ids (not the branch names) are the discriminator, so
+    # two DIFFERENT defects that merely share an open branch are never collapsed into one.
+    return [g for g in out
+            if not any({int(m["run"]["databaseId"]) for m in g["members"]}
+                       < {int(m["run"]["databaseId"]) for m in h["members"]}
+                       for h in out)]
 
 
 def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path: Path,
