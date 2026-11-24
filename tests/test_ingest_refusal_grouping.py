@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from contextlib import redirect_stdout
 
@@ -39,9 +40,24 @@ SEAM_LINE = re.compile(
 )
 
 
+def _scratch(prefix: str) -> Path:
+    """Build a replay scratch tree OUTSIDE the checkout (issue #1505).
+
+    A tree that survives inside ROOT is one `git add -A` away from being
+    committed by any lane, and it silently changes the tree a generated-artifact
+    guard reads. `mkdtemp` also gives every run a unique path.
+    """
+    return Path(tempfile.mkdtemp(prefix=prefix))
+
+
+def _remove(path: Path) -> None:
+    """Remove a scratch tree LOUDLY — `ignore_errors=True` is the silent
+    laundering this repo's own guards refuse (issue #1505)."""
+    shutil.rmtree(path)
+
+
 def _run_ingest(script_body: str, tmp: Path) -> tuple[subprocess.CompletedProcess, str]:
     """Run a scratch-data ingest subprocess and return (proc, combined stdout)."""
-    shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True, exist_ok=True)
     script = (
         "import json, os, shutil, sys\n"
@@ -80,7 +96,7 @@ def test_a_post_refused_by_every_leg_prints_one_grouped_line():
     # The #882 shape verbatim: the SAME post is captured by an amd, a cpu and a
     # nvidia leg. Each re-merge used to print the identical refusal three times;
     # the run must now print ONE grouped line naming how often it was seen.
-    tmp = ROOT / "tmp-882-group-e2e"
+    tmp = _scratch("tmp-882-group-e2e-")
     row = json.dumps(COPY_ROW)
     files = "\n".join(
         f"(tmp / 'raw' / '{name}.json').write_text(json.dumps("
@@ -106,14 +122,14 @@ def test_a_post_refused_by_every_leg_prints_one_grouped_line():
           and "nvidia-re.json" in lines[0], lines)
     check("the copy is still refused (never merges)",
           "COPIED_PRESENT=False" in out, out[-400:])
-    shutil.rmtree(tmp, ignore_errors=True)
+    _remove(tmp)
 
 
 def test_distinct_refusals_each_still_get_their_own_line():
     # Dedup must never SWALLOW a refusal: two different refusals (a cross-model
     # copy on one post, a fabricated engine on another) each print their own line,
     # with no repetition suffix for a post seen once.
-    tmp = ROOT / "tmp-882-distinct-e2e"
+    tmp = _scratch("tmp-882-distinct-e2e-")
     fabricated = json.dumps({
         "id": "gemma-3-4b", "name": "Gemma 3 4B",
         "hf": "google/gemma-3-4b-it", "formats": [{"format": "GGUF"}],
@@ -143,7 +159,7 @@ def test_distinct_refusals_each_still_get_their_own_line():
           len(fab_lines) == 1 and "fabricated engine" in fab_lines[0], fab_lines)
     check("a refusal seen once carries no repetition suffix",
           len(fab_lines) == 1 and "seen" not in fab_lines[0], fab_lines)
-    shutil.rmtree(tmp, ignore_errors=True)
+    _remove(tmp)
 
 
 def test_shipped_raw_replay_reports_each_refusal_once_per_post_and_rule():
@@ -151,7 +167,7 @@ def test_shipped_raw_replay_reports_each_refusal_once_per_post_and_rule():
     # against a copy of the shipped store, and every seam refusal line must be
     # unique per (rule, model, post) — while the run-level refusal COUNT in the
     # summary line stays the full 253-style number (the ledger never shrinks).
-    tmp = ROOT / "tmp-882-replay-e2e"
+    tmp = _scratch("tmp-882-replay-e2e-")
     body = (
         "shutil.copytree(ROOT / 'data' / 'raw', tmp / 'raw', dirs_exist_ok=True)\n"
         "added, updated = ut.ingest_raw_snapshots(store, since=None)\n"
@@ -171,13 +187,42 @@ def test_shipped_raw_replay_reports_each_refusal_once_per_post_and_rule():
     check("the refusal COUNT stays the full number while lines dedupe",
           m is not None and int(m.group(1)) > len(seam_lines) > 0,
           (m.group(0) if m else None, len(seam_lines)))
-    shutil.rmtree(tmp, ignore_errors=True)
+    _remove(tmp)
+
+
+def test_scratch_tree_is_built_outside_the_checkout_and_leaves_no_residue():
+    # Issue #1505: the replay trees used to be `ROOT / "tmp-882-*"`, inside the
+    # checkout, so a surviving one was sweepable by any lane's `git add -A`.
+    tmp = _scratch("tmp-882-guard-")
+    check("the scratch tree is built outside the checkout",
+          tmp != ROOT and ROOT not in tmp.parents, str(tmp))
+    _remove(tmp)
+    check("the scratch tree is gone after the run", not tmp.exists(), str(tmp))
+    leftovers = sorted(p.name for p in ROOT.glob("tmp-882-*"))
+    check("no scratch tree is left inside the checkout", not leftovers, str(leftovers))
+
+
+def test_a_failing_removal_raises_loudly():
+    # `ignore_errors=True` used to swallow a failed removal; the loud seam must
+    # raise instead (issue #1505).
+    tmp = _scratch("tmp-882-loud-")
+    probe = tmp / "not-a-directory"
+    probe.write_text("x")
+    try:
+        _remove(probe)
+        check("a failing removal raises loudly", False, "rmtree returned on a non-directory")
+    except OSError:
+        check("a failing removal raises loudly", True)
+    _remove(tmp)
+    check("a healthy removal leaves nothing behind", not tmp.exists(), str(tmp))
 
 
 def main() -> int:
     test_a_post_refused_by_every_leg_prints_one_grouped_line()
     test_distinct_refusals_each_still_get_their_own_line()
     test_shipped_raw_replay_reports_each_refusal_once_per_post_and_rule()
+    test_scratch_tree_is_built_outside_the_checkout_and_leaves_no_residue()
+    test_a_failing_removal_raises_loudly()
     print(f"refusal-grouping: {_PASS} passed, {_FAIL} failed")
     return 1 if _FAIL else 0
 
