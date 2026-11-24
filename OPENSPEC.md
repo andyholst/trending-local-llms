@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **512**
+Active changes: **2** · archived: **510**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `wrapped-aside-union-pin` | active | #1605 | — | [fleet-union-aside-normalisation](openspec/changes/wrapped-aside-union-pin/specs/fleet-union-aside-normalisation/spec.md) | 5/5 | [proposal.md](openspec/changes/wrapped-aside-union-pin/proposal.md) |
 
 ## Archived changes
 
@@ -68,7 +69,6 @@ Active changes: **1** · archived: **512**
 | `2026-11-23-fleet-host-reconcile` | archived | #1464 | #1481 | [fleet-host-sync](openspec/changes/archive/2026-11-23-fleet-host-reconcile/specs/fleet-host-sync/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-fleet-host-reconcile/proposal.md) |
 | `2026-11-23-fleet-host-sync-config-version` | archived | #1389 | — | [fleet-host-sync-check](openspec/changes/archive/2026-11-23-fleet-host-sync-config-version/specs/fleet-host-sync-check/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-fleet-host-sync-config-version/proposal.md) |
 | `2026-11-23-owed-row-derived-needle` | archived | #1367 | — | [owed-row-derivation](openspec/changes/archive/2026-11-23-owed-row-derived-needle/specs/owed-row-derivation/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-owed-row-derived-needle/proposal.md) |
-| `2026-11-24-filer-error-class-grouping-1557` | archived | #1557 | — | [pipeline-failure-error-class-grouping](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/specs/pipeline-failure-error-class-grouping/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/proposal.md) |
 | `2026-11-24-fleet-host-reconcile-backup-path-spelling` | archived | #1552 | #1588 | [fleet-host-sync](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/specs/fleet-host-sync/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/proposal.md) |
 | `2026-11-24-fleet-mirror-union-zero-to-n-1478` | archived | #1478 | — | [fleet-mirror-union](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/specs/fleet-mirror-union/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/proposal.md) |
 | `2026-11-24-openspec-active-twin-diagnosis` | archived | #1477 | — | [openspec-change-diagnosis](openspec/changes/archive/2026-11-24-openspec-active-twin-diagnosis/specs/openspec-change-diagnosis/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-openspec-active-twin-diagnosis/proposal.md) |
@@ -301,7 +301,6 @@ Active changes: **1** · archived: **512**
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
 | `land-forward-implementer-notes-1487` | archived | #1487 | #1489 | [forward-notes](openspec/changes/archive/land-forward-implementer-notes-1487/specs/forward-notes/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/land-forward-implementer-notes-1487/proposal.md) |
 | `land-forward-notes-1446` | archived | #1446 | #1448 | [fleet-host-sync-check](openspec/changes/archive/land-forward-notes-1446/specs/fleet-host-sync-check/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/land-forward-notes-1446/proposal.md) |
-| `land-forward-skill-notes-1559` | archived | #1559 | #1561 | [fleet-skills](openspec/changes/archive/land-forward-skill-notes-1559/specs/fleet-skills/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-forward-skill-notes-1559/proposal.md) |
 | `land-host-ahead-mirror-residual-1456` | archived | #1456 | #1465 | [fleet-lane-skill-mirrors](openspec/changes/archive/land-host-ahead-mirror-residual-1456/specs/fleet-lane-skill-mirrors/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/land-host-ahead-mirror-residual-1456/proposal.md) |
 | `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
