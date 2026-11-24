@@ -32,6 +32,8 @@ import re
 import sys
 from pathlib import Path
 
+import architecture_bot  # noqa: E402  (the ONE Makefile target-line parser — rule 6d, issue #752)
+
 #: The container seams. A line carrying one of these is NOT a bare host invocation.
 HARNESS_TOKENS = ("$(PYTHON_RUN)", "$(TEST_RUN)", "$(DOCKER_RUN)", "$(OS_OPTS)", "docker run")
 
@@ -42,7 +44,6 @@ INTERP_RE = re.compile(r"(?<![\w.$/@-])(python3|pip|uv)(?![\w.-])")
 #: while `cmd | python3 x` is not.
 SEGMENT_SPLIT = re.compile(r"\|+|&&|\|\||;|&")
 
-TARGET_RE = re.compile(r"^([A-Za-z0-9_][A-Za-z0-9_.-]*):(?!=)")
 HOP_RE = re.compile(r"\$\(MAKE\)[^\n]*?\b(_[A-Za-z0-9_-]+)")
 SHELL_RE = re.compile(r"\$\(shell\s+([^)]*)\)", re.S)
 
@@ -200,9 +201,8 @@ def parse_makefile(text: str) -> tuple[dict[str, list[tuple[int, str]]], dict[st
             macros[name] = body
             i += 1
             continue
-        match = TARGET_RE.match(line)
-        if match and not line.startswith("\t"):
-            name = match.group(1)
+        name = architecture_bot.target_at_line(line)
+        if name is not None:
             current = name
             targets.setdefault(name, [])
             i += 1
