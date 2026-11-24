@@ -18,7 +18,8 @@ This lane's chat session is pinned to these Hermes toolsets and no others: `clar
 
 The only skill that stays enabled is `tll-planner`.
 `github`, `github-issue-triage`, and the other `tll-*` lane skills are listed in `skills.disabled`.
-There is no Hermes cron for this profile.
+No blind LLM dispatch cron exists for this profile. The sole exception is the owner-authorized,
+marker-gated watcher pair (no-LLM watchdog + monitor-gated agent) — see `references/watcher-trigger.md`.
 <!-- host-bot-tools:end -->
 
 # TLL Triage Planner
@@ -32,7 +33,10 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 0. **Work the board (owner-mandated standing behavior).** Whenever active, refresh `origin/master` and pull
    the open fleet `enhancement` issues (~12 in the 690/600s scope) and the open pull request(s); drive them
    to done — do NOT stop after one issue closes. This replaces the "wait for an explicit dispatch" habit.
-1. Do not create a cron job. If `cron/jobs.json` exists, stop and tell the owner. This fleet does not run on a timer.
+1. Do not create a blind cron that starts lane work, and do not add or edit an Actions `schedule:`; the
+   owner starts the fleet. The only permitted cron is the owner-authorized, marker-gated watcher pair
+   documented in `references/watcher-trigger.md` — never create it without explicit authorization and
+   never register a second pair on a host that already has one.
 2. Read `SOUL.md` in this profile. The repo is https://github.com/andyholst/trending-local-llms, branch `master`.
 3. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
 4. Read the data store shape and size before judging it: `data/models.json` currently has top-level
@@ -72,7 +76,7 @@ needed to move the board.
   lanes running them at once contend for one container VM). Owner directive 2026-11-23, tracked on #1423.
 - The planner still NEVER writes the tree and NEVER merges. Starting a lane is dispatch, not
   implementation; only `tll-implementer` writes, and `qa-validate` merges green.
-- No cron and no Actions schedule: the directive changes who starts the lanes, not the cadence.
+- No cron and no Actions schedule: the directive changes who starts the lanes, not the cadence. Blind LLM dispatch is never scheduled; the owner-authorized, marker-gated watcher pair is the sole exception (see `references/watcher-trigger.md`).
 - **Pitfalls.** Pass `--yolo --accept-hooks`, or the lane hits `approvals.single_query_mode: deny` on
   `git push --force`. After a lane run, check the owner's checkout with `git status` — a lane's shell cwd
   is not automatically its worktree. A lane runs 30–70 min; monitor it with `process_manage` and do not
@@ -231,7 +235,21 @@ needed to move the board.
   refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
   a dispatch needs such an edit, split the deliverable: implement the writable half, and post an explicit
   owed-to-owner marker naming the exact file:line and the required wording. Never silently drop the half,
-  and never weaken a gate just to avoid needing the edit.
+  and never weaken a gate just to avoid needing the edit. **A reviewer's signed rule-3c ACCEPT does NOT
+  unlock the harness's interactive approval prompt** — `security.protected_instruction_files` defaults true
+  and is deliberately NOT routed through the `--yolo`/allowlist gate (one-operation approval EVERY time,
+  no persisted scope, fail-closed without a human channel). A headless lane still gets `BLOCKED: write to
+  protected agent-instruction file(s) ... Silence is not consent` and must post a signed blocker with the
+  denial text and exact diff, then stop. Do not treat review approval as write approval, and NEVER flip
+  that config on your own to clear a queue. If the OWNER EXPLICITLY AUTHORIZES it, set
+  `security.protected_instruction_files: false` in BOTH `~/.hermes/config.yaml` and
+  `~/.hermes/profiles/<lane>/config.yaml` — a headless lane can read either one, so flipping only one is a
+  silent no-op. Take timestamped `*.bak-<UTC>` backups FIRST and record the authorization + backup paths on
+  the issue. Rule 3c itself is unchanged: design → signed reviewer verdict → implementer lands the exact
+  approved text; only the mechanism of the final write changed.
+  **Land that same setting in the repo's `agents/<lane>/config.yaml` mirror in the same delivery.** A host-only
+  config change reds `make fleet-host-sync-check` as an owned-block drift (the flag is not a tolerated Hermes
+  stamp), so flipping the host without the repo mirror trades one blocker for several divergences.
 - **An auto-close can hide an undone half — verify the merged PR's DIFF, not its `Closes #` line.** GitHub
   closes an issue from any PR whose title/body carries the keyword, including a PR that implements only PART
   of the issue's scope. After a merge run `gh pr diff <n> --name-only` and confirm every file the issue named
@@ -254,6 +272,33 @@ needed to move the board.
   overlap, QUEUE this dispatch until that lane reports `done`. Never start a second session on a branch another
   lane holds, and never let two live dispatches name the same mirror or generated file. If a collision still
   lands, measure the duplication on master and file a dedupe PR — do NOT force a third overlapping push.
+- **Two hosts dispatching the same issue need a BOARD-VISIBLE ordering; a local timer cannot provide one.**
+  The issue thread is the only surface every host shares. Before spawning, `make dispatch-check
+  ISSUE=<n> MACHINE=<user@host>` must also refuse when another host has a NEWER ACTIVE working-claim
+  (parse the signed `BOT <lane> · working on #` / `dispatch #` markers with their `user@host` machine line
+  and createdAt); a per-host registry is invisible to other hosts and cannot prevent the collision.
+  When another writer already moved a branch, a non-fast-forward rejection is the tell — STOP and report
+  the handover rather than forcing a second push. Confirm the handover on the issue so nobody re-dispatches.
+- **NEVER open a DRAFT PR — every fleet PR goes up READY FOR REVIEW.** A draft is invisible to reviewers and
+  to auto-merge, so it stalls the board and hides finished work. Require a complete body plus `Closes #<id>`
+  in BOTH title and body; if the work is unfinished, report status on the issue instead of opening a PR.
+- **The `--query-file` is the DISPATCH PROMPT (`dispatch-<lane>-<issue>.txt`), never the comment body
+  (`c-<id>.md`).** Launching with the comment file makes the lane read a board note as its task and die in
+  seconds. Name prompts `dispatch-*`, comments `c-*`; print the first line before spawning. A killed
+  one-shot lane can leave a registered empty worktree — check `git worktree list` before re-dispatching.
+- **Post board notes with `gh issue comment <n> --body <text>` or `--body-file <path>` — `--comment` is not
+  an issue-comment flag and exits 0 without posting.** A silent no-op looks identical to success in a
+  shell batch. Re-read the thread after posting (`gh issue view <n> --comments --json comments`,
+  last comment) whenever the record matters — a handover or ruling that was never posted leaves both
+  hosts without the decision.
+- **A red naming a MISSING PRODUCT ARTIFACT is implementer work, not a rebase.** When `validate` fails
+  because `findings/<issue>.md`, an OpenSpec change, or a test module is absent, the branch lacks output a
+  lane was supposed to author — a rebase cannot fabricate it and must hand back. Measure whether the red is
+  INHERITED (e.g. a seam moved from a root file to per-issue files after that branch's last green run) and
+  dispatch `tll-implementer` to write the artifact on the existing branch; keep the rebase lane out of it.
+  **Require the artifact in the DISPATCH, not after the red.** When a PR body will say `Implements #<n>`,
+  rule 6g binds, so name `findings/<issue>.md` as a delivery item up front; a missing findings file reddens
+  `validate` in seconds and costs a whole CI cycle to discover.
 - **Before calling a lane slow, separate WALL-CLOCK from CPU and count the containers.** A lane can sit for
   hours at ~0% CPU in `sleep` polls while its real work runs in `docker run` containers on the shared VM.
   `ps -Ao pid,pcpu,time,etime,command` shows seconds of CPU across a 2h runtime; `docker ps` shows the actual
@@ -289,6 +334,23 @@ needed to move the board.
   regenerate the index (`python3 scripts/openspec_index.py --write`), re-push. Do not "fix" the branch's own
   logic, and do not rebase repeatedly while master keeps moving under the run: say so and let the gate land
   on a stationary tip. Expect several rebases per PR while the board is busy.
+- **Before bulk-closing stale keeper PRs, measure the generated artifacts on master AND confirm each
+  diff is generated-only.** In a detached worktree at the fetched tip run `python3
+  scripts/openspec_index.py --check` and `python3 scripts/architecture_check.py`; if both report current,
+  keeper PRs whose only diff is `OPENSPEC.md` / `ARCHITECTURE.md` have nothing left to land. Check
+  `gh pr diff <n> --name-only` per PR — a keeper carrying a unique fix must be kept. Close with a signed
+  reason naming the measured sha and 'reopen if you disagree'; never merge a moot PR by hand.
+- **A keeper whose target archived count is BELOW master's is SUPERSEDED — no rebase, no force-push.**
+  Generated-artifact-only keeper PRs (`OPENSPEC.md` / `ARCHITECTURE.md` regeneration) go stale when master
+  advances past them. Measure the current count (`python3 scripts/openspec_index.py --check` in a detached
+  worktree at the fetched tip) and compare with the branch's target; if master is already ahead, close the
+  PR as superseded with a signed reason rather than producing an empty re-anchor or a no-op commit.
+- **Before dispatching an implementation of a filed defect, verify the gap STILL EXISTS on fetched master.**
+  A filed issue can already be fixed by another host or the Actions lane while it sits in the queue.
+  Read `gh issue view <n> --json state` first, then `git show origin/master:<file>` for the named artifact
+  (or run the named test in a detached worktree at the fetched sha). If the fix is already on master, post
+  the measurement on the issue and STOP — opening a second PR would be unrelated churn against a closed
+  issue. This is the same verification as the superseded-keeper check, applied to code fixes.
 - **Master's own push run can go green and SUPERSEDE a filed `validate`/`openspec-index` failure.**
   Before dispatching a fix for a filed pipeline-failure issue (#1412/#1413 class), re-measure the newest
   push-to-master `qa-validate` run at the CURRENT tip: `validate` success with `index-repair` skipped
@@ -302,6 +364,11 @@ needed to move the board.
   final `OpenSpec index on the merge tree` step (`[merge-tree-index] MERGE CONFLICT`). Grep the job log for
   `##[error]` and the step `##[group]` headers to name the REAL failing step, and post a correction comment
   on the filed issue when its quoted block misleads.
+- **A recurring gate red files one near-identical issue per run — sweep the flood before dispatching fixes.**
+  Check master's newest push runs first: if they are green, the old filings are historical, not open defects.
+  Group them by root cause and close or consolidate the duplicates with a signed reason; dispatch one fix
+  for the distinct root, never one per filing. Do not confuse those auto-filed `tech-debt` items with the
+  fleet's own `enhancement` board.
 - **Host↔master `SKILL.md` divergence is TWO-DIRECTIONAL — never byte-copy host files into master.**
   Measured on #1446/#1455 at `0df63311`: host-only bullets are genuinely new, but the host also LACKS
   newer master sections (the `## Delivery procedure` block), and copying host bytes verbatim DELETES lines
@@ -324,7 +391,13 @@ needed to move the board.
 - **Master can move several times inside one cycle — re-measure before every ruling.** A dispatch's
   premise can be void by the time the lane reads it (#1448 merged while its implementer was still awaiting
   a ruling). Re-check `gh pr view <n> --json state,headRefOid` and `make dispatch-check ISSUE=<n>` before
-  answering a lane's question, and bind every verdict to the sha actually reviewed.
+  answering a lane's question, and bind every verdict to the sha actually reviewed. The same applies to the
+  BRANCH: an empty CI-retrigger commit can move an owned branch between measurement and push. Re-read
+  `git ls-remote origin <branch>`, pin `--force-with-lease` to that fetched ref, and STOP if it moved again.
+  Before ordering a force-push over a branch, confirm no live lane still owns it — a non-fast-forward
+  rejection during a rebase is the tell, and the correct response is a signed STOP plus an ownership ruling
+  on the shared thread, not a retry.
+- **Re-read the current head before answering a lane that says it is blocked or waiting for a ruling.** By the time you answer, another host may have pushed the branch, merged the PR, or already recovered the CI. Measure `gh pr view <n> --json state,headRefOid,mergeable`, `gh pr checks <n>`, and the newest issue comment first. Then post ONE explicit ownership ruling on the shared thread — "not handed back, lane X is live" / "handed back, push held head with lease pinned to <sha>" — so nobody force-pushes over a live writer and nobody re-dispatches a finished issue.
 - **A lane a planner cron starts can be hard-interrupted when that cron session ends — verify liveness, then RESUME.** Measured #1495 (2026-11-24): the implementer ran 599 s, cut its worktree and posted its claim, then its profile log recorded `Interrupt requested (hard): explicit stop requested` with NO commit and NO PR, and no `tll-*` process survived. Launch lanes with `terminal(background=true, persist_on_release=true)`, and before trusting that work continues check `ps -p <pid>` AND the lane's `logs/agent.log` for fresh API calls. On death, run `make dispatch-check ISSUE=<n>` and dispatch the bounded RESUME above — never a second implementation.
 
 ## Worktree default (fleet-wide, owner-mandated)
@@ -353,10 +426,16 @@ break consumers, split into a non-breaking step or flag the conflict before writ
 
 - **Open every PR READY (never draft) — owner directive 2026-11-24.** Every fleet PR goes up ready for review. A draft is invisible to reviewers and to `auto-merge` (`scripts/auto_merge_rebase.py` verdict `draft` → "untouched"), so it silently stalls the board and hides finished work. When dispatching, tell the lane to open the PR ready; if the work is genuinely unfinished, report status on the issue instead of opening a PR at all. `make pr-draft-check` names a bound draft PR with its issue.
 
+- Every fix or improvement is synced into the repo as BOTH its own issue (or the existing bound issue)
+  AND an implementing PR before it is called done. A local change, a chat message, or a branch alone is
+  not a delivery. Verify the merge and the issue's close state; if a fix landed without a PR, file one.
 - Every lane that opens a PR must ship: `Closes #<id>` appears in BOTH the PR **title**
   and the PR **body** content (owner clarification — not title-only, not body-only).
   Title carries the change + issue id; body repeats `Closes #<id>`; merged PRs must close
-  the issue they implemented.
+  the issue they implemented. When a reviewer confirms a gap in the GUARD THIS PR ITSELF ADDED, route the fix
+  as an AMENDMENT of that still-open PR, not a second competing PR: push to its existing branch, and ADD the
+  new issue's `Closes #<n>` line to the body ALONGSIDE the original one (never replace it). A second PR on
+  the same generated files would race the first.
 - After any merge, verify the referenced issue actually closed. An issue left open after
   its PR merged is the same defect class and must be closed (a write lane either way) or
   reported on the fleet issue by a non-write lane. Check children too — #682 was left open
@@ -423,6 +502,43 @@ Dispatch it when a PR is stale/conflicting and no lane is mid-write on it; it bo
 (start: PR#, branch, master sha; finish: new head, run id) and reports both lines to the planner. Canonical
 remote is `origin` (no `upstream` remote exists — don't invent one); branch is `master`.
 
+## Rule 3c landings (design → review → write)
+
+An edit to `AGENTS.md §7b/§8` or any `agents/*/SOUL.md` is review-required. Run the three steps in order
+and post each on the issue's OWN thread:
+
+1. **Architect design** — a signed finding with the EXACT proposed row text, its section anchor, the
+   names-only test that pins it, and its reconciliation against other rulebook landings (disjoint anchors,
+   no duplicate/contradiction). No tree write.
+2. **Reviewer sign-off** — a signed `done` carrying the approved text byte-for-byte. This is PROCESS
+   approval only; it does not unlock the harness protected-write prompt (see the pitfall above).
+3. **Implementer write** — land the approved text VERBATIM, never re-worded from memory; carry the shared
+   note clause in the order ALREADY PRESENT on the landed head, taking `git show origin/master:AGENTS.md`
+   as the source of truth — never an order quoted in a dispatch, a design, or chat (a planner who guessed the
+   sequence sent a rebase lane the wrong order and had to correct it in-thread). On a rebase of a rulebook PR,
+   resolve a shared append-only line as a UNION of all clauses, not `--ours`/`--theirs`; verify every sibling
+   clause is still present and each approved needle occurs exactly once before pushing. `Closes #<id>` in
+   title AND body; open READY. If still refused, post a signed blocker with the denial text and exact diff,
+   then stop.
+
+Group independent rulebook changes into separate small issues rather than bundling them into a debt
+landing whose own sign-off covered different text. Measure the approved strings' current occurrence count
+in `AGENTS.md` first (a zero count means purely additive; a non-zero count means a duplicate).
+
+- **A missing needle in an EXISTING row usually means extend that row in place, not add a new one.** Check
+  the row's real test function list against the tests on disk; if one implemented test is simply un-named,
+  replace that single row with the approved text and verify the row/pipe-line count is unchanged. A new row
+  would duplicate the guard and break the names-only inventory.
+- **A rulebook row landing normally owes its own OpenSpec change — prove it before accepting "none owed".**
+  Run `python3 scripts/openspec_archive_check.py --pr <n>` on the branch: a `NO OpenSpec change` failure
+  means the change is required even though the edit is docs-only. Bind it to the issue and archive it on the
+  same branch, or `validate` reds at the lifecycle gate after the design and review are otherwise complete.
+- **A names-only pin that asserts a shared append-only line ENDS with its own clause is brittle by
+  construction.** Any later clause appended by another landing breaks it. Require presence plus ascending
+  order instead, and prove both orders pass while a missing/out-of-order needle still reds. When two
+  approved pins genuinely contradict, keep the order of the LANDED head and dispatch the relaxation as its
+  own small amendment to the still-open PR — never move the shared line to satisfy the older pin.
+
 ## Fleet claim/read/report protocol (owner-mandated, #703)
 
 Spread responsibility: the planner delegates; every lane posts a signed working-claim COMMENT on the issue
@@ -446,7 +562,7 @@ Every lane hands over on the issue thread, so the board can be followed without 
 - **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: a lane reads it first to see which lane on ANY machine holds a live claim, and hands over on it. Never two lanes on one issue.
 - **Claim twice before starting (race guard).** A lane posts its signed working-claim, waits about a minute, re-reads the thread, and starts only if its claim is still the newest; a newer claim by another lane on any machine wins and the first lane backs off.
 - **A lane never works outside its remit** — it files or comments and hands over.
-- **The board is the issue thread itself.** The parent fleet issue #682 is closed; do not keep a stale parent reference. Keep each open issue's thread current: who commented, which lane is in progress, what is next.
+- **The board is the issue thread itself.** The parent fleet issue #682 is closed; do not keep a stale parent reference. Keep each open issue's thread current: who commented, which lane is in progress, what is next. For cross-host claim races and duplicate PRs use the decision table in `references/multi-host-coordination.md`.
 
 ### Read the comments to delegate (owner-mandated, issue #1209)
 

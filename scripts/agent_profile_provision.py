@@ -29,7 +29,9 @@ Three rules shape it (AGENTS.md):
 - Rule 3b — additive only. A home's existing `config.yaml` is never destroyed: it is copied to
   `config.yaml.bak-<UTC>` and the new file lands beside the backup. Restoring is a human act.
 - Rule 6d — one implementation. Lanes come from `agent_model_chain.fleet_lanes` (the tree, never
-  a hand-kept list), the bytes written are `agent_model_chain.render_text`'s output, and a lane
+  a hand-kept list), the bytes written are `agent_model_chain.render_lane`'s output — `render_text`'s
+  byte-exact chain plus a lane's OPTIONAL declared `config.append.yaml` (issue #1618, so a whole-copy
+  re-provision preserves owner-authorized settings such as #1591's flag) — and a lane
   whose on-disk config has drifted from the chain is REFUSED rather than copied: provisioning a
   config the gate would red is laundering the drift into a live profile.
 
@@ -176,13 +178,17 @@ def merge_rendered(existing: str, rendered: str) -> tuple[str, list[str]]:
     return merged, problems
 
 
-def provision_one(root: Path, lane: str, home: Path, rendered: str) -> tuple[int, Path | None]:
+def provision_one(root: Path, lane: str, home: Path, chain_or_rendered: AMC.Chain | str) -> tuple[int, Path | None]:
     """Copy ONE lane's rendered config into its profile home, backing up whatever was there."""
     src = root / "agents" / lane / CONFIG_REL
     if not src.is_file():
         print(f"[profile-provision] FATAL: agents/{lane}/{CONFIG_REL} does not exist — run "
               f"`make agent-profile-model-render` first (the chain renders it)", file=sys.stderr)
         return EXIT_UNDECIDABLE, None
+    # A caller that already rendered the bytes (issue #1229's prompt probe) still works; a chain
+    # caller gets the lane's declared append too (issue #1618). Additive, never a breaking switch.
+    rendered = (chain_or_rendered if isinstance(chain_or_rendered, str)
+                else AMC.render_lane(root, chain_or_rendered, lane))
     if src.read_text() != rendered:
         # The gate would red this lane; a live home must never receive what the gate refuses.
         print(f"[profile-provision] REFUSED: agents/{lane}/{CONFIG_REL} is not what the chain "
@@ -354,8 +360,8 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_UNDECIDABLE
 
     home = profiles_home(args.profiles_home)
-    rendered = AMC.render_text(chain)
-    drift = AMC.config_problems(root, chain, rendered)
+    rendered = AMC.render_text(chain)  # non-lane merge homes get the chain; lanes add their declared append
+    drift = AMC.config_problems(root, chain)
     if drift:
         for line in drift:
             print(f"[profile-provision] REFUSED: {line}", file=sys.stderr)
@@ -373,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[profile-drift] UNDECIDABLE: profile home {home / lane} does not exist",
                       file=sys.stderr)
                 return EXIT_UNDECIDABLE
-            stale += check_one(f"lane={lane}", dest, rendered, whole_copy=True)
+            stale += check_one(f"lane={lane}", dest, AMC.render_lane(root, chain, lane), whole_copy=True)
             checked += 1
         for name in wanted_profiles:
             profile_dir = home.parent if name == DEFAULT_PROFILE else home / name
@@ -417,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
     wrote = 0
     backups = 0
     for lane in wanted:
-        rc, backup = provision_one(root, lane, home, rendered)
+        rc, backup = provision_one(root, lane, home, chain)
         if rc != EXIT_OK:
             return rc
         wrote += 1

@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **520**
+Active changes: **1** · archived: **523**
 
 ## Active changes
 
@@ -249,6 +249,7 @@ Active changes: **1** · archived: **520**
 | `fixture-git-identity-isolation` | archived | #943 — "test_worktree_base.py's identity-fallback assertion reads the | #944 | [os-agnostic-test-fixtures](openspec/changes/archive/fixture-git-identity-isolation/specs/os-agnostic-test-fixtures/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/fixture-git-identity-isolation/proposal.md) |
 | `flake-token-gap` | archived | #1371 | #1373 | [test-determinism](openspec/changes/archive/flake-token-gap/specs/test-determinism/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/flake-token-gap/proposal.md) |
 | `fleet-aux-local-sync` | archived | #1198 | #1200 | [fleet-model-chain](openspec/changes/archive/fleet-aux-local-sync/specs/fleet-model-chain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/fleet-aux-local-sync/proposal.md) |
+| `fleet-host-sync-reconcile-1618` | archived | #1618 | #1624 | [fleet-host-config-mirrors](openspec/changes/archive/fleet-host-sync-reconcile-1618/specs/fleet-host-config-mirrors/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fleet-host-sync-reconcile-1618/proposal.md) |
 | `fleet-host-sync-runtime-stamps` | archived | #1401 | #1414 | [fleet-host-sync-check](openspec/changes/archive/fleet-host-sync-runtime-stamps/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fleet-host-sync-runtime-stamps/proposal.md) |
 | `fleet-lane-handover-protocol` | archived | #1189 — "fleet: lanes must hand over on the issue thread — a signed done | #1191 | [fleet-lane-handover](openspec/changes/archive/fleet-lane-handover-protocol/specs/fleet-lane-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/fleet-lane-handover-protocol/proposal.md) |
 | `fleet-lifecycle-divergence-gate` | archived | #1209 — "fleet: the issue owns the PR→reviewer handover, and host lane behaviour is checked against fetched master (CI too)" | #1212 | [fleet-lifecycle](openspec/changes/archive/fleet-lifecycle-divergence-gate/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fleet-lifecycle-divergence-gate/proposal.md) |
