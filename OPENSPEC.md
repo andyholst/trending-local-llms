@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **489**
+Active changes: **1** · archived: **491**
 
 ## Active changes
 
@@ -350,6 +350,7 @@ Active changes: **1** · archived: **489**
 | `openspec-image-publish-gate-issue-989` | archived | #989 | #990 | [ci-pipelines](openspec/changes/archive/openspec-image-publish-gate-issue-989/specs/ci-pipelines/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/openspec-image-publish-gate-issue-989/proposal.md) |
 | `openspec-index-drift-tolerance` | archived | #1415 | #1419 | [openspec-index](openspec/changes/archive/openspec-index-drift-tolerance/specs/openspec-index/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-index-drift-tolerance/proposal.md) |
 | `openspec-invalid-change-repair` | archived | #962 — "The OpenSpec keeper names no repairer for an INVALID ACTIVE CHANGE" | #1086 | [openspec-invalid-change-repair](openspec/changes/archive/openspec-invalid-change-repair/specs/openspec-invalid-change-repair/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/openspec-invalid-change-repair/proposal.md) |
+| `openspec-keeper-supersede-1438` | archived | #1438 | #1498 | [openspec-keeper-supersede](openspec/changes/archive/openspec-keeper-supersede-1438/specs/openspec-keeper-supersede/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/openspec-keeper-supersede-1438/proposal.md) |
 | `openspec-merge-tree-1239` | archived | #1239 (measured on origin/master `cebd71c7`) | #1240 | [openspec-index](openspec/changes/archive/openspec-merge-tree-1239/specs/openspec-index/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/openspec-merge-tree-1239/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |

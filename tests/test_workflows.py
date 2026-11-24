@@ -376,7 +376,7 @@ def test_keeper_dedup_counts_only_mergeable_keepers():
               "A mergeable" in invalid_text and "already open" in invalid_text, invalid_text[:800])
     keeper_src = (ROOT / "scripts" / "keeper_pr.py").read_text()
     check("keeper seam reads mergeStateStatus beside the branch prefix (#960)",
-          "headRefName,mergeStateStatus" in keeper_src
+          "number,headRefName,headRefOid,mergeStateStatus" in keeper_src
           and '"DIRTY", "CONFLICTING"' in keeper_src, "")
     check("keeper seam names the UNMERGEABLE keeper it refused to honour (#960)",
           "UNMERGEABLE" in keeper_src, "")
