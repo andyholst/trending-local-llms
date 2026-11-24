@@ -447,8 +447,8 @@
       ],
       "issue_number": "1380",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1380",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1144,
+      "guard": "tests/test_ensure_image.py",
       "undiagnosed": null,
       "failing_steps": [
         "Verify the base manifest answers both architectures (make image-manifest-check)"
@@ -457,7 +457,11 @@
       "error_excerpt": "2026-11-18T15:07:06.0960756Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T15:07:06.1029032Z make: *** [Makefile:369: image-manifest-check] Error 1\n2026-11-18T15:07:06.1044150Z ##[error]Process completed with exit code 2.",
       "note": "filed before the ledger existed (marker-matched)",
       "rediagnosed_utc": "2026-11-23T15:48:14.922725+00:00",
-      "rediagnosis_note": "re-read on this sweep from job 134894794536 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
+      "rediagnosis_note": "re-read on this sweep from job 134894794536 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "fix_pr_merged_utc": "2026-11-19T13:20:34Z",
+      "stamp_utc": "2026-11-24T10:04:12.371970+00:00",
+      "attribution_evidence": "scripts/ensure_image.py:578",
+      "stamp_note": "attributed by `make pipeline-failure-attribute` (issue #1053): merged PR #1144 (fix(tech-debt): the image reuse decision asks which architectures a published tag answers (issue #11) is the landed fix for this error class; guard tests/test_ensure_image.py; evidence: scripts/ensure_image.py:578"
     },
     {
       "run_id": 44422028712,
@@ -472,8 +476,8 @@
       ],
       "issue_number": "1381",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1381",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1144,
+      "guard": "tests/test_ensure_image.py",
       "undiagnosed": null,
       "failing_steps": [
         "Verify the base manifest answers both architectures (make image-manifest-check)"
@@ -482,7 +486,11 @@
       "error_excerpt": "2026-11-18T23:37:54.6074720Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T23:37:54.6144550Z make: *** [Makefile:377: image-manifest-check] Error 1\n2026-11-18T23:37:54.6157443Z ##[error]Process completed with exit code 2.",
       "note": "filed before the ledger existed (marker-matched)",
       "rediagnosed_utc": "2026-11-23T15:48:14.922725+00:00",
-      "rediagnosis_note": "re-read on this sweep from job 135217203192 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
+      "rediagnosis_note": "re-read on this sweep from job 135217203192 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "fix_pr_merged_utc": "2026-11-19T13:20:34Z",
+      "stamp_utc": "2026-11-24T10:03:44.138755+00:00",
+      "attribution_evidence": "scripts/ensure_image.py:578",
+      "stamp_note": "attributed by `make pipeline-failure-attribute` (issue #1053): merged PR #1144 (fix(tech-debt): the image reuse decision asks which architectures a published tag answers (issue #11) is the landed fix for this error class; guard tests/test_ensure_image.py; evidence: scripts/ensure_image.py:578"
     },
     {
       "run_id": 45141972094,
