@@ -10,6 +10,10 @@ provider is the built-in **`nous`** provider (the Nous Portal session; the same
 `provider: nous`, because adding `base_url`/`key_env` re-routes it to `custom` and answers HTTP
 401 on inference (measured). `make agent-profile-model-render` renders each
 fleet lane's Hermes profile config — `agents/<lane>/config.yaml` — from that file;
+Since issue #1618 a lane may also carry `agents/<lane>/config.append.yaml`, an OPTIONAL declared extra
+block that `render_lane` appends AFTER `render_text`'s byte-exact chain output. The chain still owns
+`model:`/`model_aliases:`/`fallback_providers:`, an append may not redeclare one (refused), and a lane
+with no append file renders exactly as before.
 `make agent-model-chain-check` (bundled into `make lint`, so `qa-validate`'s `validate` job and
 `scripts/fix_loop.sh` both run it) refuses a lane config that drifted from the chain, a chain
 that lost its primary / fallback / last-resort shape, a `nous` step carrying `base_url`/`key_env`,
@@ -36,6 +40,11 @@ from typing import NamedTuple
 ROOT = Path(__file__).resolve().parent.parent
 CHAIN_REL = "agents/model_chain.json"
 CONFIG_REL = "config.yaml"
+# Issue #1618: a lane may declare an EXTRA top-level block beside its rendered config. The chain still
+# owns `model:`/`model_aliases:`/`fallback_providers:` byte-for-byte; this file carries owner-authorized
+# profile settings (e.g. #1591's `security.protected_instruction_files: false`) that must survive a
+# whole-copy re-provision. Absent = no append, so every other lane renders exactly as before (rule 6b).
+APPEND_REL = "config.append.yaml"
 LANE_PREFIX = "tll-"
 
 EXIT_OK, EXIT_PROBLEM, EXIT_UNDECIDABLE = 0, 1, 2
@@ -341,7 +350,26 @@ def render_text(chain: Chain) -> str:
     return "\n".join(lines) + "\n"
 
 
-def config_problems(root: Path, chain: Chain, rendered: str) -> list[str]:
+def lane_append(root: Path, lane: str) -> str:
+    """The lane's DECLARED extra config bytes (`agents/<lane>/config.append.yaml`, issue #1618).
+
+    Read from the TREE, never from a profile home: a host-only setting that is not declared here is
+    drift, not a lesson that may be laundered into a rendered config (rule 6d).
+    """
+    path = root / "agents" / lane / APPEND_REL
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
+def render_lane(root: Path, chain: Chain, lane: str) -> str:
+    """The bytes a lane's `config.yaml` must carry: the chain's render plus its declared append."""
+    text = render_text(chain)
+    append = lane_append(root, lane)
+    if not append:
+        return text
+    return text + "\n" + append if not append.startswith("\n") else text + append
+
+
+def config_problems(root: Path, chain: Chain) -> list[str]:
     """Every way a lane's on-disk config can drift from the chain it was rendered from."""
     problems: list[str] = []
     lanes = fleet_lanes(root)
@@ -352,9 +380,19 @@ def config_problems(root: Path, chain: Chain, rendered: str) -> list[str]:
         if not path.is_file():
             problems.append(f"agents/{lane}/{CONFIG_REL} is missing — `make agent-profile-model-render` writes it")
             continue
+        append = lane_append(root, lane)
+        if append:
+            # An append may add profile settings, never silently override a chain-owned block: the
+            # owned-block drift verdict in `fleet_host_sync_check` reads the LAST one by name.
+            for name in ("model", "model_aliases", "fallback_providers"):
+                if re.search(rf"(?m)^{name}:", append):
+                    problems.append(
+                        f"agents/{lane}/{APPEND_REL} redeclares `{name}:` — the chain owns that block"
+                    )
+        want = render_lane(root, chain, lane)
         on_disk = path.read_text()
-        if on_disk != rendered:
-            diff = _first_diff_line(on_disk, rendered)
+        if on_disk != want:
+            diff = _first_diff_line(on_disk, want)
             problems.append(f"agents/{lane}/{CONFIG_REL} drifted from the chain ({diff}) — re-run `make agent-profile-model-render`, never hand-edit a generated config")
     return problems
 
@@ -405,11 +443,10 @@ def render(root: Path) -> int:
         for p in problems:
             print(f"[model-chain] FAIL {p}", file=sys.stderr)
         return EXIT_PROBLEM
-    rendered = render_text(chain)
     lanes = fleet_lanes(root)
     for lane in lanes:
         path = root / "agents" / lane / CONFIG_REL
-        path.write_text(rendered)
+        path.write_text(render_lane(root, chain, lane))
     print(f"[model-chain] rendered {len(lanes)} lane config(s) from {CHAIN_REL}: "
           + " -> ".join(f"{e.alias}({e.model})" for e in chain.entries))
     return EXIT_OK
@@ -434,7 +471,7 @@ def check(root: Path) -> int:
         return EXIT_UNDECIDABLE
     assert chain is not None
     pins, pin_problems = read_makefile_pins(root)
-    problems = pin_problems + chain_problems(chain, pins) + config_problems(root, chain, render_text(chain))
+    problems = pin_problems + chain_problems(chain, pins) + config_problems(root, chain)
     problems += credential_leak_problems(root)
     lanes = fleet_lanes(root)
     if problems:

@@ -1,0 +1,4 @@
+# Owner-authorized 2026-11-24 (issue #1591): rule 3c is enforced by the
+# design -> reviewer sign-off -> implementer protocol on the issue thread.
+security:
+  protected_instruction_files: false

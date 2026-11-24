@@ -64,3 +64,8 @@ fallback_providers:
     base_url: http://127.0.0.1:8080/v1
   - provider: nous
     model: deepseek/deepseek-v4-flash-0731
+
+# Owner-authorized 2026-11-24 (issue #1591): rule 3c is enforced by the
+# design -> reviewer sign-off -> implementer protocol on the issue thread.
+security:
+  protected_instruction_files: false

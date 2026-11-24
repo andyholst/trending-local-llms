@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **520**
+Active changes: **2** · archived: **519**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `fleet-host-sync-reconcile-1618` | active | #1618 | — | [fleet-host-config-mirrors](openspec/changes/fleet-host-sync-reconcile-1618/specs/fleet-host-config-mirrors/spec.md) | 8/8 | [proposal.md](openspec/changes/fleet-host-sync-reconcile-1618/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -401,7 +402,6 @@ Active changes: **1** · archived: **520**
 | `pr-ready-never-draft-1563` | archived | #1563 — "Fleet: never open a draft PR — every fleet PR is ready for review" | #1570 | [pr-readiness](openspec/changes/archive/pr-ready-never-draft-1563/specs/pr-readiness/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-ready-never-draft-1563/proposal.md) |
 | `pr-rebase-skill-push-verify-1427` | archived | #1427 | #1429 | [fleet-lane-contracts](openspec/changes/archive/pr-rebase-skill-push-verify-1427/specs/fleet-lane-contracts/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-rebase-skill-push-verify-1427/proposal.md) |
 | `pr-rebase-soul-generated-artifacts` | archived | #1361 | #1362 | [pr-rebase-lane](openspec/changes/archive/pr-rebase-soul-generated-artifacts/specs/pr-rebase-lane/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/pr-rebase-soul-generated-artifacts/proposal.md) |
-| `pr-rebase-soul-push-verify-1442` | archived | #1442 | #1628 | [fleet-lane-contracts](openspec/changes/archive/pr-rebase-soul-push-verify-1442/specs/fleet-lane-contracts/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-rebase-soul-push-verify-1442/proposal.md) |
 | `pr-title-from-the-issue` | archived | #541 | — | [pr-body](openspec/changes/archive/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-title-from-the-issue/proposal.md) |
 | `pr-triggered-failure-ledger` | archived | #1164 | #1170 | [pr-triggered-failure-ledger](openspec/changes/archive/pr-triggered-failure-ledger/specs/pr-triggered-failure-ledger/spec.md) | 18/18 | [proposal.md](openspec/changes/archive/pr-triggered-failure-ledger/proposal.md) |
 | `prechange-guard-fixtures-1292` | archived | #1292 | #1298 | [regression-guards](openspec/changes/archive/prechange-guard-fixtures-1292/specs/regression-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/prechange-guard-fixtures-1292/proposal.md) |

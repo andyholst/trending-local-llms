@@ -374,6 +374,10 @@ def test_the_make_target_renders_the_shipped_configs_from_a_fresh_tree():
             d = root / "agents" / lane
             d.mkdir()
             shutil.copy(ROOT / "agents" / lane / "SOUL.md", d / "SOUL.md")
+            # Issue #1618: a lane's declared extra config block is part of what the seam renders.
+            append = ROOT / "agents" / lane / "config.append.yaml"
+            if append.is_file():
+                shutil.copy(append, d / "config.append.yaml")
         res = subprocess.run(["make", "-C", str(root), "agent-profile-model-render"],
                              cwd=str(ROOT), capture_output=True, text=True)
         check("`make agent-profile-model-render` runs in a fresh tree", res.returncode == 0,
@@ -388,6 +392,41 @@ def test_the_make_target_renders_the_shipped_configs_from_a_fresh_tree():
                              cwd=str(ROOT), capture_output=True, text=True)
         check("`make agent-model-chain-check` passes in that fresh tree", res.returncode == 0,
               (res.stdout + res.stderr)[-200:])
+
+
+def test_a_declared_lane_append_is_rendered_and_an_undeclared_one_is_refused():
+    """Issue #1618: an owner-authorized lane block is rendered from the TREE, never hand-typed on a host."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        lane = "tll-tester"
+        block = "# owner-authorized 2026-11-24 (issue #1591)\nsecurity:\n  protected_instruction_files: false\n"
+        (root / "agents" / lane / "config.append.yaml").write_text(block, encoding="utf-8")
+        res = run("--write", root=root)
+        check("a declared append renders green", res.returncode == 0, (res.stdout + res.stderr)[-200:])
+        cfg_path = root / "agents" / lane / "config.yaml"
+        text = cfg_path.read_text(encoding="utf-8")
+        check("the lane config carries the declared block byte-for-byte", block in text, text[-200:])
+        check("the chain's owned blocks stay byte-exact before the append",
+              "  - provider: nous\n    model: deepseek/deepseek-v4-flash-0731\n" in text
+              and text.index("fallback_providers:") < text.index("# owner-authorized"),
+              repr(text[-120:]))
+        other = (root / "agents" / "tll-reviewer" / "config.yaml").read_text(encoding="utf-8")
+        check("a lane with no declared append renders exactly as before",
+              "protected_instruction_files" not in other, other[-120:])
+        res = run("--check", root=root)
+        check("the gate is green on the rendered append", res.returncode == 0,
+              (res.stdout + res.stderr)[-200:])
+        cfg_path.write_text(text + "terminal:\n  backend: local\n", encoding="utf-8")
+        res = run("--check", root=root)
+        check("an UNDECLARED extra block is refused, not laundered", res.returncode == 1,
+              (res.stdout + res.stderr)[-200:])
+        (root / "agents" / lane / "config.append.yaml").write_text(
+            "model:\n  default: deepseek/deepseek-v4-flash-0731\n", encoding="utf-8")
+        run("--write", root=root)
+        res = run("--check", root=root)
+        out = res.stdout + res.stderr
+        check("an append may not redeclare a chain-owned block", res.returncode == 1
+              and "redeclares `model:`" in out, out[-300:])
 
 
 def test_the_gate_is_wired_where_it_bites():
@@ -423,6 +462,7 @@ def main() -> int:
     test_an_unreadable_chain_is_exit_2_never_a_silent_clean()
     test_a_lane_without_a_config_is_refused()
     test_the_make_target_renders_the_shipped_configs_from_a_fresh_tree()
+    test_a_declared_lane_append_is_rendered_and_an_undeclared_one_is_refused()
     test_the_gate_is_wired_where_it_bites()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

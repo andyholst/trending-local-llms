@@ -431,6 +431,29 @@ def test_check_is_green_after_provisioning_and_a_missing_home_is_exit_2():
               missing.returncode == 2 and "does not exist" in missing.stderr, missing.stderr[-200:])
 
 
+def test_a_declared_lane_append_survives_a_whole_copy_reprovision():
+    """Issue #1618: re-provisioning copies whole bytes, so the #1591 block must be in the render."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        lane = "tll-tester"
+        block = "# owner-authorized 2026-11-24 (issue #1591)\nsecurity:\n  protected_instruction_files: false\n"
+        (root / "agents" / lane / "config.append.yaml").write_text(block, encoding="utf-8")
+        assert AMC.render(root) == 0
+        home = Path(td) / "profiles"
+        (home / lane).mkdir(parents=True)
+        proc = run_provision("--lane", lane, "--profiles-home", str(home), root=root)
+        out = proc.stdout + proc.stderr
+        check("a lane with a declared append provisions green", proc.returncode == 0, out[-200:])
+        dest = home / lane / AMC.CONFIG_REL
+        check("the #1591 setting survives a whole-copy re-provision", block in dest.read_text(),
+              dest.read_text()[-200:])
+        check("the installed bytes are exactly the rendered lane config",
+              dest.read_text() == lane_config(root, lane), "")
+        chk = run_provision("--check", "--lane", lane, "--profiles-home", str(home), root=root)
+        check("CHECK mode calls the provisioned home CLEAN",
+              chk.returncode == 0 and "CLEAN" in chk.stdout, chk.stdout[-200:] + chk.stderr[-200:])
+
+
 def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("the Makefile defines the internal recipe (the seam, not a second copy)",
@@ -473,6 +496,7 @@ def main() -> int:
     test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_refused()
     test_check_names_every_stale_home_writes_nothing_and_needs_no_credential()
     test_check_is_green_after_provisioning_and_a_missing_home_is_exit_2()
+    test_a_declared_lane_append_survives_a_whole_copy_reprovision()
     test_the_target_is_wired_to_the_makefile_and_a_pipeline_job()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
