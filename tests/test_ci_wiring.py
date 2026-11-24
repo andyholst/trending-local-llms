@@ -23,6 +23,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from wiring import recipe  # noqa: E402  (the ONE Makefile-recipe locator)
+
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "scripts" / "run_tests.sh"
 
@@ -111,10 +113,35 @@ def test_an_empty_directory_is_a_failure_not_a_vacuous_pass():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_the_recipe_locator_reads_the_targets_own_lines() -> None:
+    """`makefile.split("lint:")` is not a locator (PR #1566's measured red).
+
+    A comment that says "like lint:" and an image URL containing "hadolint:" made the
+    slice start in prose, so three wiring guards read 600-800 characters that never
+    reached the recipe they assert on. The locator must anchor on the target's own
+    line; this module is RED if `wiring.recipe` goes back to a substring split.
+    """
+    planted = (
+        "# note: like lint: it runs before any image exists.\n"
+        "IMAGES := ghcr.io/hadolint/hadolint:v2.12.0\n"
+        "lint:\n"
+        "\t$(MAKE) --no-print-directory check-conflict-markers\n"
+        "\n"
+        "lint-fix:\n"
+        "\tpython3 scripts/lint_linefeeds.py --fix\n"
+    )
+    body = recipe(planted, "lint")
+    check("recipe: locates the target's own command lines", "check-conflict-markers" in body, body)
+    check("recipe: a prose or image token containing the name does not disturb it",
+          "lint_linefeeds.py --fix" not in body, body)
+    check("recipe: a missing target is empty, never a guess", recipe(planted, "nosuch") == "")
+
+
 def main() -> int:
     print("test runner wiring (issues #176/#192)")
     test_the_runner_lists_every_module()
     test_the_makefile_has_exactly_one_runner_and_no_dead_pytest_branch()
+    test_the_recipe_locator_reads_the_targets_own_lines()
     test_a_failing_module_stops_the_run()
     test_a_green_directory_passes()
     test_an_empty_directory_is_a_failure_not_a_vacuous_pass()

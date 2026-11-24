@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **507**
+Active changes: **1** · archived: **509**
 
 ## Active changes
 
@@ -361,6 +361,7 @@ Active changes: **1** · archived: **507**
 | `openspec-merge-tree-1239` | archived | #1239 (measured on origin/master `cebd71c7`) | #1240 | [openspec-index](openspec/changes/archive/openspec-merge-tree-1239/specs/openspec-index/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/openspec-merge-tree-1239/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
+| `os-agnostic-make-cross-cutting-seams` | archived | #1496 | #1566 | [os-agnostic-make-cross-cutting-seams](openspec/changes/archive/os-agnostic-make-cross-cutting-seams/specs/os-agnostic-make-cross-cutting-seams/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/os-agnostic-make-cross-cutting-seams/proposal.md) |
 | `os-agnostic-make-pr-body-batch-seam` | archived | #1399 | #1417 | [os-agnostic-make-pr-body-batch-seam](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/specs/os-agnostic-make-pr-body-batch-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/proposal.md) |
 | `os-agnostic-make-self-archive-seam` | archived | #1495 | #1556 | [python-env-self-archive-seam](openspec/changes/archive/os-agnostic-make-self-archive-seam/specs/python-env-self-archive-seam/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/os-agnostic-make-self-archive-seam/proposal.md) |
 | `owed-row-close-quote` | archived | #766 | #922 | [agents-guard-registry](openspec/changes/archive/owed-row-close-quote/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-row-close-quote/proposal.md) |
@@ -369,6 +370,7 @@ Active changes: **1** · archived: **507**
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pin-freshness-rides-the-scheduled-pipeline` | archived | #1093 | #1150 | [fleet-cadence](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/specs/fleet-cadence/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/proposal.md) |
+| `pip-tools-console-script-detection-1593` | archived | #1593 | #1566 | [pip-tools-detection](openspec/changes/archive/pip-tools-console-script-detection-1593/specs/pip-tools-detection/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pip-tools-console-script-detection-1593/proposal.md) |
 | `pipeline-failure-diagnosis` | archived | #802 (measured: qa-validate master run 43088760321 red on `openspec-archive-check` — diagnosed only because a human opened the run page; the chain ended as issue #800 → fix PR #808 → guard `tests/test_openspec_archive_check.py`) | #811 | [alarms](openspec/changes/archive/pipeline-failure-diagnosis/specs/alarms/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/pipeline-failure-diagnosis/proposal.md) |
 | `pipeline-failure-rediagnose-820` | archived | #820 | #967 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-820/proposal.md) |
 | `pipeline-failure-rediagnose-821` | archived | #821 | #974 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-821/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-821/proposal.md) |

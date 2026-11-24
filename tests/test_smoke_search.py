@@ -70,8 +70,11 @@ def _makefile_keywords(backend: str) -> list:
 
     text = MAKEFILE.read_text()
     var = backend.upper() + "_KEYWORDS"
-    m = re.search(rf"^{var} = \$\(shell python3 scripts/query_vocab\.py --print {backend}\b",
-                  text, re.M)
+    # #712 Slice 5 (#1496) routes the parse-time exec through `$(PYTHON_RUN)`, so the seam
+    # prefix is optional here — exactly as tests/test_cpu_query_vocabulary.py reads it. The ONE
+    # derivation home is still this line: a hand-copied list still does not parse.
+    m = re.search(rf"^{var} = \$\(shell (?:\$\(PYTHON_RUN\) )?python3 scripts/query_vocab\.py"
+                  rf" --print {backend}\b", text, re.M)
     if not m:
         return []
     resolved = subprocess.run(

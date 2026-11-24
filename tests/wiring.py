@@ -11,6 +11,7 @@ the discovery rule lives here.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -30,3 +31,28 @@ def wired(path: str | Path | None = None) -> bool:
     mk = (ROOT / "Makefile").read_text()
     name = Path(path).name if path else None
     return "_test:\n\tbash scripts/run_tests.sh" in mk and (name in listed(path) if name else True)
+
+
+def recipe(text: str, target: str) -> str:
+    """The command lines of one Makefile recipe, located by its OWN target line.
+
+    `text.split(f"{target}:")` is NOT a locator. A comment that says "like lint:"
+    (added by #1496) or an image URL containing "hadolint:" makes the slice start
+    in prose, so three wiring guards read 600-800 characters that never reach the
+    recipe they assert on — measured red on PR #1566's head while `make lint`
+    really did run every guard. The recipe is instead anchored on a line that
+    STARTS with the target, then followed only by tab-indented command lines
+    (blank lines are ignored, as make ignores them).
+    """
+    m = re.search(rf"(?m)^{re.escape(target)}:[^\n]*", text)
+    if not m:
+        return ""
+    body: list[str] = []
+    for line in text[m.end():].splitlines():
+        if line.startswith("\t"):
+            body.append(line)
+        elif not line.strip():
+            continue
+        else:
+            break
+    return "\n".join(body)

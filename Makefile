@@ -210,8 +210,16 @@ HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
 # prose as a command and the leg died with a syntax error far from its cause. `$(subst ','\'',…)`
 # shell-escapes every quote in the value, `'$1'` hands it to bash untouched, and `eval "$$1"` runs
 # it with the same parsing (and the same exit status under pipefail) the splice had.
+#
+# Slice 5 of #712 (#1496): the redactor is an interpreter too, so it runs through the ONE
+# `$(PYTHON_RUN)` python-env seam instead of the host's `python3` — the same image every other
+# migrated utility recipe uses, so a host with Docker but not the pinned Python still scrubs. The
+# harness is injected at the REDACTOR end of the pipeline (`cmd | $(PYTHON_RUN) python3 …`), never
+# around the command being scrubbed: those agent legs are already `$(DOCKER_RUN)`/`$(TEST_RUN)`
+# containers and wrapping them again would be docker-in-docker. The capture contract is unchanged
+# (raw + redacted files, `--append` per round, streamed masked lines, the command's own status).
 define scrubbed_run
-	@bash -o pipefail -c 'eval "$$1" 2>&1 | python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
+	@bash -o pipefail -c 'eval "$$1" 2>&1 | $(PYTHON_RUN) python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
 endef
 
 
@@ -330,8 +338,11 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 # $PWD), plus conditional forwarding of the fix-loop self-archive baseline path
 # and its SELF_ARCHIVE_* env so `self-archive-snapshot`/`-guard` behave on a real
 # repository exactly as they do on the host. Both stay pure `python3 scripts/…`.
+# Slice 5 (#1496) adds `-e FIRECRAWL_API_KEY`, the one credential the search pre-flight
+# (`_search-preflight`) proves through this seam, so the check reads the value the AGENT will
+# get rather than a name the container drops — the same fixed name list DOCKER_RUN forwards.
 PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
-	-e PYTHONUNBUFFERED=1 $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
+	-e PYTHONUNBUFFERED=1 -e FIRECRAWL_API_KEY $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
 
 # ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
 # Not every host `python3 scripts/…` target routes through PYTHON_RUN; these stay
@@ -364,6 +375,43 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #    recipe (no `docker` in the test image) — deferred to #1411, not routed here.
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
+#
+# Slice 5 of #712 (#1496) makes the list MECHANICAL: `make check-no-bare-host-python`
+# (scripts/check_no_bare_host_python.py, part of `make lint`) fails when any public target
+# outside this list reaches a bare host `python3`/`pip`/`uv` — or a bare pip-tools console script
+# (`pip-compile`, `pip-sync`, `pip-tools`; #1593, which the shorter `pip` spelling could not see)
+# — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one bare
+# `$(MAKE) _x` hop. The authoritative copy is EXCEPTIONS in that script; the mirror below carries
+# the SAME names, and tests/test_os_agnostic_make.py fails when the two drift. Categories: image
+# build/selection (the docker seam itself), gh/GitHub-state bound, host git identity/worktree, the
+# cheapest pre-image-ensure guards, and host orchestration/local probes.
+# HOST-EXCEPTIONS-BEGIN
+#   `agent-aux-local-sync` `agent-hermes-smoke` `agent-image-published-check`
+#   `agent-image-push-check` `agent-image-ref` `agent-image-smoke` `agent-model-chain-check`
+#   `agent-model-chain-report` `agent-profile-model-render` `agent-profile-provision`
+#   `announce-image-fallback` `auto-merge-head-check` `auto-merge-rebase` `base-advance`
+#   `base-check` `base-rebase` `bot-health` `branch-adopt` `check-branch-protection`
+#   `check-commit-authorship` `check-conflict-markers` `check-counter-parity`
+#   `check-gh-json-fields` `check-makefile-knobs` `check-no-bare-host-python`
+#   `check-pytest-imports` `check-workflow-guards` `check-working-files` `code-review-file`
+#   `code-review-scan` `comment-monitor` `comment-watch` `commit-authorship-report`
+#   `commit-message-check` `data-gap-baseline` `data-gap-issue` `dispatch-check`
+#   `file-findings` `findings-check-for-pr` `fleet-host-reconcile` `fleet-host-sync-check`
+#   `free-model-refresh` `free-model-refresh-pr-body` `freshness-alarm` `ghost-run-alarm`
+#   `git-identity` `hermes-pin-channel-record` `hermes-pin-freshness` `image-ensure`
+#   `image-ensure-base` `image-ensure-test` `image-manifest-check` `image-tags`
+#   `issue-message-check` `issue-outcome` `issue-pick` `issue-queue` `issue-skip-note`
+#   `issue-state` `issue-thread` `issue-verdict` `keeper-pr` `lint` `lint-fix`
+#   `local-endpoint-probe` `local-endpoint-probe-check` `master-alarm` `model-type-report`
+#   `openspec-archive-check` `openspec-image` `openspec-manifest-check` `owed-rows-check`
+#   `pipeline-failure-attribute` `pipeline-failure-guard-check` `pipeline-failure-issue`
+#   `pr-closure` `pr-draft-check` `pr-health` `pr-message-check` `publish-agent-image` `python-env-image`
+#   `qa-report` `queued-alarm` `rebuild-decision` `refresh-require-tip` `refresh-run-block`
+#   `refresh-sync` `reset-working-files` `review-issue-body-hash` `review-issue-check-markers`
+#   `review-issue-finish` `review-issue-guard` `review-issue-mark` `review-issue-pick`
+#   `secret-scan` `secret-scan-history` `secret-scan-self-test` `security-scan-self-test`
+#   `sweep-alarm` `verify-closure` `watch-monitor` `worktree-new` `worktree-resume`
+# HOST-EXCEPTIONS-END
 
 .PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check image-manifest-check test-image-smoke
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
@@ -808,12 +856,27 @@ _check-working-files:
 check-working-files: ## Fail when a name in the bot's working-file list is not gitignored (issue #543)
 	@$(MAKE) --no-print-directory _check-working-files
 
+# Slice 5 of #712 (#1496): the mechanical half of "no public target outside the documented
+# host-only exceptions invokes a bare host python3/pip/uv". It reads the REAL Makefile and fails
+# naming the target and line; the exception list lives in ONE place
+# (scripts/check_no_bare_host_python.py::EXCEPTIONS) and the same names are mirrored between the
+# HOST-EXCEPTIONS-BEGIN/END markers above the PYTHON_RUN seam, with tests/test_os_agnostic_make.py
+# proving the two agree. Host-side by design, like lint: it runs before any image exists.
+.PHONY: _check-no-bare-host-python
+_check-no-bare-host-python:
+	python3 scripts/check_no_bare_host_python.py
+
+.PHONY: check-no-bare-host-python
+check-no-bare-host-python: ## Fail when a non-exception public make target reaches a bare host python3/pip/uv or a bare pip-tools console script (issue #712 Slice 5, #1496; #1593)
+	@$(MAKE) --no-print-directory _check-no-bare-host-python
+
 .PHONY: lint lint-fix
-lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill or its model chain
+lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, a bot leg lost its project skill or its model chain, or a non-exception public target reaches a bare host python3/pip/uv or a bare pip-tools console script
 	python3 scripts/lint_linefeeds.py
 	python3 scripts/lint_syntax.py
 	$(MAKE) --no-print-directory check-agent-skills
 	$(MAKE) --no-print-directory check-working-files
+	$(MAKE) --no-print-directory check-no-bare-host-python
 	$(MAKE) --no-print-directory check-conflict-markers
 	$(MAKE) --no-print-directory check-pytest-imports
 	$(MAKE) --no-print-directory check-counter-parity
@@ -952,7 +1015,11 @@ agent-skills-report: python-env-image ## Print every agent leg with its prompt s
 # scripts/update_trending.py (rule 6d), through scripts/query_coverage.py, so the
 # prompts and the guard can never disagree. Recursive (=) so the script runs only
 # when a prompt actually uses it, never on every make invocation.
-MODEL_QUERIES = $(shell python3 scripts/query_coverage.py --queries 2>/dev/null)
+#
+# Slice 5 of #712 (#1496): the parse-time execs go through `$(PYTHON_RUN)` too, so expanding
+# `_search-*` needs the CONTAINER's interpreter, not the host's. They stay recursive (`=`), so
+# the seam still starts only when a leg prompt actually reads the list.
+MODEL_QUERIES = $(shell $(PYTHON_RUN) python3 scripts/query_coverage.py --queries 2>/dev/null)
 
 # The curated vocabulary of each leg comes from ONE reviewed home —
 # scripts/query_vocab.py (issue #858). The CPU leg's hand-copied words captured
@@ -960,10 +1027,10 @@ MODEL_QUERIES = $(shell python3 scripts/query_coverage.py --queries 2>/dev/null)
 # copies (this file, scripts/smoke_search.py, and a near-copy in
 # update_trending.SEARCH_GROUPS) could each drift and nothing read the WORDS.
 # Recursive (=): the script runs only when a leg prompt uses the list.
-NVIDIA_KEYWORDS = $(shell python3 scripts/query_vocab.py --print nvidia 2>/dev/null)
-METAL_KEYWORDS = $(shell python3 scripts/query_vocab.py --print metal 2>/dev/null)
-CPU_KEYWORDS = $(shell python3 scripts/query_vocab.py --print cpu 2>/dev/null)
-AMD_KEYWORDS = $(shell python3 scripts/query_vocab.py --print amd 2>/dev/null)
+NVIDIA_KEYWORDS = $(shell $(PYTHON_RUN) python3 scripts/query_vocab.py --print nvidia 2>/dev/null)
+METAL_KEYWORDS = $(shell $(PYTHON_RUN) python3 scripts/query_vocab.py --print metal 2>/dev/null)
+CPU_KEYWORDS = $(shell $(PYTHON_RUN) python3 scripts/query_vocab.py --print cpu 2>/dev/null)
+AMD_KEYWORDS = $(shell $(PYTHON_RUN) python3 scripts/query_vocab.py --print amd 2>/dev/null)
 
 # The guard: every top-N trending model must be named by a query in the set the
 # searches use. Exit 1 when one is not, so a stale or broken derivation is LOUD
@@ -1267,8 +1334,8 @@ search:
 # missing and the leg writes the marketing name). A leg whose job stopped forwarding
 # either one fails HERE, loudly and before the agent, naming the variable.
 .PHONY: _search-preflight
-_search-preflight:
-	@python3 scripts/require_env.py FIRECRAWL_API_KEY --why "the search legs cannot scrape lightbrd.com without it"
+_search-preflight: python-env-image
+	@$(PYTHON_RUN) python3 scripts/require_env.py FIRECRAWL_API_KEY --why "the search legs cannot scrape lightbrd.com without it"
 	@$(MAKE) --no-print-directory search-smoke BACKEND=$(BACKEND)
 	@$(MAKE) --no-print-directory agent-shell-keys-check AGENT_SHELL_CHECK_KEYS="FIRECRAWL_API_KEY HF_TOKEN"
 

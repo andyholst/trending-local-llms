@@ -172,7 +172,8 @@ def test_every_public_leg_checks_the_key_before_the_agent():
     check("pre-flight: it requires the key by name",
           "scripts/require_env.py FIRECRAWL_API_KEY" in mk, "")
     check("pre-flight: and proves the backend answers (the ONE smoke implementation)",
-          "\n_search-preflight:\n" in mk and "search-smoke BACKEND=$(BACKEND)" in mk, "")
+          re.search(r"\n_search-preflight:[^\n]*\n", mk) is not None
+          and "search-smoke BACKEND=$(BACKEND)" in mk, "")
 
 
 # ---------------------------------------------------------------------------

@@ -70,7 +70,9 @@ def test_one_home_every_reader_resolves_to_it():
     text = MAKEFILE.read_text()
     for leg in query_vocab.LEGS:
         var = f"{leg.upper()}_KEYWORDS"
-        m = re.search(rf"^{var} = \$\(shell python3 scripts/query_vocab\.py --print {leg}\b",
+        # `#712 Slice 5 routes the parse-time exec through $(PYTHON_RUN), so the seam prefix is
+        # optional here: the ONE derivation home is still this line.
+        m = re.search(rf"^{var} = \$\(shell (?:\$\(PYTHON_RUN\) )?python3 scripts/query_vocab\.py --print {leg}\b",
                       text, re.M)
         check(f"home: Makefile defines {var} from scripts/query_vocab.py --print {leg}",
               bool(m), "no $(shell query_vocab) definition")

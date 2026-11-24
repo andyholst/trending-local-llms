@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import recipe  # noqa: E402  (the ONE Makefile-recipe locator)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "reset_working_files.py"
 LIST = ROOT / "scripts" / "issue_bot_working_files.txt"
@@ -139,7 +141,7 @@ def test_one_list_one_target():
     makefile = (ROOT / "Makefile").read_text()
     check("wiring: the Makefile defines the target", "\nreset-working-files:" in makefile, "")
     check("wiring: `lint` runs the check",
-          "check-working-files" in makefile.split("lint:")[1][:700], "")
+          "check-working-files" in recipe(makefile, "lint"), "")
 
 
 def main() -> int:

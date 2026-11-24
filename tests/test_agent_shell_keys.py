@@ -250,7 +250,8 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
     check("wiring: `_agent-shell-keys-check` runs the script, defaulting to the ONE list",
           "python3 scripts/agent_shell_keys_check.py $(AGENT_SHELL_CHECK_KEYS)" in mk
           and "AGENT_SHELL_CHECK_KEYS ?= $(AGENT_SHELL_KEYS)" in mk, "")
-    pre = re.search(r"\n_search-preflight:\n((?:\t.*\n)+)", mk)
+    # `#712 Slice 5 gave the pre-flight a `python-env-image` prerequisite.
+    pre = re.search(r"\n_search-preflight:[^\n]*\n((?:\t.*\n)+)", mk)
     check("wiring: every search leg proves the AGENT can see the credentials it uses before it starts",
           bool(pre) and 'agent-shell-keys-check AGENT_SHELL_CHECK_KEYS="FIRECRAWL_API_KEY HF_TOKEN"' in pre.group(1),
           pre.group(1) if pre else "")
