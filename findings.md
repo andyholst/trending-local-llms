@@ -59,6 +59,13 @@
 - **Why:** the sync gate compares bytes and cannot distinguish a legitimate forward note from staleness; copying the base over it would delete work an active lane just wrote and repeat the false-alarm this step exists to prevent. The duplicate heading is noise and is excluded from the landing.
 - **Done when:** a reviewed PR lands only the genuinely-new clause in the tracked skill, the host file stays intact with a timestamped backup, and the fleet-sync gate goes green after the merge and base re-sync.
 
+## The planner DEAD-lane RESUME note is forward work and must be landed, not wiped
+
+- **Evidence:** after PR #1499 merged (master `16481506`), `make fleet-host-sync-check BASE=origin/master` stayed RED on `tll-planner/skills/tll-planner/SKILL.md`; `diff -u` of the base blob against the live host file gives 9 added lines and 0 deletions, the new `A pushed branch with NO PR is a DEAD lane` clause with measured #1467 evidence. The host file was backed up before any copy.
+- **Why:** a byte-exact gate cannot distinguish a genuine forward note from staleness, and overwriting it would delete work an active planner lane wrote; only the additive landing makes the gate green without loss.
+- **Done when:** a reviewed PR lands the clause in the tracked planner skill, the host file stays intact with a timestamped backup, and the fleet-sync gate goes green after the merge and base re-sync.
+
+
 
 ## The AGENTS.md §6r behaviour bullet and the §8 guard row for the filer window are owed to a protected rulebook
 

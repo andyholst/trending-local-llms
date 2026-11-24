@@ -77,6 +77,15 @@ needed to move the board.
   `git push --force`. After a lane run, check the owner's checkout with `git status` — a lane's shell cwd
   is not automatically its worktree. A lane runs 30–70 min; monitor it with `process_manage` and do not
   assume it finished.
+- **A pushed branch with NO PR is a DEAD lane — dispatch a RESUME, never a second implementation.**
+  Measured #1467: the implementer's complete commit `02ec523f` reached `origin` at 03:37Z, the lane
+  process was gone by the next watch cycle, and no PR existed. Before re-dispatching check THREE things:
+  `ps` for a live `hermes -p tll-* chat`, `gh pr list --state all --head <branch>`, and whether the pushed
+  commit already carries the full delivery (OpenSpec change dir bound to the issue, tests, ARCHITECTURE
+  rows, findings). If it does, the dispatch is a bounded RESUME — open the PR from the EXISTING head, run
+  fast offline checks, fix loop, push — and must forbid cutting a new branch or rewording the commit. Run
+  `make dispatch-check ISSUE=<n>` first (it reads live state) and honor the §7b race guard (post the
+  dispatch, wait ~80 s, re-read the thread, start only if your comment is still newest).
 
 ## This lane
 
