@@ -20,8 +20,9 @@ through ONE pure function (`classify`):
   human-owned            — a human's branch: reported, never rewritten (the §6s partition)
   refs-unreadable        — behindness is never guessed: report-only, merge proceeds as before
   current                — the head already carries the fetched tip: merge proceeds as before
-  behind-and-clean-bot   — rebase onto the fetched master, REGENERATE `OPENSPEC.md` ON the
-                           rebased tree (the shared rebaser `pr_health.rebase_and_push` does
+  behind-and-clean-bot   — rebase onto the fetched master, REGENERATE the generated artifacts
+                           (`OPENSPEC.md`, and `ARCHITECTURE.md`'s §10 block since issue #1601) ON
+                           the rebased tree (the shared rebaser `pr_health.rebase_and_push` does
                            both, one implementation), commit as the agent (rule 3f) and push
                            `--force-with-lease` pinned to the fetched tip (a branch someone
                            else moved is never overwritten); then print `rebased=true`
@@ -106,7 +107,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description="qa-validate auto-merge pre-squash gate: classify the PR against the "
                     "fetched master; rebase a behind-and-clean bot branch onto it and "
-                    "regenerate OPENSPEC.md on the rebased tree before any push (issue #1049)")
+                    "regenerate the generated artifacts (OPENSPEC.md, ARCHITECTURE.md) on the "
+                    "rebased tree before any push (issues #1049/#1601)")
     ap.add_argument("--pr", required=True, type=int, help="pull request number")
     ap.add_argument("--repo", default=None, help="owner/name (default: gh's own resolution)")
     ap.add_argument("--dir", default=None,
@@ -142,8 +144,8 @@ def main() -> int:
             rebased = True
             new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
             print(f"[auto-merge-rebase] rebased {head} onto the fetched master "
-                  f"({new_oid[:12]}); OPENSPEC.md regenerated on the rebased tree — {msg}. "
-                  "This run will NOT merge (its event head is now stale); "
+                  f"({new_oid[:12]}); the generated artifacts were regenerated on the rebased "
+                  f"tree — {msg}. This run will NOT merge (its event head is now stale); "
                   "CI on the new head will land it.")
             verdict = "rebased"
         else:

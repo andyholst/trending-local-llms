@@ -307,6 +307,13 @@ def branch_behind(cwd: Path, head: str) -> bool | None:
     return None
 
 
+#: The two GENERATED artifacts a bot rebase must land merge-time-current: `OPENSPEC.md`
+#: (issue #1049) and `ARCHITECTURE.md`'s §10 inventory block (issue #1601). A rebase whose ONLY
+#: unmerged paths are these two is resolved by taking the branch's side and REGENERATING both
+#: from the merged tree; any other unmerged path is fix-loop/human work (rule 6s).
+GENERATED_REBASE_PATHS = ("OPENSPEC.md", "ARCHITECTURE.md")
+
+
 def regenerate_index(wt: Path) -> tuple[bool, str]:
     """Regenerate the generated `OPENSPEC.md` ON the rebased tree and commit it (issue #1049).
 
@@ -338,6 +345,84 @@ def regenerate_index(wt: Path) -> tuple[bool, str]:
     return True, " + OPENSPEC.md regenerated on the rebased tree"
 
 
+def regenerate_architecture(wt: Path) -> tuple[bool, str]:
+    """Regenerate `ARCHITECTURE.md`'s §10 inventory block ON the rebased tree and commit it (#1601).
+
+    The same rebase that moves the index under the branch also moves the description's living block:
+    master routinely adds a script, workflow or target while a PR waits, so a head last refreshed at
+    branch-cut time lands a block `make architecture-check` refuses (measured 2026-11-24: bot branches
+    stalled behind a merge that moved BOTH generated files). So both generated artifacts are
+    refreshed through the TREE'S OWN generator — `scripts/architecture_bot.py --write`, the exact
+    command `make architecture-refresh` runs (rule 6d: never a second implementation) — and committed
+    as the agent (rule 3f) BEFORE the lease push. A failed regeneration stops the push: the remote
+    branch stays byte-identical."""
+    doc = wt / "ARCHITECTURE.md"
+    if not doc.is_file():
+        return True, ""  # a tree without the description has no block to refresh
+    gen = wt / "scripts" / "architecture_bot.py"
+    if not gen.is_file():
+        return False, ("ARCHITECTURE.md exists but scripts/architecture_bot.py does not — "
+                       "its block cannot be regenerated")
+    r = subprocess.run([sys.executable, str(gen), "--write"], capture_output=True, text=True,
+                       cwd=str(wt))
+    if r.returncode != 0:
+        return False, f"architecture regeneration failed: {(r.stderr or r.stdout).strip()[:160]}"
+    st = _git(wt, "status", "--porcelain", "--", "ARCHITECTURE.md")
+    if not st.stdout.strip():
+        return True, ""  # the rebased tree's block was already current
+    add = _git(wt, "add", "--", "ARCHITECTURE.md")
+    if add.returncode != 0:
+        return False, f"architecture add failed: {add.stderr.strip()[:120]}"
+    c = _git(wt, "commit", "-q",
+             "-m", "chore(architecture): regenerate the inventory block on the rebased tree "
+                   "(issue #1601)")
+    if c.returncode != 0:
+        return False, f"architecture commit failed: {c.stderr.strip()[:120]}"
+    return True, " + ARCHITECTURE.md regenerated on the rebased tree"
+
+
+def _unmerged_paths(wt: Path) -> list[str]:
+    """The paths a rebase/merge left unmerged (empty when nothing is)."""
+    r = _git(wt, "diff", "--name-only", "--diff-filter=U")
+    return [p.strip() for p in r.stdout.splitlines() if p.strip()]
+
+
+def resolve_generated_conflicts(wt: Path) -> tuple[bool, str]:
+    """Resolve a rebase conflict CONFINED to the generated pair, so the rebase can complete.
+
+    Both paths are deterministic outputs of the tree's own generators, so a conflict inside them is
+    never a human decision: take the branch's side (the commit being replayed — `--theirs` of a
+    rebase; the #583 "keep THE WORK" convention), continue, and let `regenerate_index` /
+    `regenerate_architecture` re-derive both from the merged tree. A conflict ANYWHERE ELSE (a
+    hand-written file) is returned as a refusal: the caller aborts and the branch stays untouched.
+
+    Returns `(True, "<paths>")` when the rebase continued cleanly, else `(False, reason)`."""
+    unmerged = _unmerged_paths(wt)
+    if not unmerged:
+        return False, "rebase failed with no unmerged paths"
+    outside = [p for p in unmerged if p not in GENERATED_REBASE_PATHS]
+    if outside:
+        return False, ("rebase conflicted outside the generated files "
+                       f"({', '.join(outside)}) — branch left untouched (fix-loop/human work)")
+    kept: list[str] = []
+    for path in unmerged:
+        if _git(wt, "checkout", "--theirs", "--", path).returncode != 0:
+            return False, (f"could not take the branch's side of {path} — branch left untouched "
+                           "(fix-loop/human work)")
+        if _git(wt, "add", "--", path).returncode != 0:
+            return False, f"could not stage {path} — branch left untouched (fix-loop/human work)"
+        kept.append(path)
+    # A detached run must never open an editor on the replayed commit's message.
+    env = {**os.environ, "GIT_EDITOR": "true"}
+    cont = subprocess.run(["git", "-C", str(wt), *_identity_flags(), "rebase", "--continue"],
+                          capture_output=True, text=True, env=env)
+    if cont.returncode != 0:
+        leftover = ", ".join(_unmerged_paths(wt)) or "none"
+        return False, (f"rebase --continue failed ({(cont.stderr or cont.stdout).strip()[:120]}); "
+                       f"still unmerged: {leftover}")
+    return True, ", ".join(kept)
+
+
 def pat_push_url(origin_url: str, pat: str) -> str | None:
     """Rewrite a github.com HTTPS origin into an owner-PAT-authenticated push URL
     (issue #1115). Returns None when the PAT is empty or the origin is not a
@@ -357,9 +442,11 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
 
     The scratch worktree keeps the checkout untouched; a conflict ABORTS the rebase and the
     branch is left byte-identical — the rebaser never force-pushes a conflicted result. A
-    CLEAN rebase regenerates `OPENSPEC.md` on the rebased tree before the push (issue #1049:
-    the merge-time-current index; shared here so the weekly sweep and qa-validate's
-    `auto-merge` gate, which both call this one rebaser, can never disagree)."""
+    CLEAN rebase regenerates BOTH generated artifacts on the rebased tree before the push
+    (issue #1049 for `OPENSPEC.md`, issue #1601 for `ARCHITECTURE.md`'s block: the shared
+    rebaser `pr_health.rebase_and_push` does both, so the weekly sweep and qa-validate's
+    `auto-merge` gate can never disagree), and a conflict CONFINED to those two generated
+    paths is resolved by regeneration instead of stalling the branch."""
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         wt = Path(td) / "wt"
@@ -368,12 +455,19 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
             return False, f"worktree add failed: {add.stderr.strip()[:120]}"
         try:
             rb = _git(wt, "rebase", "refs/remotes/origin/master")
+            resolved = ""
             if rb.returncode != 0:
-                _git(wt, "rebase", "--abort")
-                return False, "rebase conflicted — branch left untouched (fix-loop/human work)"
+                ok, note = resolve_generated_conflicts(wt)
+                if not ok:
+                    _git(wt, "rebase", "--abort")
+                    return False, note
+                resolved = note
             regen_ok, regen_note = regenerate_index(wt)
             if not regen_ok:
                 return False, f"{regen_note} — branch left untouched (nothing was pushed)"
+            arch_ok, arch_note = regenerate_architecture(wt)
+            if not arch_ok:
+                return False, f"{arch_note} — branch left untouched (nothing was pushed)"
             # A rebase REWRITES the branch history, so the push must be a lease push:
             # --force-with-lease pinned to the remote tip THIS run just fetched. If anyone
             # moved the branch since the fetch, the lease fails and nothing is overwritten.
@@ -404,8 +498,11 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
                 if pat:
                     err = err.replace(pat, "***")  # rule 3d: the token never reaches a log
                 return False, f"push failed: {err}"
-            return True, ("rebased onto origin/master and pushed to the PR head"
-                          + regen_note + f" (push identity: {push_identity})")
+            note = ""
+            if resolved:
+                note = f" (resolved the generated conflict in {resolved})"
+            return True, ("rebased onto origin/master and pushed to the PR head" + note
+                          + regen_note + arch_note + f" (push identity: {push_identity})")
         finally:
             _git(cwd, "worktree", "remove", "--force", str(wt))
 
