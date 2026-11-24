@@ -1768,6 +1768,11 @@ watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`
 # CEILING=<n>     the ONE concurrency ceiling (default 3 = ACTIVE_LANE_CEILING)
 # REPO=<o/n>      owner/name read live through gh (default andyholst/trending-local-llms)
 # FROM_FILE=<p>   a recorded issue/PR payload instead of gh (offline; tests use it)
+# COMMENTS_FILE=<p>  a recorded ISSUE-THREAD payload instead of reading the comments live
+#                 (offline; tests use it). Live mode reads them through `gh api`.
+# MACHINE=<user@host>  the caller's machine id; default derives it from the host
+#                 (`TLL_MACHINE` in the environment overrides). The cross-host check
+#                 refuses only a DIFFERENT named host (#1569).
 # CLAIMS="<p1> <p2>"  repo-relative paths this dispatch will touch (space-separated);
 #                 refuses when an ACTIVE registry lane already claims an overlapping path
 #                 (issue #1458). The script's own flag is repeatable `--claim <path>`;
@@ -1775,21 +1780,26 @@ watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`
 #                 pass CLAIMS=. No CLAIMS = the pre-#1458 check only.
 # JSON=1           print the verdict as JSON
 #
-# Exit 0 = allow · 1 = refuse (closed issue / merged bound PR / over the ceiling) ·
-# 2 = undecidable (no registry, unreadable registry, unreadable GitHub state).
+# Exit 0 = allow · 1 = refuse (closed issue / merged bound PR / over the ceiling /
+# a path an ACTIVE lane claims / a NEWER ACTIVE working-claim held by another host)
+# · 2 = undecidable (no registry, unreadable registry, unreadable GitHub state).
 .PHONY: dispatch-check
 # A VERDICT the caller ACTS on: `make dispatch-check` exits NON-ZERO when the guard
-# refuses — a closed issue, a merged bound PR, or an active-lane count above the ceiling —
-# and prints WHY (`REFUSE` + each reason, plus `active_lanes=N/ceiling`). Exit 0 = allowed.
-# Exit 2 = the guard could not decide at all (no registry, an unreadable one, an
-# unreadable GitHub state): that is a defect in the invocation, not a verdict, and it
-# stays distinct from a refusal so a planner never reads "undecidable" as "refused".
-dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR is MERGED, above the active-lane ceiling, or onto a path an ACTIVE lane already claims — exit non-zero with the reason (ISSUE=, REGISTRY=, CEILING=3, REPO=, FROM_FILE=, CLAIMS="p1 p2", JSON=1; issues #1416/#1458)
-	@test -n "$(ISSUE)" || { echo "Usage: make dispatch-check ISSUE=<n> [REGISTRY=<path>] [CEILING=<n>] [REPO=<owner/name>] [FROM_FILE=<recorded.json>] [CLAIMS=\"p1 p2\"] [JSON=1]"; exit 2; }
+# refuses — a closed issue, a merged bound PR, an active-lane count above the ceiling, a
+# path an ACTIVE lane already claims, or another host's newer ACTIVE working-claim on the
+# issue thread — and prints WHY (`REFUSE` + each reason, plus `active_lanes=N/ceiling`).
+# Exit 0 = allowed. Exit 2 = the guard could not decide at all (no registry, an
+# unreadable one, an unreadable GitHub state): that is a defect in the invocation, not a
+# verdict, and it stays distinct from a refusal so a planner never reads "undecidable" as
+# "refused".
+dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR is MERGED, above the active-lane ceiling, onto a path an ACTIVE lane already claims, or onto an issue ANOTHER host's newer ACTIVE working-claim holds — exit non-zero with the reason (ISSUE=, REGISTRY=, CEILING=3, REPO=, FROM_FILE=, COMMENTS_FILE=, MACHINE=user@host, CLAIMS="p1 p2", JSON=1; issues #1416/#1458/#1569)
+	@test -n "$(ISSUE)" || { echo "Usage: make dispatch-check ISSUE=<n> [REGISTRY=<path>] [CEILING=<n>] [REPO=<owner/name>] [FROM_FILE=<recorded.json>] [COMMENTS_FILE=<thread.json>] [MACHINE=<user@host>] [CLAIMS=\"p1 p2\"] [JSON=1]"; exit 2; }
 	@out=$$(python3 scripts/dispatch_guard.py --issue "$(ISSUE)" \
 		--registry "$(if $(REGISTRY),$(REGISTRY),$(or $(TLL_ACTIVE_LANES),$(HOME)/.hermes/active-lanes.json))" \
 		--ceiling "$(if $(CEILING),$(CEILING),3)" \
 		$(foreach c,$(CLAIMS),--claim "$(c)" ) \
+		$(if $(MACHINE),--machine "$(MACHINE)",) \
+		$(if $(COMMENTS_FILE),--comments-file "$(COMMENTS_FILE)",) \
 		$(if $(REPO),--repo "$(REPO)",) \
 		$(if $(FROM_FILE),--from-file "$(FROM_FILE)",) \
 		$(if $(JSON),--json,) 2>&1); rc=$$?; printf '%s\n' "$$out"; \

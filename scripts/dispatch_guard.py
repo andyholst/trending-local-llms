@@ -18,9 +18,17 @@ This is the ONE implementation of the dispatch rules (rule 6d). It decides, it n
   shared files  — REFUSE when a `--claim <repo-relative path>` overlaps a path another
                   ACTIVE lane already claims in that same registry (issue #1458), naming
                   the holding lane.
+  cross-host    — REFUSE when ANOTHER host holds a NEWER ACTIVE working-claim on the SAME
+                  issue (issue #1569), read from the ISSUE THREAD every host shares: the
+                  signed `BOT <lane> · working on #<id>` / `· dispatch #<id>` markers, their
+                  machine line (`user@host`) and their `createdAt`. The refusal names the
+                  holding host, lane and comment id. A caller whose OWN marker is the newest
+                  is ALLOWED to re-dispatch; a claim whose host cannot be named does not
+                  block (the guard refuses a DIFFERENT, named host, never invents one).
 
 Exit codes: 0 = dispatch allowed; 1 = refused for a STALE TARGET (closed issue / merged PR),
-for being OVER the ceiling, or for a shared-file CLAIM overlapping an ACTIVE lane;
+for being OVER the ceiling, for a shared-file CLAIM overlapping an ACTIVE lane, or for a
+NEWER ACTIVE working-claim held by ANOTHER host on the issue thread;
 2 = the guard could not decide — no registry, an unreadable registry, an unreadable
 GitHub state — never a silent clean. A caller that wants a verdict without acting takes
 `--json`.
@@ -44,19 +52,29 @@ Usage:
     python3 scripts/dispatch_guard.py --issue 1416 --repo andyholst/trending-local-llms
     python3 scripts/dispatch_guard.py --issue 1239 --from-file recorded.json
     python3 scripts/dispatch_guard.py --issue 1458 --claim agents/x --claim docs/y --from-file f.json
+    python3 scripts/dispatch_guard.py --issue 1569 --from-file f.json --comments-file thread.json
     python3 scripts/dispatch_guard.py --help
 
 The registry's per-lane rows (`lanes`, issue #1458) carry the shared files each lane will
 touch; the overlap check reads them ONLY when at least one `--claim` (or `CLAIMS=`) is
 given, so a claim-free invocation behaves exactly as it did before the check existed.
+
+The cross-host half (#1569) reads the issue's comments through the SAME seam discipline:
+live through `gh api repos/<repo>/issues/<n>/comments --paginate --slurp` when a repo is
+given, a RECORDED thread otherwise (`--comments-file`, or a `comments` list inside the
+`--from-file` payload). The tests drive the REAL parser over recorded threads — no network,
+and no credential value appears in this module or its fixtures.
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
+import re
 import shlex
 import shutil
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -83,6 +101,21 @@ REGISTRY_LANES_KEY = "lanes"
 #: issue ages out of the list, so the window is bounded (never unbounded) and the branch-name
 #: convention is the second window for a PR the binding no longer carries.
 PR_LIST_LIMIT = 100
+
+#: The env var that pins the caller's machine id (`user@host`, rule 6u). Unset = derive it
+#: from the host (`getpass.getuser()` + the first label of `socket.gethostname()`), which is
+#: the same identity the fleet writes into its claims.
+MACHINE_ENV = "TLL_MACHINE"
+
+#: The signed markers that HOLD an issue (issue #1569). A planner's `dispatch` names the lane
+#: it is about to start; a lane's `working on` is the claim itself. Both are read because the
+#: collision this guard prevents happens BETWEEN the dispatch and the lane's first comment.
+CLAIM_KINDS = ("working on", "dispatch")
+
+#: The signed markers that RELEASE an issue, so a claim that landed or moved on cannot block
+#: the next dispatch forever: the implementer's delivery/handover (`pr`), its signed end
+#: (`done`), and the reviewer taking over (`reviewing`).
+RELEASE_KINDS = ("done", "pr", "reviewing")
 
 #: A registry row is `{REGISTRY_COUNT_KEY: int}` optionally carrying free-form provenance
 #: (`hosts`, `updated_utc`). The count must be a whole number >= 0.
@@ -286,6 +319,237 @@ def fetch_state(repo: str | None, issue: str, from_file: str | None) -> dict:
     return recorded_state(from_file) if from_file else issue_state(repo or DEFAULT_REPO, issue)
 
 
+# --------------------------------------------------------------------------- issue thread
+
+#: A signed marker in a comment body: `BOT <lane> · <kind> #<issue>`, optionally carrying
+#: `(host <user@host>)` between the lane and the middle dot (the shape rule 6u(b) asks a
+#: claim to name). `kind` is one of CLAIM_KINDS / RELEASE_KINDS.
+_MARKER_KINDS = "|".join(re.escape(kind) for kind in CLAIM_KINDS + RELEASE_KINDS)
+_MARKER = re.compile(
+    r"BOT\s+(?P<lane>[A-Za-z0-9][\w.-]*)\s*"
+    r"(?:\(\s*host\s+(?P<host>[^)]+?)\s*\)\s*)?"
+    r"\u00b7\s*(?P<kind>" + _MARKER_KINDS + r")\s*#(?P<issue>\d+)"
+)
+
+#: The machine line forms a comment actually carries: `(host user@host)`, a line that starts
+#: `user@host ·` (the LOOK/status/WITHDRAW shape), or a `· user@host ·` span (the STATUS
+#: marker shape). An arbitrary `user@host` token in prose is deliberately NOT read: real
+#: dispatch comments QUOTE other hosts' markers, and attributing a claim to a host that was
+#: merely mentioned is worse than leaving it unattributed.
+_HOST_PAREN = re.compile(r"\(\s*host\s+([^)]+?)\s*\)")
+_LINE_MACHINE = re.compile(r"(?m)^[ \t]*(?:[-*]\s+)?(?P<m>[A-Za-z0-9._-]+@[A-Za-z0-9._-]+)\b")
+_DOT_MACHINE = re.compile(r"\u00b7\s*(?P<m>[A-Za-z0-9._-]+@[A-Za-z0-9._-]+)\s*\u00b7")
+
+
+def default_machine() -> str:
+    """The caller's own machine id (`user@host`), the identity its claims are compared to.
+
+    Derived from the host rather than configured, so a fresh machine needs no setup; the
+    first label of the hostname keeps `andy@Andys-MacBook-Pro.local` equal to the machine id
+    `andy@Andys-MacBook-Pro` the fleet writes. `TLL_MACHINE` overrides it per invocation.
+    """
+    try:
+        import getpass
+
+        user = getpass.getuser()
+    except Exception:  # pragma: no cover - an odd host with no passwd database
+        user = os.environ.get("USER") or os.environ.get("LOGNAME") or "unknown"
+    host = socket.gethostname().split(".")[0] or "localhost"
+    return f"{user}@{host}"
+
+
+def _machine_key(value: str) -> tuple[str, str]:
+    """Case/label-insensitive identity: `asimov@omarchy.local` == `asimov@omarchy`."""
+    text = str(value or "").strip().lower()
+    user, sep, host = text.partition("@")
+    if not sep:
+        return (text, "")
+    return (user.strip(), host.split(".")[0])
+
+
+def same_machine(a: str, b: str) -> bool:
+    """True when two machine ids name the SAME host."""
+    return bool(a) and bool(b) and _machine_key(a) == _machine_key(b)
+
+
+def comment_markers(body: str) -> list[dict]:
+    """Every signed claim/release marker in one comment body.
+
+    Returns `{lane, kind, issue, host}` rows in document order; `host` is the parenthetical
+    `(host …)` when the marker itself carries one, else None.
+    """
+    out: list[dict] = []
+    for m in _MARKER.finditer(body or ""):
+        out.append({
+            "lane": m.group("lane"),
+            "kind": m.group("kind"),
+            "issue": int(m.group("issue")),
+            "host": (m.group("host").strip() if m.group("host") else None),
+        })
+    return out
+
+
+def comment_machine(body: str) -> str | None:
+    """The machine id a comment names about itself, or None when it names none.
+
+    A claim written before rule 6u carried no identity at all, so this reads the spellings
+    the fleet actually uses: `(host …)`, a line that starts `user@host ·`, or a
+    `· user@host ·` span. Prose that merely MENTIONS a host (a dispatch quoting another
+    host's claim) is not read — the guard never attributes a claim to a mentioned host.
+    """
+    m = _HOST_PAREN.search(body or "")
+    if not m:
+        m = _LINE_MACHINE.search(body or "")
+    if not m:
+        m = _DOT_MACHINE.search(body or "")
+    if not m:
+        return None
+    if m.re is _HOST_PAREN:
+        return m.group(1).strip()
+    return m.group("m").strip()
+
+
+def normalize_comments(comments) -> list[dict]:
+    """Recorded/live comments to sorted `{id, body, created, machine}` rows (oldest first).
+
+    Both API spellings are accepted (`created_at` from REST, `createdAt` from `gh --json`).
+    """
+    rows: list[dict] = []
+    for raw in comments or []:
+        if not isinstance(raw, dict):
+            continue
+        body = str(raw.get("body") or "")
+        cid = raw.get("id") if raw.get("id") is not None else raw.get("comment_id")
+        rows.append({
+            "id": cid,
+            "body": body,
+            "created": str(raw.get("created_at") or raw.get("createdAt") or ""),
+            "machine": comment_machine(body),
+        })
+    rows.sort(key=lambda row: (row["created"], str(row["id"])))
+    return rows
+
+
+def _epoch(text: str) -> float:
+    """A comment's `createdAt` as seconds (0.0 when unparseable — nearest-neighbour only)."""
+    try:
+        return dt.datetime.fromisoformat(str(text).strip().replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def attribute_machines(rows: list[dict]) -> list[dict]:
+    """Fill a claim whose OWN comment names no host from the NEAREST comment that does.
+
+    The fleet's real threads mix identity-bearing and identity-free comments (a planner
+    dispatch carries none; the LOOK/status lines around a claim do). Nearest-by-time is the
+    attribution a human reader makes anyway; ties prefer the earlier comment. A thread with
+    no machine id anywhere stays unattributed — the guard never invents a host.
+    """
+    known = [row for row in rows if row["machine"]]
+    for row in rows:
+        if row["machine"]:
+            continue
+        best = None
+        best_key = None
+        for other in known:
+            key = (abs(_epoch(other["created"]) - _epoch(row["created"])),
+                   0 if other["created"] <= row["created"] else 1)
+            if best_key is None or key < best_key:
+                best_key, best = key, other
+        row["machine"] = best["machine"] if best else None
+    return rows
+
+
+def active_claim(rows: list[dict], issue: str) -> dict | None:
+    """The NEWEST ACTIVE working-claim on `issue`, or None when nothing holds it.
+
+    Claims and releases are replayed oldest-first by `(createdAt, comment id)`: a claim sets
+    the holder, a later release (`done`/`pr`/`reviewing`) clears it. The survivor is the
+    holder a second host must be refused against. Markers naming ANOTHER issue are ignored.
+    """
+    events: list[tuple[str, str, dict, dict]] = []
+    for row in rows:
+        for marker in comment_markers(row["body"]):
+            if str(marker["issue"]) != str(issue):
+                continue
+            if marker["kind"] in CLAIM_KINDS or marker["kind"] in RELEASE_KINDS:
+                events.append((row["created"], str(row["id"]), row, marker))
+    events.sort(key=lambda event: (event[0], event[1]))
+    holder: dict | None = None
+    for _, _, row, marker in events:
+        if marker["kind"] in CLAIM_KINDS:
+            holder = {
+                "comment_id": row["id"],
+                "lane": marker["lane"],
+                "kind": marker["kind"],
+                "machine": marker["host"] or row["machine"],
+                "created": row["created"],
+            }
+        else:
+            holder = None
+    return holder
+
+
+def cross_host_reasons(holder: dict | None, machine: str) -> list[str]:
+    """Why another host's ACTIVE claim blocks this dispatch (#1569), naming it.
+
+    Refuses ONLY a DIFFERENT, NAMED host: the refusal must quote the holding host, lane and
+    comment id, so a claim whose host cannot be read is reported as allowed rather than
+    inventing a collision the thread does not state. The caller's own newest claim allows.
+    """
+    if not holder:
+        return []
+    holding = holder.get("machine")
+    if not holding:
+        return []
+    if machine and same_machine(holding, machine):
+        return []
+    return [
+        f"another host holds a NEWER ACTIVE working-claim: host {holding}, "
+        f"lane {holder['lane']}, comment {holder['comment_id']} ({holder['created']}) "
+        f"— one lane per issue across hosts"
+    ]
+
+
+def issue_comments(repo: str, issue: str) -> list[dict]:
+    """The issue's comment thread, live through `gh api` (numeric ids + `created_at`)."""
+    payload = json.loads(_run(gh_client(), [
+        "api", "--paginate", "--slurp", f"repos/{repo}/issues/{issue}/comments",
+    ]))
+    rows: list[dict] = []
+    if isinstance(payload, list):
+        for page in payload:
+            if isinstance(page, list):
+                rows.extend(item for item in page if isinstance(item, dict))
+            elif isinstance(page, dict):
+                rows.append(page)
+    return rows
+
+
+def recorded_comments(path: str) -> list[dict]:
+    """The fixture seam for the thread: a recorded list of comments (offline, no network).
+
+    Accepts the plain list shape, the `--slurp` list-of-pages shape, or an object carrying
+    a `comments` list. A missing/unreadable file is a loud exit 2, never an empty clean.
+    """
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise Unreadable(f"recorded comments {path!r} could not be read: {exc}") from exc
+    if isinstance(payload, dict):
+        payload = payload.get("comments") or []
+    if not isinstance(payload, list):
+        raise Unreadable(f"recorded comments {path!r} is not a list of comments")
+    rows: list[dict] = []
+    for item in payload:
+        if isinstance(item, list):
+            rows.extend(entry for entry in item if isinstance(entry, dict))
+        elif isinstance(item, dict):
+            rows.append(item)
+    return rows
+
+
 # --------------------------------------------------------------------------- shared files
 
 def normalize_repo_path(raw: str) -> tuple[str, str]:
@@ -382,7 +646,9 @@ def stale_target_reasons(state: dict) -> list[str]:
 def evaluate(state: dict, count: int | None, ceiling: int,
              reasons: list[str] | None = None,
              claims: list[str] | None = None,
-             lanes: list[dict] | None = None) -> dict:
+             lanes: list[dict] | None = None,
+             holder: dict | None = None,
+             machine: str | None = None) -> dict:
     """The whole verdict as data (rule 6d): one dict, every reader a projection of it.
 
     `verdict` is `allow` or `refuse`; `reasons` is the ordered list a caller prints. The
@@ -392,6 +658,8 @@ def evaluate(state: dict, count: int | None, ceiling: int,
 
     `claims`/`lanes` are the shared-file check (#1458) and are consulted ONLY when at least
     one claim is given: with no claims this function returns exactly the pre-#1458 verdict.
+    `holder`/`machine` are the cross-host check (#1569): an ACTIVE working-claim on the
+    issue thread held by a DIFFERENT named host refuses, alongside every earlier check.
     """
     if reasons is None:
         reasons = stale_target_reasons(state)
@@ -402,6 +670,8 @@ def evaluate(state: dict, count: int | None, ceiling: int,
             reasons += unusable
             if lanes is not None:
                 reasons += overlap_reasons(usable, lanes)
+        if holder is not None:
+            reasons += cross_host_reasons(holder, machine or "")
     return {
         "issue": state.get("issue"),
         "state": state.get("state"),
@@ -409,6 +679,7 @@ def evaluate(state: dict, count: int | None, ceiling: int,
         "active_lanes": count,
         "ceiling": ceiling,
         "claims": list(claims or []),
+        "thread_holder": holder,
         "verdict": "refuse" if reasons else "allow",
         "reasons": reasons,
     }
@@ -430,6 +701,12 @@ def render(verdict: dict) -> str:
     ]
     if verdict.get("claims"):
         lines.append(f"[dispatch-guard]   claims={verdict['claims']}")
+    holder = verdict.get("thread_holder")
+    if holder:
+        lines.append(
+            f"[dispatch-guard]   thread_holder={holder.get('machine') or 'unattributed'} "
+            f"lane={holder.get('lane')} comment={holder.get('comment_id')}"
+        )
     lines.append(f"[dispatch-guard] {verdict['verdict'].upper()}")
     for reason in verdict["reasons"]:
         lines.append(f"[dispatch-guard]   - {reason}")
@@ -446,7 +723,10 @@ def main(argv=None) -> int:
             f"an absent file means 0. ceiling: ACTIVE_LANE_CEILING = {ACTIVE_LANE_CEILING}. "
             f"claims: repeat --claim <repo-relative path> (or CLAIMS=\"p1 p2\") to refuse an "
             f"overlap with a path an ACTIVE registry lane already claims; no --claim = the "
-            f"pre-#1458 check only. exit 0 allow · 1 refuse · 2 undecidable."
+            f"pre-#1458 check only. cross-host: the issue's comments are read through gh "
+            f"(or --comments-file offline) and a NEWER ACTIVE working-claim held by another "
+            f"named host refuses; --machine/TLL_MACHINE names the caller. "
+            f"exit 0 allow · 1 refuse · 2 undecidable."
         ),
     )
     ap.add_argument("--issue", required=True, help="the issue number a lane is about to start")
@@ -456,6 +736,12 @@ def main(argv=None) -> int:
     ap.add_argument("--ceiling", type=int, default=ACTIVE_LANE_CEILING,
                     help=f"the ONE concurrency ceiling (default {ACTIVE_LANE_CEILING})")
     ap.add_argument("--from-file", default="", help="a recorded issue/PR payload instead of gh")
+    ap.add_argument("--comments-file", default="",
+                    help="a RECORDED issue-thread payload (offline; tests use it). Live mode "
+                         "reads the issue's comments through gh")
+    ap.add_argument("--machine", default=os.environ.get(MACHINE_ENV, ""),
+                    help="the caller's machine id (user@host); default derives it from the "
+                         "host (first hostname label), and a claim by the SAME host allows")
     ap.add_argument("--claim", action="append", default=[], metavar="PATH",
                     help="a REPO-RELATIVE path this dispatch will touch; repeatable "
                          "(or CLAIMS=\"p1 p2\") — refuses when an ACTIVE registry lane "
@@ -476,7 +762,16 @@ def main(argv=None) -> int:
         state["issue"] = args.issue
         count = active_lane_count(registry)
         lanes = lane_entries(registry) if claims else []
-        verdict = evaluate(state, count, args.ceiling, claims=claims, lanes=lanes)
+        if args.from_file:
+            raw_comments = (recorded_comments(args.comments_file) if args.comments_file
+                            else (state.get("comments") or []))
+        else:
+            raw_comments = issue_comments(args.repo or DEFAULT_REPO, args.issue)
+        rows = attribute_machines(normalize_comments(raw_comments))
+        holder = active_claim(rows, args.issue)
+        machine = args.machine.strip() or default_machine()
+        verdict = evaluate(state, count, args.ceiling, claims=claims, lanes=lanes,
+                           holder=holder, machine=machine)
     except Unreadable as exc:
         print(f"UNDECIDABLE: {exc}", file=sys.stderr)
         return 2
