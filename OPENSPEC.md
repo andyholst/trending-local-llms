@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **494**
+Active changes: **1** · archived: **497**
 
 ## Active changes
 
@@ -513,6 +513,7 @@ Active changes: **1** · archived: **494**
 | `watcher-files-red` | archived | #1376 | #1377 | [fleet-watcher](openspec/changes/archive/watcher-files-red/specs/fleet-watcher/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/watcher-files-red/proposal.md) |
 | `weekly-free-model-refresh` | archived | #1195 | #1205 | [fleet-model-chain](openspec/changes/archive/weekly-free-model-refresh/specs/fleet-model-chain/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/weekly-free-model-refresh/proposal.md) |
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
+| `workflow-concurrency-groups-1560` | archived | #1560 | #1564 | [ci-concurrency](openspec/changes/archive/workflow-concurrency-groups-1560/specs/ci-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/workflow-concurrency-groups-1560/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
 | `write-raw-snapshot-copy-payload` | archived | #646 | #898 | [write-raw-payload-immutability](openspec/changes/archive/write-raw-snapshot-copy-payload/specs/write-raw-payload-immutability/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/write-raw-snapshot-copy-payload/proposal.md) |

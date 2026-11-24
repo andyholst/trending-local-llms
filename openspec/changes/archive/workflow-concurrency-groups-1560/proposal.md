@@ -1,6 +1,7 @@
 # Proposal: workflow-concurrency-groups-1560
 
 Issue: #1560
+PR: #1564
 
 ## Why
 
