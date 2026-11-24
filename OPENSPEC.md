@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **506**
+Active changes: **1** · archived: **507**
 
 ## Active changes
 
@@ -107,6 +107,7 @@ Active changes: **1** · archived: **506**
 | `agents-row-storage-offload` | archived | #369 | — | [agents-guard-registry](openspec/changes/archive/agents-row-storage-offload/specs/agents-guard-registry/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/agents-row-storage-offload/proposal.md) |
 | `agents-rows-two-label-sweep` | archived | #494 | — | [rulebook](openspec/changes/archive/agents-rows-two-label-sweep/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agents-rows-two-label-sweep/proposal.md) |
 | `agents-skills-relocation-904` | archived | #904 | #982 | [agent-leg-skills](openspec/changes/archive/agents-skills-relocation-904/specs/agent-leg-skills/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/agents-skills-relocation-904/proposal.md) |
+| `agents-store-rows` | archived | #1482 | #1597 | [rulebook-store-rows](openspec/changes/archive/agents-store-rows/specs/rulebook-store-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/agents-store-rows/proposal.md) |
 | `agents2-docstring-inventory-row-947` | archived | #947 | #1066 | [agents-guard-registry](openspec/changes/archive/agents2-docstring-inventory-row-947/specs/agents-guard-registry/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/agents2-docstring-inventory-row-947/proposal.md) |
 | `agents2-owed-row-1014` | archived | #1014 | #1064 | [agents-guard-registry](openspec/changes/archive/agents2-owed-row-1014/specs/agents-guard-registry/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/agents2-owed-row-1014/proposal.md) |
 | `agents8-implement-stream-row-1062` | archived | #1062 | #1065 | [agents-guard-registry](openspec/changes/archive/agents8-implement-stream-row-1062/specs/agents-guard-registry/spec.md) | 2/5 | [proposal.md](openspec/changes/archive/agents8-implement-stream-row-1062/proposal.md) |
