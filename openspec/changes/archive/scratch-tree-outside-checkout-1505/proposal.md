@@ -1,6 +1,7 @@
 # Proposal: scratch-tree-outside-checkout-1505
 
 Issue: #1505
+PR: #1574
 
 ## Why
 
