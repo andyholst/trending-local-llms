@@ -16,6 +16,12 @@ carries the same names between `# HOST-EXCEPTIONS-BEGIN/END`, and `tests/test_os
 proves the two agree, so a new bare invocation cannot land silently and a removed one cannot
 linger as dead documentation.
 
+The token set also names the pip-tools console scripts as their OWN words — `pip-compile`,
+`pip-sync`, `pip-tools`. They are matched BEFORE the bare `pip` spelling (#1593): with only
+`pip` in the alternation the trailing `-` lookahead rejected `pip-compile`, so a planted
+`pip-compile …` in a non-exception public target exited 0 INVISIBLE while the guard's own docstring
+promised to name it.
+
 What it deliberately does NOT do: it does not judge `bash`/`git`/`gh`/`docker`/`hermes` (those are
 host tools the container seams themselves need), and it does not run anything — a bare reading of
 the tree, so it is cheap enough to sit inside `make lint`.
@@ -38,7 +44,12 @@ import architecture_bot  # noqa: E402  (the ONE Makefile target-line parser — 
 HARNESS_TOKENS = ("$(PYTHON_RUN)", "$(TEST_RUN)", "$(DOCKER_RUN)", "$(OS_OPTS)", "docker run")
 
 #: A host interpreter invocation, but not `python3.12` / `my-python3` / `scripts/pip`.
-INTERP_RE = re.compile(r"(?<![\w.$/@-])(python3|pip|uv)(?![\w.-])")
+#: The pip-tools console scripts are their OWN words — `pip-compile`, `pip-sync`,
+#: `pip-tools` — so they come FIRST in the alternation: a shorter alternative earlier
+#: would match only the `pip` prefix and the trailing `-` lookahead would then reject it,
+#: which is exactly the hole #1593 measured (a planted `pip-compile …` exited 0).
+INTERP_RE = re.compile(
+    r"(?<![\w.$/@-])(pip-compile|pip-sync|pip-tools|python3|pip|uv)(?![\w.-])")
 
 #: Split a recipe line into pipeline/list segments so `cmd | $(PYTHON_RUN) python3 x` is clean
 #: while `cmd | python3 x` is not.

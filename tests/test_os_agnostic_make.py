@@ -13,6 +13,10 @@ Three properties, each locking a measured gap:
     `python3 scripts/scrub_log.py` inside `scrubbed_run`, a bare `$(shell python3 …)`) it reports
     them. That is the RED half of "proven RED against the pre-change tree", so reverting either
     seam cannot pass silently while this module is green.
+ 4. **The pip-tools console scripts are tokens too (#1593).** A planted `pip-compile …` / bare
+    `pip-tools …` in a NON-exception PUBLIC target is reported naming target + line, while the REAL
+    private recipes that carry them (`_requirements`, `_generate-requirements`) stay GREEN because
+    their only entry is a `$(DOCKER_RUN) make _x` hop — both polarities in one pair.
 
 Nothing here mocks product code: the suite imports the real `scripts/check_no_bare_host_python.py`
 and reads the real `Makefile` (AGENTS.md rule 6m).
@@ -163,6 +167,79 @@ def test_the_detector_is_red_on_the_pre_change_seam_shapes() -> None:
     check("green: the containerised shapes are clean", not fixed_findings, fixed_findings)
 
 
+def test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed() -> None:
+    """Property 3b (#1593): the pip-tools console scripts are tokens, and their recipes stay green.
+
+    RED half: a planted `pip-compile …` / bare `pip-tools …` in a NON-exception PUBLIC target is
+    reported naming target + line. Pre-#1593 the alternation carried only `python3|pip|uv`, so the
+    trailing `-` lookahead rejected `pip-compile` and the whole guard exited 0 INVISIBLE.
+    GREEN half: the REAL repo recipes that carry those commands (`_requirements`,
+    `_generate-requirements`) are private and reached only through a `$(DOCKER_RUN) make _x` hop,
+    so `requirements`/`generate-requirements` walk to [] and the tree stays clean for the right
+    reason (containerised), not because the token set cannot see them.
+    """
+    module = scanner()
+
+    # The token set itself: each pip-tools console script is its OWN word, and the near-miss
+    # spellings the old regex deliberately excluded still do NOT match.
+    for token in ("pip-compile", "pip-sync", "pip-tools"):
+        check(f"tokens: `{token}` is an interpreter token",
+              module.INTERP_RE.search(token) is not None, module.INTERP_RE.pattern)
+    for false_friend in ("python3.12", "my-python3", "scripts/pip"):
+        check(f"tokens: `{false_friend}` is not an interpreter token",
+              not module.INTERP_RE.search(false_friend), module.INTERP_RE.pattern)
+
+    # RED: planted into a non-exception public target, named with target + line.
+    planted = (
+        ".PHONY: search-smoke\n"
+        "search-smoke:\n"
+        "\tpip-compile --quiet --output-file x.txt requirements.in\n"
+        "\tpip-tools --version\n"
+    )
+    findings, _count = module.violations(planted)
+    check("red(#1593): a planted bare `pip-compile` in a non-exception public target is reported",
+          any(f.target == "search-smoke" and f.token == "pip-compile" for f in findings),
+          [str(f) for f in findings])
+    check("red(#1593): a planted bare `pip-tools` in a non-exception public target is reported",
+          any(f.target == "search-smoke" and f.token == "pip-tools" for f in findings),
+          [str(f) for f in findings])
+    check("red(#1593): the finding names the offending line number",
+          sorted({f.line for f in findings}) == [3, 4],
+          [(f.target, f.line, f.token) for f in findings])
+
+    # GREEN: the SAME idiom behind a harness seam is clean, on a synthetic pair.
+    harnessed = (
+        ".PHONY: requirements\n"
+        "requirements:\n"
+        "\t$(DOCKER_RUN) make _requirements\n"
+        ".PHONY: _requirements\n"
+        "_requirements:\n"
+        "\tpip install --quiet pip-tools\n"
+        "\tpip-compile --quiet --output-file requirements.txt requirements.in\n"
+    )
+    targets, macros = module.parse_makefile(harnessed)
+    check("green(#1593): `requirements` (harnessed hop) walks to no finding",
+          not module.walk("requirements", targets, macros),
+          [str(f) for f in module.walk("requirements", targets, macros)])
+    check("green(#1593): the containerised pair reports nothing at all",
+          not module.violations(harnessed)[0], module.violations(harnessed)[0])
+
+    # And the REAL tree's three recipes are private + harnessed exactly as documented, so the
+    # widened token set does not red the current gate.
+    real_targets, real_macros = module.parse_makefile(MAKEFILE_TEXT)
+    for private in ("_requirements", "_generate-requirements", "_requirements-test"):
+        check(f"green(#1593): `{private}` is a private target (not scanned as public)",
+              private.startswith("_") and private not in module.public_targets(real_targets),
+              private)
+    for public in ("requirements", "generate-requirements"):
+        check(f"green(#1593): `{public}` walks to no finding on the real tree",
+              not module.walk(public, real_targets, real_macros),
+              [str(f) for f in module.walk(public, real_targets, real_macros)])
+        check(f"green(#1593): `{public}` carries its hop inside a container harness",
+              "$(DOCKER_RUN) make _" in MAKEFILE_TEXT.split(f"\n{public}:", 1)[1].split("\n\n", 1)[0],
+              "the public wrapper no longer routes the private recipe through $(DOCKER_RUN)")
+
+
 def test_the_guard_is_wired_into_lint_and_reachable() -> None:
     """Property 1c: `make lint` actually runs the guard, and the public target exists."""
     lint_block = MAKEFILE_TEXT.split("\nlint:", 1)
@@ -184,6 +261,7 @@ def main() -> int:
     test_the_documented_exception_list_agrees_with_the_scanner()
     test_the_two_cross_cutting_seams_run_through_the_container_seam()
     test_the_detector_is_red_on_the_pre_change_seam_shapes()
+    test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed()
     test_the_guard_is_wired_into_lint_and_reachable()
     print(f"\nPASSED {PASSED} | FAILED {FAILED}")
     return 1 if FAILED else 0

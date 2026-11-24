@@ -378,12 +378,13 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #
 # Slice 5 of #712 (#1496) makes the list MECHANICAL: `make check-no-bare-host-python`
 # (scripts/check_no_bare_host_python.py, part of `make lint`) fails when any public target
-# outside this list reaches a bare host `python3`/`pip`/`uv` through a recipe line, a `$(call …)`
-# macro body, a `$(shell …)` parse-time exec, or one bare `$(MAKE) _x` hop. The authoritative
-# copy is EXCEPTIONS in that script; the mirror below carries the SAME names, and
-# tests/test_os_agnostic_make.py fails when the two drift. Categories: image build/selection
-# (the docker seam itself), gh/GitHub-state bound, host git identity/worktree, the cheapest
-# pre-image-ensure guards, and host orchestration/local probes.
+# outside this list reaches a bare host `python3`/`pip`/`uv` — or a bare pip-tools console script
+# (`pip-compile`, `pip-sync`, `pip-tools`; #1593, which the shorter `pip` spelling could not see)
+# — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one bare
+# `$(MAKE) _x` hop. The authoritative copy is EXCEPTIONS in that script; the mirror below carries
+# the SAME names, and tests/test_os_agnostic_make.py fails when the two drift. Categories: image
+# build/selection (the docker seam itself), gh/GitHub-state bound, host git identity/worktree, the
+# cheapest pre-image-ensure guards, and host orchestration/local probes.
 # HOST-EXCEPTIONS-BEGIN
 #   `agent-aux-local-sync` `agent-hermes-smoke` `agent-image-published-check`
 #   `agent-image-push-check` `agent-image-ref` `agent-image-smoke` `agent-model-chain-check`
@@ -866,11 +867,11 @@ _check-no-bare-host-python:
 	python3 scripts/check_no_bare_host_python.py
 
 .PHONY: check-no-bare-host-python
-check-no-bare-host-python: ## Fail when a non-exception public make target reaches a bare host python3/pip/uv (issue #712 Slice 5, #1496)
+check-no-bare-host-python: ## Fail when a non-exception public make target reaches a bare host python3/pip/uv or a bare pip-tools console script (issue #712 Slice 5, #1496; #1593)
 	@$(MAKE) --no-print-directory _check-no-bare-host-python
 
 .PHONY: lint lint-fix
-lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, a bot leg lost its project skill or its model chain, or a non-exception public target reaches a bare host python3/pip/uv
+lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, a bot leg lost its project skill or its model chain, or a non-exception public target reaches a bare host python3/pip/uv or a bare pip-tools console script
 	python3 scripts/lint_linefeeds.py
 	python3 scripts/lint_syntax.py
 	$(MAKE) --no-print-directory check-agent-skills

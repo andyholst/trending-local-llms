@@ -38,7 +38,7 @@ The five parse-time derivations (`query_coverage.py --queries` and `query_vocab.
 
 ### Requirement: No public target outside the documented exceptions reaches a bare host interpreter
 
-A guard SHALL read the REAL Makefile and fail when any PUBLIC target reaches a bare host `python3`/`pip`/`uv` — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one bare `$(MAKE) _x` hop. A line carrying a container harness (`$(PYTHON_RUN)`, `$(TEST_RUN)`, `$(DOCKER_RUN)`, `$(OS_OPTS)`, `docker run`) is clean.
+A guard SHALL read the REAL Makefile and fail when any PUBLIC target reaches a bare host `python3`/`pip`/`uv` — or a bare pip-tools console script (`pip-compile`, `pip-sync`, `pip-tools`; #1593) — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one bare `$(MAKE) _x` hop. A line carrying a container harness (`$(PYTHON_RUN)`, `$(TEST_RUN)`, `$(DOCKER_RUN)`, `$(OS_OPTS)`, `docker run`) is clean.
 
 #### Scenario: The real tree is green through the guard's own CLI
 
@@ -53,6 +53,13 @@ A guard SHALL read the REAL Makefile and fail when any PUBLIC target reaches a b
 - **When** the detector runs
 - **Then** it reports both (the macro body is analysed as its own line, so a harness in the caller's argument cannot launder it), while the SAME shapes containerised are clean
 - **Test:** tests/test_os_agnostic_make.py::test_the_detector_is_red_on_the_pre_change_seam_shapes
+
+#### Scenario: The pip-tools console scripts are tokens, and their recipes stay harnessed (#1593)
+
+- **Given** a planted `pip-compile …` and a bare `pip-tools …` in a NON-exception PUBLIC target
+- **When** the detector runs
+- **Then** both are reported naming the target and line number, while the REAL private `_requirements` / `_generate-requirements` recipes that carry those commands walk to no finding because their only entry is a `$(DOCKER_RUN) make _x` hop
+- **Test:** tests/test_os_agnostic_make.py::test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed
 
 ### Requirement: The host-only exception list is mechanical and agrees with the docs
 
