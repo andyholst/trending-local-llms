@@ -20,6 +20,17 @@ missing `OPENSPEC.md` always fails — there is nothing to compare. Both targets
 are wired into `make openspec-check`, which `qa-validate` runs on every PR
 (rule 6d).
 
+That tolerance is deliberate housekeeping slack, but it means a drifted index
+keeps `validate` GREEN, so the event-driven `index-repair` keeper — gated on a
+RED validate — never wakes and the drift compounds merge over merge (issue
+#1634, measured on master `cb139e7c`: `archived: **520**` vs 522 dirs, rc 0).
+`--drift` is the additive half that closes that loop without touching the gate:
+it prints the SAME `index_drift()` count as the one-line report `drift=<n>` and
+always exits 0 for a readable tree, so qa-validate can surface the number as an
+allowlisted output key and wake `index-repair` on a green push whose index
+drifted. It is a REPORT, never a second verdict — `--check`'s constant, its WARN
+branch and its exit codes are byte-identical.
+
 Layout it reads:
 
     openspec/changes/<name>/proposal.md          (active change)
@@ -35,6 +46,7 @@ Issue/PR references come from the proposal's own header lines:
 Usage:
     python3 scripts/openspec_index.py --write
     python3 scripts/openspec_index.py --check
+    python3 scripts/openspec_index.py --drift
 """
 
 from __future__ import annotations
@@ -266,6 +278,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--write", action="store_true", help="rewrite OPENSPEC.md from openspec/changes/**")
     ap.add_argument("--check", action="store_true",
                     help=f"fail when OPENSPEC.md drifts by more than {MAX_OPENSPEC_INDEX_DRIFT} changes (default)")
+    ap.add_argument("--drift", action="store_true",
+                    help="print the ONE drift measure as `drift=<n>` and exit 0 for any drift "
+                         "(a report beside --check, whose tolerance is unchanged; issue #1634)")
     a = ap.parse_args(argv)
 
     text = render()
@@ -281,15 +296,36 @@ def main(argv: list[str] | None = None) -> int:
     active, archived = discover()
 
     # A missing file has nothing to compare: always red, whatever the drift rule.
+    # `--drift` exits 2 there (a report that cannot be produced); `--check` keeps 1.
     if not INDEX.is_file():
         print(
             f"[openspec-index] FAIL {INDEX.name} is missing "
             f"({len(active)} active, {len(archived)} archived on disk) — run `make openspec-index`",
             file=sys.stderr,
         )
-        return 1
+        return 2 if a.drift else 1
 
-    current = INDEX.read_text(encoding="utf-8")
+    try:
+        current = INDEX.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"[openspec-index] FAIL {INDEX.name} could not be read: {exc}", file=sys.stderr)
+        return 2 if a.drift else 1
+
+    # `--drift` (issue #1634): the ONE measure (`index_drift`) as a REPORT. It
+    # never gates — any tolerated drift still exits 0 — so qa-validate can read the
+    # number and wake its `index-repair` keeper on a push whose `validate` stayed
+    # GREEN. stdout carries exactly one `drift=<n>` line (the workflow parses an
+    # allowlist of keys, rule 3d), so the reasons go to stderr.
+    if a.drift:
+        if current == text:
+            print("drift=0")
+            return 0
+        drift, reasons = index_drift(current, text, active, archived)
+        for reason in reasons:
+            print(f"[openspec-index]   {reason}", file=sys.stderr)
+        print(f"drift={drift}")
+        return 0
+
     if current == text:
         print(
             f"[openspec-index] OK {INDEX.name} is current: {len(active)} active, {len(archived)} archived"

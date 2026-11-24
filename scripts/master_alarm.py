@@ -117,6 +117,12 @@ GATES: dict[str, tuple[str, str]] = {
     # no keeper that writes an analysis file. Registered additively (rule 3b).
     "findings-check-for-pr": ("alarm", "master-alarm"),
     "openspec-archive-check": ("alarm", "master-alarm"),
+    # Issue #1634: the drift REPORT (`make openspec-index-drift`, run by the validate
+    # job so its number can wake the `index-repair` keeper on a green push). It is not
+    # a verifier and regenerates nothing — its exit code never gates a merge — so a
+    # red master goes to the alarm; registered additively (rule 3b) because
+    # `validate_gates_from_trees` reads every `make X` the validate job runs.
+    "openspec-index-drift": ("alarm", "master-alarm"),
     # The reintroduction gate (issue #802): a red on master here means a diagnosed pipeline
     # failure was closed without its fix PR + guard test; master-alarm makes it loud.
     "pipeline-failure-guard-check": ("alarm", "master-alarm"),
