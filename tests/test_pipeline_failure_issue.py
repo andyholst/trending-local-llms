@@ -2327,6 +2327,115 @@ def test_a_run_with_several_bad_jobs_is_one_member_and_one_ledger_row() -> None:
         check("the FILED line says 1 run(s), not 6", "1 run(s): 300" in proc.stdout, proc.stdout)
 
 
+#: The nine CANCELLED `push`-to-`master` runs measured on 2026-11-24 (issue #1669): each superseded
+#: by the next master push, its jobs' logs gone (`gh: HTTP 404`), grouped into ONE content-free
+#: `EMPTY_SHAPE` class `da39a3ee5e6b`.
+CANCELLED_PUSH_RUN_IDS = (45429408107, 45440925405, 45446456215, 45447848863, 45452146950,
+                          45466204064, 45471561423, 45472215832, 45486686473)
+
+
+def _cancelled_push_runs(event: str = "push", conclusion: str = "cancelled") -> list[dict]:
+    """The nine superseded runs, each with its OWN cancelled `index-repair` job."""
+    out = []
+    for n, rid in enumerate(CANCELLED_PUSH_RUN_IDS):
+        out.append({"databaseId": rid, "workflowName": "qa-validate.yml", "name": f"r{rid}",
+                    "headBranch": "master", "headSha": f"{n + 1:040x}", "event": event,
+                    "createdAt": "2026-11-11T20:00:00Z", "conclusion": conclusion,
+                    "status": "completed",
+                    "url": f"https://github.com/octo/repo/actions/runs/{rid}"})
+    return out
+
+
+def _superseded_scene() -> dict:
+    """Nine cancelled push-to-master runs whose logs cannot be read, plus ONE cancelled
+    `schedule` run (a dropped delivery) that must still file UNDIAGNOSED."""
+    canned = {"window-qa-validate_yml-none-p1.json": [_rest(r) for r in _cancelled_push_runs()],
+              "issues.json": [], "log-fail": ""}  # every log read fails (gh HTTP 404)
+    for n, rid in enumerate(CANCELLED_PUSH_RUN_IDS):
+        canned[f"jobs-{rid}.json"] = {"jobs": [{"databaseId": 950 + n, "name": "index-repair",
+                                                "conclusion": "cancelled"}]}
+    sched = {"databaseId": 999, "workflowName": "refresh-bot.yml", "name": "sweep",
+             "headBranch": "master", "headSha": "f" * 40, "event": "schedule",
+             "createdAt": "2026-11-11T19:00:00Z", "conclusion": "cancelled",
+             "status": "completed", "url": "https://github.com/octo/repo/actions/runs/999"}
+    canned["window-refresh-bot_yml-none-p1.json"] = [_rest(sched)]
+    canned["jobs-999.json"] = {"jobs": [{"databaseId": 960, "name": "alarm",
+                                         "conclusion": "cancelled"}]}
+    return canned
+
+
+def test_a_cancelled_push_run_is_not_filed() -> None:
+    print("\nsuperseded push (#1669): nine CANCELLED push-to-master runs with unreadable logs "
+          "file NOTHING; a cancelled SCHEDULE run still files UNDIAGNOSED")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, _superseded_scene())
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip())
+        check("#1669: exactly ONE issue — the schedule cancellation, not the nine push runs",
+              created == 1, f"create-count={created}\n{proc.stdout}")
+        bodies = [p.read_text() for p in (tmp / "canned").glob("body-*.txt")]
+        check("#1669: no filed body names any superseded push run",
+              not any(f"run={rid}" in b for b in bodies for rid in CANCELLED_PUSH_RUN_IDS),
+              str(bodies)[:400])
+        check("#1669: the sweep ANNOUNCEs the nine skipped runs, never silent",
+              "skip 9 cancelled push-to-master run(s)" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        rows = {e["run_id"]: e for e in data["failures"]}
+        check("#1669: NO ledger row for any superseded push run",
+              not (set(rows) & set(CANCELLED_PUSH_RUN_IDS)), str(sorted(rows)))
+        check("#1669: the cancelled schedule run IS tracked, UNDIAGNOSED and diagnosis-free",
+              rows.get(999, {}).get("undiagnosed") and rows[999].get("error_excerpt") is None,
+              str(rows.get(999)))
+        check("#1669: the schedule run is its OWN class, never merged with the skipped runs",
+              rows[999].get("class_runs") == [999], str(rows[999]))
+
+
+def test_the_superseded_skip_is_announced_in_dry_output() -> None:
+    print("\nsuperseded push (#1669): a dry sweep previews the skip and writes nothing")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, _superseded_scene())
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger, "--dry")
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("#1669: the dry preview announces the skipped superseded runs",
+              "skip 9 cancelled push-to-master run(s)" in proc.stdout, proc.stdout)
+        check("#1669: the dry preview files no class for the superseded push runs",
+              not any(str(rid) in ln for ln in proc.stdout.splitlines()
+                      if ln.startswith("WOULD FILE") for rid in CANCELLED_PUSH_RUN_IDS),
+              proc.stdout)
+        check("#1669: dry writes neither an issue nor a ledger",
+              not (tmp / "canned" / "create-count").exists() and not ledger.exists(), "")
+
+
+def test_a_cancelled_push_run_with_a_readable_diagnosis_still_files() -> None:
+    print("\nsuperseded push (#1669): a cancelled push-to-master run whose log DID yield an "
+          "error block STILL files (the #1615 counterexample)")
+    runs = [_rest(r) for r in _cancelled_push_runs()[:1]]
+    canned = {"window-qa-validate_yml-none-p1.json": runs, "issues.json": [],
+              "jobs-45429408107.json": {"jobs": [{"databaseId": 950, "name": "validate",
+                                                   "conclusion": "cancelled"}]},
+              "log-job-950.txt": CLASS_LOG_A}
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip())
+        check("#1669: the readable-diagnosis cancelled push run is NOT skipped", created == 1,
+              f"create-count={created}\n{proc.stdout}")
+        check("#1669: no superseded-skip announcement fired",
+              "superseded by a newer push" not in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = {e["run_id"]: e for e in data["failures"]}[45429408107]
+        check("#1669: the row carries the readable diagnosis, not an empty shape",
+              row.get("error_excerpt") and row.get("failure_class") != F.EMPTY_SHAPE, str(row))
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -2388,6 +2497,9 @@ def main() -> int:
     test_the_master_schedule_half_files_one_issue_per_error_class()
     test_the_error_class_dry_run_previews_without_writing()
     test_a_run_with_several_bad_jobs_is_one_member_and_one_ledger_row()
+    test_a_cancelled_push_run_is_not_filed()
+    test_the_superseded_skip_is_announced_in_dry_output()
+    test_a_cancelled_push_run_with_a_readable_diagnosis_still_files()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 

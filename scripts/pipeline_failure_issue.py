@@ -34,6 +34,13 @@ the FAILING REGION's own lines with every run-specific token collapsed, with `ex
 as the second axis — and ONE issue is filed per class per window, naming every member run, while
 EACH member still appends its own ledger row (append-only, rule 3b: no existing value is lost).
 
+A CANCELLED `push`-to-`master` run carrying NO diagnosis is NOT a tracked failure (issue #1669):
+GitHub cancels the older validation when a newer push lands (#1560's concurrency), so it never
+concluded a delivery and its cancelled jobs' logs are gone (`gh: HTTP 404`). Filing it produced a
+content-free UNDIAGNOSED issue under the EMPTY_SHAPE class (`da39a3ee5e6b`), which rule 6r forbids.
+Such runs are skipped and the sweep ANNOUNCES the count; a cancelled run whose log DID yield a
+diagnosis still files (#1615), and a cancelled `schedule`/dispatch run stays a dropped delivery.
+
 Dedup is the ledger (run id) plus a scan of issues (open OR closed) carrying the marker: one run
 files once, ever. A log fetch that fails after one retry is recorded in the ledger as UNDIAGNOSED
 with the reason — loudly, never silently — and the issue body then says the log was unreadable
@@ -139,7 +146,9 @@ BAD_CONCLUSIONS = ("failure", "cancelled")
 #: PR-triggered run is SUPERSEDED by the newer head that replaced it — the queued/ghost alarms
 #: own that state — and a cancelled job carries no error text, so grouping it would file a
 #: content-free "blockage" issue, which rule 6r forbids. The master/schedule half keeps
-#: `BAD_CONCLUSIONS`: there a cancelled push run IS meaningful (a dropped cron delivery).
+#: `BAD_CONCLUSIONS`: there a cancelled SCHEDULE/dispatched run IS meaningful (a dropped cron
+#: delivery). A cancelled PUSH-to-`master` run is refined further by `_superseded_cancelled_push`
+#: (issue #1669) — only when its jobs yielded no diagnosis at all.
 PR_BLOCK_CONCLUSIONS = ("failure",)
 
 #: The digest of an EMPTY signature (`sha1("")[:12]`). A member whose steps, `make` targets and
@@ -651,6 +660,23 @@ def _one_member_per_run(members: list[dict]) -> list[dict]:
     for m in sorted(members, key=lambda m: int(m["run"]["databaseId"])):
         by_run.setdefault(int(m["run"]["databaseId"]), m)
     return [by_run[rid] for rid in sorted(by_run)]
+
+
+def _superseded_cancelled_push(item: dict) -> bool:
+    """A CANCELLED `push`-to-`master` run carrying NO diagnosis is superseded, not a failure.
+
+    Issue #1669: GitHub cancels the older validation when a newer push lands (#1560's
+    concurrency), so the run never concluded a delivery and its cancelled jobs' logs are gone
+    (`gh: HTTP 404`). Grouping it filed ONE content-free `UNDIAGNOSED` issue under the
+    `EMPTY_SHAPE` class, which rule 6r forbids. A cancelled run whose log DID yield a failing
+    step, `make` target or error block still files (issue #1615), and a cancelled
+    `schedule`/dispatch run is a dropped delivery, which `BAD_CONCLUSIONS` deliberately keeps.
+    """
+    run = item.get("run") or {}
+    return (run.get("event") == "push"
+            and run.get("conclusion") == "cancelled"
+            and item.get("shape") == EMPTY_SHAPE
+            and item.get("exact_shape", item.get("shape")) == EMPTY_SHAPE)
 
 
 def group_failure_classes(items: list[dict]) -> list[dict]:
@@ -2056,6 +2082,7 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     # half used to file inside this loop, one issue per run; grouping needs EVERY member's shape
     # before the first issue is composed, so collection and filing are two phases.
     items: list[dict] = []
+    superseded: set[int] = set()
     for run in sorted(runs, key=lambda r: r["databaseId"]):
         rid = int(run["databaseId"])
         if rid in known:
@@ -2089,12 +2116,20 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
             # block, and named on the issue when the block yields no `make` target.
             steps = failing_step_names(job)
             targets = failed_make_targets(block)
-            items.append({
+            item = {
                 "run": run, "job": job, "block": block, "region": region,
                 "targets": targets, "steps": steps, "log_error": log_error,
                 "shape": failure_shape(block, targets, steps),
                 "exact_shape": exact_failure_shape(block, targets, steps),
-            })
+            }
+            if _superseded_cancelled_push(item):
+                superseded.add(rid)
+                continue
+            items.append(item)
+    if superseded:
+        lines.append(f"skip {len(superseded)} cancelled push-to-master run(s) superseded by a "
+                     f"newer push — no failing step, `make` target or readable error block, so "
+                     f"nothing to file (issue #1669)")
     # Phase 2 — ONE issue per STABLE ERROR CLASS per window (issue #1557), oldest class first;
     # EVERY member still appends its own ledger row (append-only, rule 3b).
     for group in group_failure_classes(items):
