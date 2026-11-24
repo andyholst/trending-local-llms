@@ -1,6 +1,7 @@
 # Proposal: agents-store-rows
 
 Issue: #1482
+PR: #1597
 
 ## Why
 
