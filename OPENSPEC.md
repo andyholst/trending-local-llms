@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **514**
+Active changes: **1** · archived: **515**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `rulebook-store-note-pin-order-1612` | active | #1612 | #1600 | [rulebook-store-note-pin-order](openspec/changes/rulebook-store-note-pin-order-1612/specs/rulebook-store-note-pin-order/spec.md) | 8/8 | [proposal.md](openspec/changes/rulebook-store-note-pin-order-1612/proposal.md) |
 
 ## Archived changes
 
@@ -455,6 +454,7 @@ Active changes: **2** · archived: **514**
 | `rulebook-names-the-conflict-repair` | archived | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/archive/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-names-the-conflict-repair/proposal.md) |
 | `rulebook-pipelines-read-bullets-only` | archived | #660 | #909 | [rulebook](openspec/changes/archive/rulebook-pipelines-read-bullets-only/specs/rulebook/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/rulebook-pipelines-read-bullets-only/proposal.md) |
 | `rulebook-push-and-verify-1589` | archived | #1589 | #1598 | [rulebook](openspec/changes/archive/rulebook-push-and-verify-1589/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-push-and-verify-1589/proposal.md) |
+| `rulebook-store-note-pin-order-1612` | archived | #1612 | #1600 | [rulebook-store-note-pin-order](openspec/changes/archive/rulebook-store-note-pin-order-1612/specs/rulebook-store-note-pin-order/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-store-note-pin-order-1612/proposal.md) |
 | `s8-row-r-marker-pr` | archived | #1336 | #1338 | [rulebook](openspec/changes/archive/s8-row-r-marker-pr/specs/rulebook/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/s8-row-r-marker-pr/proposal.md) |
 | `scope-gate-total-vram` | archived | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/archive/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/scope-gate-total-vram/proposal.md) |
 | `scratch-auth-flake-1177` | archived | #1177 | #1254 | [ci-reliability](openspec/changes/archive/scratch-auth-flake-1177/specs/ci-reliability/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/scratch-auth-flake-1177/proposal.md) |
