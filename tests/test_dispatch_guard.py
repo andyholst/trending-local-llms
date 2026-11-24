@@ -18,11 +18,17 @@ path>` (repeatable, or `CLAIMS=`) refuses when another ACTIVE registry lane alre
 an overlapping path, naming the holder, while a FINISHED lane does not block and a claim-free
 invocation behaves exactly as it did before.
 
+Issue #1569 adds the CROSS-HOST half: `make dispatch-check` reads the ISSUE THREAD (the one
+surface every host shares) and refuses when ANOTHER host holds a NEWER ACTIVE working-claim,
+naming the holding host, lane and comment id. These tests run the REAL parser over RECORDED
+threads through `--comments-file`/`--from-file` — offline, no network, no credential values.
+
 Run:  python3 tests/test_dispatch_guard.py   or   make test
 """
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -358,6 +364,219 @@ def test_cli_and_make_forward_claims_and_keep_existing_refusals() -> None:
               proc.returncode == 0, proc.stdout + proc.stderr)
 
 
+# ---------------------------------------------------------------------------- thread (#1569)
+def comment(cid: int, created: str, body: str) -> dict:
+    """One recorded comment (the REST shape: numeric id + `created_at`)."""
+    return {"id": cid, "created_at": created, "body": body}
+
+
+def thread_file(tmp: Path, name: str, comments: list[dict]) -> Path:
+    path = tmp / name
+    path.write_text(json.dumps(comments), encoding="utf-8")
+    return path
+
+
+def test_thread_markers_and_machine_lines_are_parsed() -> None:
+    print("\nThread: signed markers and machine lines parse (issue #1569)")
+    working = ("BOT tll-implementer (host asimov@omarchy) · working on #1495 · branch none · "
+               "blocked on none · next cut the worktree")
+    check("a working-on marker parses lane/kind/issue/host",
+          D.comment_markers(working) == [{"lane": "tll-implementer", "kind": "working on",
+                                          "issue": 1495, "host": "asimov@omarchy"}],
+          str(D.comment_markers(working)))
+    m = D.comment_markers("BOT tll-planner · dispatch #1569 · lane tll-implementer · base `abc`")[0]
+    check("a dispatch marker parses with NO host",
+          m["kind"] == "dispatch" and m["issue"] == 1569 and m["host"] is None, str(m))
+    for kind in D.RELEASE_KINDS:
+        got = D.comment_markers(f"BOT tll-reviewer · {kind} #1317 · handover owner")[0]
+        check(f"the {kind!r} marker parses as a release",
+              got["kind"] == kind and got["issue"] == 1317, str(got))
+    check("(host …) is read", D.comment_machine("BOT x (host asimov@mac) · working on #1") == "asimov@mac")
+    check("a leading machine line is read",
+          D.comment_machine("asimov@mac · status #1 · head abc") == "asimov@mac")
+    check("a · user@host · span (the STATUS marker shape) is read",
+          D.comment_machine("BOT tll-implementer · status #1560 · andy@Andys-MacBook-Pro · branch b")
+          == "andy@Andys-MacBook-Pro")
+    check("prose that only MENTIONS a host is not read",
+          D.comment_machine("BOT tll-planner · dispatch #1 · measured andy@Andys-MacBook-Pro elsewhere")
+          is None)
+    check("no identity -> None", D.comment_machine("BOT tll-planner · dispatch #1 · base abc") is None)
+    rows = D.normalize_comments([
+        {"id": 2, "created_at": "2026-11-24T08:02:00Z", "body": "b"},
+        {"id": 1, "createdAt": "2026-11-24T08:01:00Z", "body": "a"},
+    ])
+    check("rows sort oldest-first across both API spellings",
+          [row["id"] for row in rows] == [1, 2], str(rows))
+    check("default_machine is user@host (first hostname label)",
+          re.fullmatch(r"[^@\s]+@[^.\s]+", D.default_machine()) is not None, D.default_machine())
+    check("machine labels/case compare equal",
+          D.same_machine("asimov@omarchy.local", "Asimov@omarchy")
+          and not D.same_machine("asimov@mac", "asimov@omarchy"))
+
+
+def test_active_claim_replays_newest_wins_and_release_clears() -> None:
+    print("\nThread: newest ACTIVE claim wins; a release clears")
+    rows = D.normalize_comments([
+        comment(10, "2026-11-23T17:12:45Z", "BOT tll-implementer · working on #1445 · branch fix/a"),
+        comment(11, "2026-11-23T17:31:58Z", "BOT tll-implementer · working on #1445 · branch fix/b"),
+        comment(12, "2026-11-23T18:00:00Z", "BOT tll-planner · dispatch #1445 · lane tll-reviewer"),
+    ])
+    holder = D.active_claim(rows, "1445")
+    check("the newest claim holds",
+          holder is not None and holder["comment_id"] == 12 and holder["lane"] == "tll-planner",
+          str(holder))
+    check("markers for another issue are ignored", D.active_claim(rows, "9999") is None)
+
+    released = D.normalize_comments([
+        comment(10, "2026-11-23T17:12:45Z", "BOT tll-implementer (host asimov@mac) · working on #1445"),
+        comment(11, "2026-11-23T19:00:00Z", "BOT tll-implementer · done #1445 · handover tll-planner"),
+    ])
+    check("a later done releases the claim", D.active_claim(released, "1445") is None,
+          str(D.active_claim(released, "1445")))
+
+    delivered = D.normalize_comments([
+        comment(10, "2026-11-23T17:12:45Z", "BOT tll-implementer (host asimov@mac) · working on #1445"),
+        comment(11, "2026-11-23T19:00:00Z", "BOT tll-implementer · pr #1445 · PR #1448 · handover tll-reviewer"),
+        comment(12, "2026-11-23T19:30:00Z", "BOT tll-reviewer · reviewing #1445 · handover tll-implementer"),
+        comment(13, "2026-11-23T20:00:00Z", "BOT tll-planner · dispatch #1445 · lane tll-implementer"),
+    ])
+    held = D.active_claim(delivered, "1445")
+    check("a review cycle ends with the newest dispatch holding",
+          held is not None and held["comment_id"] == 13, str(held))
+
+
+def test_cross_host_refusal_names_host_lane_and_comment() -> None:
+    print("\nThread: another host's NEWER ACTIVE claim refuses, naming it (#1569)")
+    holder = {"comment_id": 7125064315, "lane": "tll-implementer", "kind": "working on",
+              "machine": "andy@Andys-MacBook-Pro", "created": "2026-11-24T07:30:20Z"}
+    v = D.evaluate({"issue": "1569", "state": "OPEN", "bound_prs": []}, 0, 3,
+                   holder=holder, machine="asimov@omarchy")
+    check("different host -> REFUSE", v["verdict"] == "refuse", str(v))
+    reason = " ".join(v["reasons"])
+    check("names the holding host, lane and comment id",
+          "andy@Andys-MacBook-Pro" in reason and "tll-implementer" in reason
+          and "7125064315" in reason, reason)
+    check("the refusal says ACTIVE and cross-host",
+          "ACTIVE" in reason and "another host" in reason, reason)
+
+    same = D.evaluate({"issue": "1569", "state": "OPEN", "bound_prs": []}, 0, 3,
+                      holder=holder, machine="andy@Andys-MacBook-Pro")
+    check("the SAME host re-dispatching an issue it holds -> ALLOW",
+          same["verdict"] == "allow" and not same["reasons"], str(same))
+
+    allow = D.evaluate({"issue": "1569", "state": "OPEN", "bound_prs": []}, 0, 3,
+                       holder=dict(holder, machine=None), machine="asimov@omarchy")
+    check("a claim whose host cannot be named does not block", allow["verdict"] == "allow", str(allow))
+
+
+def test_cli_reads_a_recorded_thread_offline() -> None:
+    print("\nThread: the real CLI over a recorded thread, no network")
+    with tempfile.TemporaryDirectory(prefix="dispatch-thread-cli-") as td:
+        tmp = Path(td)
+        fixture = state_file(tmp, "open.json", "OPEN", [])
+        reg = registry(tmp, "lanes.json", 0)
+        thread = thread_file(tmp, "thread.json", [
+            comment(1, "2026-11-24T07:29:43Z",
+                    "BOT tll-planner · dispatch #1560 · lane tll-implementer · base `674bb36b`"),
+            comment(2, "2026-11-24T07:30:20Z",
+                    "BOT tll-implementer · working on #1560 · branch ci/workflow-concurrency-groups-1560"),
+            comment(3, "2026-11-24T07:54:48Z",
+                    "BOT tll-implementer · status #1560 · andy@Andys-MacBook-Pro · branch ci/workflow-concurrency-groups-1560 @ 340f0e7e"),
+        ])
+
+        def run(*args: str) -> tuple[int, str]:
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "dispatch_guard.py"),
+                 "--issue", "1560", "--registry", str(reg), "--from-file", str(fixture),
+                 "--comments-file", str(thread), *args],
+                capture_output=True, text=True, cwd=ROOT,
+            )
+            return proc.returncode, proc.stdout + proc.stderr
+
+        rc, out = run("--machine", "asimov@omarchy")
+        check("CLI: the second host is refused", rc != 0, out)
+        check("CLI: names the holding host, lane and comment",
+              "andy@Andys-MacBook-Pro" in out and "tll-implementer" in out and "comment 2" in out, out)
+        rc, out = run("--machine", "andy@Andys-MacBook-Pro")
+        check("CLI: the holding host itself is allowed", rc == 0, out)
+        check("CLI: the holder is reported", "thread_holder=andy@Andys-MacBook-Pro" in out, out)
+        rc, out = run("--machine", "asimov@omarchy", "--json")
+        data = json.loads(out)
+        check("JSON: the holder is carried as data",
+              data["thread_holder"]["comment_id"] == 2 and data["verdict"] == "refuse", out[:400])
+
+        embedded = tmp / "embedded.json"
+        embedded.write_text(json.dumps({"state": "OPEN", "bound_prs": [],
+                                        "comments": json.loads(thread.read_text(encoding="utf-8"))}),
+                            encoding="utf-8")
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "dispatch_guard.py"), "--issue", "1560",
+             "--registry", str(reg), "--from-file", str(embedded), "--machine", "asimov@omarchy"],
+            capture_output=True, text=True, cwd=ROOT,
+        )
+        check("CLI: a `comments` list inside --from-file is read offline",
+              proc.returncode != 0 and "comment 2" in proc.stdout + proc.stderr,
+              proc.stdout + proc.stderr)
+
+
+def test_make_forwards_the_machine_and_the_recorded_thread() -> None:
+    print("\nThread: make forwards MACHINE and COMMENTS_FILE (#1569)")
+    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+    check("Makefile: the recipe forwards --machine", '--machine "$(MACHINE)"' in mk, "")
+    check("Makefile: the recipe forwards --comments-file", '--comments-file "$(COMMENTS_FILE)"' in mk, "")
+    with tempfile.TemporaryDirectory(prefix="dispatch-thread-make-") as td:
+        tmp = Path(td)
+        fixture = state_file(tmp, "open.json", "OPEN", [])
+        reg = registry(tmp, "lanes.json", 0)
+        thread = thread_file(tmp, "thread.json", [
+            comment(1, "2026-11-24T07:30:20Z",
+                    "BOT tll-implementer (host asimov@omarchy) · working on #1560 · branch b"),
+        ])
+        base = ["make", "dispatch-check", "ISSUE=1560", f"REGISTRY={reg}",
+                f"FROM_FILE={fixture}", f"COMMENTS_FILE={thread}"]
+
+        proc = subprocess.run([*base, "MACHINE=andy@Andys-MacBook-Pro"],
+                              capture_output=True, text=True, cwd=ROOT)
+        out = proc.stdout + proc.stderr
+        check("make: another host is refused", proc.returncode != 0, out)
+        check("make: names the holding host", "asimov@omarchy" in out, out)
+        proc = subprocess.run([*base, "MACHINE=asimov@omarchy"],
+                              capture_output=True, text=True, cwd=ROOT)
+        check("make: the holding host itself is allowed",
+              proc.returncode == 0, proc.stdout + proc.stderr)
+
+
+def test_existing_refusals_keep_firing_alongside_the_thread_check() -> None:
+    print("\nThread: prior refusals unchanged with a thread present (#1569)")
+    holder = {"comment_id": 2, "lane": "tll-implementer", "kind": "working on",
+              "machine": "asimov@omarchy", "created": "2026-11-24T07:30:20Z"}
+    closed = D.evaluate({"issue": "1", "state": "CLOSED", "bound_prs": []}, 0, 3,
+                        holder=holder, machine="andy@Andys-MacBook-Pro")
+    check("closed issue still refuses with its own reason",
+          any("CLOSED" in r for r in closed["reasons"]), str(closed["reasons"]))
+    check("and the cross-host reason is added",
+          any("another host" in r for r in closed["reasons"]), str(closed["reasons"]))
+    over = D.evaluate({"state": "OPEN", "bound_prs": []}, 9, 3,
+                      holder=holder, machine="andy@Andys-MacBook-Pro")
+    check("ceiling refusal intact", any("ABOVE" in r for r in over["reasons"]), str(over["reasons"]))
+    merged = D.evaluate({"state": "OPEN", "bound_prs": [
+        {"number": 7, "state": "MERGED", "mergedAt": "2026-11-24T00:00:00Z"}]}, 0, 3,
+        holder=holder, machine="andy@Andys-MacBook-Pro")
+    check("merged-PR refusal intact", any("MERGED" in r for r in merged["reasons"]),
+          str(merged["reasons"]))
+    with tempfile.TemporaryDirectory(prefix="dispatch-thread-claims-") as td:
+        reg = registry_with_lanes(Path(td), "lanes.json", 1, [
+            {"lane": "tll-planner", "state": "active", "claims": ["agents/tll-planner"]},
+        ])
+        both = D.evaluate({"state": "OPEN", "bound_prs": []}, 1, 3,
+                          claims=["agents/tll-planner/SKILL.md"],
+                          lanes=D.lane_entries(reg),
+                          holder=holder, machine="andy@Andys-MacBook-Pro")
+        check("--claim overlap refusal intact alongside the thread check",
+              any("tll-planner" in r and "overlaps" in r for r in both["reasons"])
+              and any("another host" in r for r in both["reasons"]), str(both["reasons"]))
+
+
 def main() -> int:
     test_open_issue_is_allowed()
     test_closed_issue_is_refused()
@@ -370,6 +589,12 @@ def main() -> int:
     test_cli_and_make_forward_claims_and_keep_existing_refusals()
     test_help_documents_the_registry_and_the_ceiling()
     test_make_dispatch_check_is_the_callers_single_seam()
+    test_thread_markers_and_machine_lines_are_parsed()
+    test_active_claim_replays_newest_wins_and_release_clears()
+    test_cross_host_refusal_names_host_lane_and_comment()
+    test_cli_reads_a_recorded_thread_offline()
+    test_make_forwards_the_machine_and_the_recorded_thread()
+    test_existing_refusals_keep_firing_alongside_the_thread_check()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
