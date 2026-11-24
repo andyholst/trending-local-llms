@@ -8,12 +8,22 @@ The DECISION is the real product: every test drives `stale_claim_sweep.sweep_thr
 Child 2 pins both grace pairs as module constants with `Makefile ?=` overrides and floors,
 names the three authority limits, and locks them with the same-age proof assertion.
 
+Issue #1635 adds the `#1265` §3B half: the thin `gh` layer resolves each `R:<id>` /
+`PR #<n>` the claim carries, a STILL-LIVE one is exempt from sweeping at any age, and a
+CONCLUDED one keeps the doubled pair — proved end-to-end against a stub `gh`, both directions,
+with a RED pin against an authentic pre-#1635 script fixture. That fixture is pinned in the tree
+(`tests/fixtures/stale_claim_sweep_base_1635.py`, recorded from `origin/master` = `cb139e7c`):
+reading it through `git show` in the container goes empty on a worktree whose `.git` points at a
+host path, which made the negative assertion pass on an empty module (#1292 lesson).
+
 RED half: the wiring checks read the REAL tree, so they fail on the base revision (no target,
 no workflow step, no ARCHITECTURE.md row, no `master_alarm.GATES` entry); the Child 2 guards
-fail on `origin/master`'s script, which carries neither the pinned live pair nor the limits.
+fail on `origin/master`'s script, which carries neither the pinned live pair nor the limits,
+and the §3B guard fails there because the shipped seam cannot exempt a still-live run.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -268,6 +278,172 @@ else:
     return stub
 
 
+def _liveness_stub(tmp: Path, *, body: str, created_at: str,
+                   runs: dict | None = None, prs: dict | None = None,
+                   newest: dict | None = None) -> Path:
+    """A stub `gh` answering the thread AND the liveness reads (the external system only).
+
+    `runs` maps a run id to its `status`; `prs` maps a PR number to `{state, headRefName}`;
+    `newest` maps a branch to its newest-first run rows. An id the payload does not name is a
+    LOUD exit 1, so a seam that asks for an unplanted run cannot pass silently.
+    """
+    payload = {
+        "body": body,
+        "createdAt": created_at,
+        "runs": {str(key): value for key, value in (runs or {}).items()},
+        "prs": {str(key): value for key, value in (prs or {}).items()},
+        "newest": newest or {},
+    }
+    source = '''#!/usr/bin/env python3
+import json, sys
+ARGS = sys.argv[1:]
+DATA = __DATA__
+if ARGS[:2] == ["issue", "list"]:
+    print(json.dumps([{"number": 1610}]))
+elif ARGS[:2] == ["issue", "view"]:
+    print(json.dumps({"number": 1610, "state": "OPEN", "comments": [{
+        "id": 90001610, "author": {"login": "andyholst"},
+        "createdAt": DATA["createdAt"], "body": DATA["body"]}]}))
+elif ARGS[:2] == ["run", "view"]:
+    status = DATA["runs"].get(ARGS[2])
+    if status is None:
+        sys.stderr.write("unknown run %s\\n" % ARGS[2]); sys.exit(1)
+    print(json.dumps({"status": status,
+                      "conclusion": "success" if status == "completed" else None}))
+elif ARGS[:2] == ["pr", "view"]:
+    pr = DATA["prs"].get(ARGS[2])
+    if pr is None:
+        sys.stderr.write("unknown pr %s\\n" % ARGS[2]); sys.exit(1)
+    print(json.dumps(pr))
+elif ARGS[:2] == ["run", "list"]:
+    branch = ARGS[ARGS.index("--branch") + 1]
+    rows = DATA["newest"].get(branch)
+    if rows is None:
+        sys.stderr.write("unknown branch %s\\n" % branch); sys.exit(1)
+    print(json.dumps(rows))
+else:
+    sys.stderr.write("unexpected gh call: %s\\n" % ARGS); sys.exit(1)
+'''.replace("__DATA__", repr(payload))
+    stub = tmp / "gh-liveness"
+    stub.write_text(source, encoding="utf-8")
+    stub.chmod(0o755)
+    return stub
+
+
+def _created(minutes_ago: float) -> str:
+    return (NOW - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_the_pure_decision_exempts_live_evidence_at_any_age() -> None:
+    print("\nPure decision (#1265 §3B): live evidence emits nothing at ANY age")
+    body = CLAIM.format(n=1610) + " — CI run R:45123456789"
+    check("the run id is extracted from the claim text", S.extract_run_ids(body) == (45123456789,),
+          S.extract_run_ids(body))
+    check("the PR number is extracted from the claim text",
+          S.extract_pr_numbers(CLAIM.format(n=1610) + " — opened PR #1611") == (1611,),
+          S.extract_pr_numbers(CLAIM.format(n=1610) + " — opened PR #1611"))
+    check("a queued or in_progress status is live", S.run_is_live("in_progress")
+          and S.run_is_live("queued") and not S.run_is_live("completed"), "")
+    for age in (181, 200, 360, 600, 1440):
+        th = claim_thread(minutes_ago=age, body=body)
+        check(f"live_evidence=True exempts a {age}-minute run-bearing claim",
+              S.sweep_thread(th, now=NOW, lanes=LANES, live_evidence=True) == [],
+              S.sweep_thread(th, now=NOW, lanes=LANES, live_evidence=True))
+    th = claim_thread(minutes_ago=600, body=body)
+    check("live_evidence=False keeps the doubled pair (released)",
+          [v.kind for v in S.sweep_thread(th, now=NOW, lanes=LANES, live_evidence=False)] == ["released"],
+          [v.kind for v in S.sweep_thread(th, now=NOW, lanes=LANES, live_evidence=False)])
+    check("live_evidence=None (unresolved) keeps the doubled pair — nothing is silently exempted",
+          [v.kind for v in S.sweep_thread(th, now=NOW, lanes=LANES)] == ["released"],
+          [v.kind for v in S.sweep_thread(th, now=NOW, lanes=LANES)])
+    check("a SILENT claim ignores live_evidence entirely",
+          [v.kind for v in S.sweep_thread(claim_thread(minutes_ago=600), now=NOW,
+                                          lanes=LANES, live_evidence=True)] == ["released"],
+          "")
+
+
+def test_a_still_live_run_is_exempt_and_a_concluded_one_keeps_the_doubled_pair() -> None:
+    print("\nLive-run evidence end-to-end (#1265 §3B): stub gh only, BOTH directions")
+    base = CLAIM.format(n=1610)
+    cases = (
+        ("an in_progress run id", base + " — CI run R:111", {"runs": {111: "in_progress"}},
+         {}, {}, True),
+        ("a queued run id", base + " — CI run R:112", {"runs": {112: "queued"}},
+         {}, {}, True),
+        ("a completed run id", base + " — CI run R:113", {"runs": {113: "completed"}},
+         {}, {}, False),
+        ("an OPEN PR whose newest run is in_progress",
+         base + " — opened PR #1611", {},
+         {"prs": {1611: {"state": "OPEN", "headRefName": "fix/live"}}},
+         {"newest": {"fix/live": [{"databaseId": 9001, "status": "in_progress",
+                                   "conclusion": None}]}}, True),
+        ("an OPEN PR whose newest run is completed",
+         base + " — opened PR #1612", {},
+         {"prs": {1612: {"state": "OPEN", "headRefName": "fix/done"}}},
+         {"newest": {"fix/done": [{"databaseId": 9002, "status": "completed",
+                                   "conclusion": "success"}]}}, False),
+        ("a MERGED PR", base + " — opened PR #1613", {},
+         {"prs": {1613: {"state": "MERGED", "headRefName": "fix/merged"}}}, {}, False),
+        ("an OPEN PR with no run at all", base + " — opened PR #1614", {},
+         {"prs": {1614: {"state": "OPEN", "headRefName": "fix/empty"}}},
+         {"newest": {"fix/empty": []}}, False),
+    )
+    for label, body, runs, prs, newest, live in cases:
+        for age in (200, 400):  # past the live STALE bound, and past the live RELEASE bound
+            with tempfile.TemporaryDirectory() as td:
+                stub = _liveness_stub(Path(td), body=body, created_at=_created(age),
+                                      runs=runs.get("runs"), prs=prs.get("prs"),
+                                      newest=newest.get("newest"))
+                threads = S.fetch_open_threads("o/r", str(stub))
+                got = [v.marker() for v in S.sweep_threads(
+                    threads, now=NOW, lanes=LANES,
+                    live_resolver=S.liveness_resolver(repo="o/r", client=str(stub)))]
+                if live:
+                    check(f"{label} at {age} min (still LIVE) emits NOTHING", got == [], got)
+                else:
+                    kind = "released" if age >= 400 else "stale"
+                    check(f"{label} at {age} min (concluded) keeps the doubled pair ({kind})",
+                          len(got) == 1 and got[0].endswith(f":{kind}"), got)
+
+
+def test_the_live_exemption_guard_is_red_on_the_base_revision() -> None:
+    print("\nRED on the base head: the shipped seam cannot exempt a still-live run "
+          "(authentic fixture recorded from origin/master)")
+    body = CLAIM.format(n=1610) + " — CI run R:111"
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        stub = _liveness_stub(tmp, body=body, created_at=_created(400), runs={111: "in_progress"})
+        threads = S.fetch_open_threads("o/r", str(stub))
+        fixed = [v.marker() for v in S.sweep_threads(
+            threads, now=NOW, lanes=LANES,
+            live_resolver=S.liveness_resolver(repo="o/r", client=str(stub)))]
+        check("this head exempts the still-live claim", fixed == [], fixed)
+
+        # An authentic pre-#1635 script fixture, pinned in the tree. `git show origin/master:…`
+        # answers EMPTY inside the test container for a linked worktree (the worktree's `.git`
+        # points at a host path the container does not mount), which used to make this negative
+        # assertion pass on an empty module (#1292/#1438 lesson).
+        base_src = (ROOT / "tests" / "fixtures" / "stale_claim_sweep_base_1635.py").read_text(
+            encoding="utf-8")
+        check("the pre-change script fixture is non-empty", bool(base_src.strip()), "")
+        check("RED: the pre-change script carries NO liveness seam",
+              "claim_evidence_is_live" not in base_src and "liveness_resolver" not in base_src,
+              "the base already resolves run/PR liveness")
+        mod_path = tmp / "stale_base_1635.py"
+        mod_path.write_text(base_src, encoding="utf-8")
+        spec = importlib.util.spec_from_file_location("stale_base_1635", mod_path)
+        assert spec is not None and spec.loader is not None, "the base script could not be loaded"
+        base = importlib.util.module_from_spec(spec)
+        # dataclasses resolves `cls.__module__` through sys.modules, so the module must be
+        # REGISTERED before it executes (a bare module_from_spec leaves it absent).
+        sys.modules[spec.name] = base
+        spec.loader.exec_module(base)
+        base_threads = base.fetch_open_threads("o/r", str(stub))
+        old = [v.marker() for v in base.sweep_threads(base_threads, now=NOW, lanes=LANES)]
+        check("RED: the base head reports the still-live claim (no exemption exists there)",
+              len(old) == 1 and old[0].endswith(":released"), old)
+
+
 def test_the_real_request_layer_reads_a_thread_end_to_end() -> None:
     print("\ngh layer: the real fetch builds the request and parses the answer (stub gh only)")
     with tempfile.TemporaryDirectory() as td:
@@ -346,6 +522,9 @@ def main() -> int:
     test_a_terminal_thread_is_never_swept()
     test_the_threshold_pairs_are_pinned_with_floors_and_makefile_overrides()
     test_the_three_authority_limits_emit_nothing_at_the_same_age()
+    test_the_pure_decision_exempts_live_evidence_at_any_age()
+    test_a_still_live_run_is_exempt_and_a_concluded_one_keeps_the_doubled_pair()
+    test_the_live_exemption_guard_is_red_on_the_base_revision()
     test_a_second_tick_does_not_re_report_the_same_claim()
     test_output_is_newest_last_and_one_line_per_claim()
     test_the_real_request_layer_reads_a_thread_end_to_end()

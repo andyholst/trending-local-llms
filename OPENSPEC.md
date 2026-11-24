@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **529**
+Active changes: **1** · archived: **531**
 
 ## Active changes
 
@@ -499,6 +499,7 @@ Active changes: **1** · archived: **529**
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stale-cadence-docstring-1291` | archived | #1291 | #1308 | [pipeline-failure-filer](openspec/changes/archive/stale-cadence-docstring-1291/specs/pipeline-failure-filer/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-cadence-docstring-1291/proposal.md) |
+| `stale-claim-live-run-exemption-1635` | archived | #1635 | #1638 | [fleet-claims](openspec/changes/archive/stale-claim-live-run-exemption-1635/specs/fleet-claims/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/stale-claim-live-run-exemption-1635/proposal.md) |
 | `stale-claim-sweep-seam` | archived | #1610 | #1617 | [fleet-claims](openspec/changes/archive/stale-claim-sweep-seam/specs/fleet-claims/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/stale-claim-sweep-seam/proposal.md) |
 | `stale-claim-thresholds-1626` | archived | #1626 | #1630 | [fleet-claims](openspec/changes/archive/stale-claim-thresholds-1626/specs/fleet-claims/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/stale-claim-thresholds-1626/proposal.md) |
 | `stale-last-seen-gap` | archived | #1183 | #1216 | [data-gap-analysis](openspec/changes/archive/stale-last-seen-gap/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-last-seen-gap/proposal.md) |
