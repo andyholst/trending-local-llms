@@ -58,6 +58,18 @@ def git(args, cwd):
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True)
 
 
+def _tracked() -> subprocess.CompletedProcess:
+    """The tracked paths of THIS checkout.
+
+    `make test` runs in a container as root over a host-owned bind mount, where git's
+    ownership guard refuses the repository; a read-only `safe.directory` override keeps
+    this query honest in both the host and container identities. Without it the "root
+    file is absent" assertion would pass VACUOUSLY on an unreadable index (measured on
+    PR #1592's first CI run).
+    """
+    return git(["-c", "safe.directory=*", "ls-files"], ROOT)
+
+
 def _seed_repo(td: Path, *, track_root: bool) -> Path:
     """A scratch repository at `td/repo` with one base commit.
 
@@ -193,7 +205,10 @@ def test_the_old_shared_append_point_was_the_conflict():
 
 def test_this_repository_is_on_the_per_issue_seam():
     """The seam is real here: the root file is untracked, the record and the gate agree."""
-    tracked = git(["ls-files"], ROOT).stdout.splitlines()
+    tracked_proc = _tracked()
+    check("tree: the checked-out git index is readable", tracked_proc.returncode == 0,
+          tracked_proc.stderr[:300])
+    tracked = tracked_proc.stdout.splitlines()
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
