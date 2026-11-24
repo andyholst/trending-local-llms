@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **525**
+Active changes: **1** · archived: **526**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `pr-blockage-empty-signature-1604` | active | #1604 | — | [pr-blockage-empty-signature](openspec/changes/pr-blockage-empty-signature-1604/specs/pr-blockage-empty-signature/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/pr-blockage-empty-signature-1604/proposal.md) |
 
 ## Archived changes
 
@@ -391,6 +390,7 @@ Active changes: **2** · archived: **525**
 | `positive-more-count` | archived | #1219 | #1221 | [readme-render](openspec/changes/archive/positive-more-count/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/positive-more-count/proposal.md) |
 | `pr-block-grace-derived-1176` | archived | #1176 — "The 24 h grace is a guess, and it is the only thing standing between | #1289 | [pipeline-failure-ledger](openspec/changes/archive/pr-block-grace-derived-1176/specs/pipeline-failure-ledger/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/pr-block-grace-derived-1176/proposal.md) |
 | `pr-block-log-budget-1174` | archived | #1174 | #1262 | [pipeline-failure](openspec/changes/archive/pr-block-log-budget-1174/specs/pipeline-failure/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-block-log-budget-1174/proposal.md) |
+| `pr-blockage-empty-signature-1604` | archived | #1604 | #1636 | [pr-blockage-empty-signature](openspec/changes/archive/pr-blockage-empty-signature-1604/specs/pr-blockage-empty-signature/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/pr-blockage-empty-signature-1604/proposal.md) |
 | `pr-blockage-read-cap-after-filters` | archived | #1405 | #1443 | [pr-blockage-selection](openspec/changes/archive/pr-blockage-read-cap-after-filters/specs/pr-blockage-selection/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/pr-blockage-read-cap-after-filters/proposal.md) |
 | `pr-blockage-stable-shape` | archived | #1476 | #1555 | [pr-blockage-failure-shape](openspec/changes/archive/pr-blockage-stable-shape/specs/pr-blockage-failure-shape/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-blockage-stable-shape/proposal.md) |
 | `pr-blockage-subset-dedup` | archived | #1565 | #1571 | [pr-blockage-grouping](openspec/changes/archive/pr-blockage-subset-dedup/specs/pr-blockage-grouping/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-blockage-subset-dedup/proposal.md) |

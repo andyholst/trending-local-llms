@@ -1,6 +1,7 @@
 # Proposal: pr-blockage-empty-signature-1604
 
 Issue: #1604
+PR: #1636
 
 ## Why
 
