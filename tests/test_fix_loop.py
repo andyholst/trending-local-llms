@@ -139,7 +139,7 @@ def test_green_on_entry():
     # and the unit suite still runs last.
     check("green: checks fast -> slow (lint first, gates before validate, unit suite last)",
           calls == ["lint", "validate-search", "validate-mapped", "openspec-check",
-                    "architecture-check", "validate", "test"], calls)
+                    "architecture-check", "findings-check-for-pr", "validate", "test"], calls)
 
 
 def test_fixed_in_round_one():
@@ -168,9 +168,9 @@ def test_stops_at_first_red_and_skips_unit_suite():
     rc, calls, report, out = run(red=99, rounds=1)
     check("speed: 'make test' never runs while a validate check is red", "test" not in calls, calls)
     check("speed: nothing after the first red check in a round",
-          calls[:6] == ["lint", "validate-search", "validate-mapped", "openspec-check",
-                        "architecture-check", "validate"]
-          and calls[6] == "fix", calls)
+          calls[:7] == ["lint", "validate-search", "validate-mapped", "openspec-check",
+                        "architecture-check", "findings-check-for-pr", "validate"]
+          and calls[7] == "fix", calls)
 
 
 def test_findings_check_only_for_implementation_runs():
