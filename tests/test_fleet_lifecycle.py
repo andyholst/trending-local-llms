@@ -95,8 +95,9 @@ UNION_MIRRORS = (
     "agents/tll-pr-rebase/skills/tll-pr-rebase/SKILL.md",
 )
 #: A parenthetical aside is dropped before clauses are split, so `chasing it (#972).` and a
-#: bare `chasing it.` compare equal — the fragment #1469 measured as duplicated.
-_PARENTHETICAL = re.compile(r"\((?:[^()]|\([^()]*\))*\)")
+#: bare `chasing it.` compare equal — the fragment #1469 measured as duplicated. Issue #1605
+#: made the strip WRAPPING-AWARE: `_mask_parentheticals` blanks a balanced group WHOLE, even
+#: when it opens on one line and closes on a later one.
 _CLAUSE_BREAK = re.compile(r"[.!?;:,]")
 _CLAUSE_EDGE = "*`-—– .,:;!?-•_"
 _TRIVIAL_LINE = re.compile(r"^(?:---+|[#]{1,6}\s*)$")
@@ -115,6 +116,28 @@ def _is_unit(clause: str) -> bool:
     return len(clause) >= floor
 
 
+def _mask_parentheticals(text: str) -> str:
+    """Blank every BALANCED parenthetical group, INCLUDING one that wraps across lines.
+
+    Characters inside a group become spaces and the NEWLINES survive, so line units and line
+    structure are untouched while the aside itself contributes nothing. Only spans whose parens
+    balance are masked — an unmatched opener is left exactly as written, never allowed to blank
+    the rest of the file.
+    """
+    chars = list(text)
+    stack: list[int] = []
+    for i, ch in enumerate(text):
+        if ch == "(":
+            stack.append(i)
+        elif ch == ")" and stack:
+            start = stack.pop()
+            if not stack:
+                for j in range(start, i + 1):
+                    if chars[j] != "\n":
+                        chars[j] = " "
+    return "".join(chars)
+
+
 def mirror_units(text: str) -> Counter:
     """The multiset of non-trivial lines and clauses/phrases a mirror carries.
 
@@ -123,14 +146,13 @@ def mirror_units(text: str) -> Counter:
     Short filler ("ok", "and", a bare URL, `make X`) is not a unit — it cannot carry a rule.
     """
     counts: Counter = Counter()
-    for raw in text.splitlines():
+    for raw in _mask_parentheticals(text).splitlines():
         stripped = raw.strip()
         if stripped and not _TRIVIAL_LINE.match(stripped) and (
             len(stripped.split()) >= 4 or "`" in stripped
         ):
             counts[("line", stripped)] += 1
-        for fragment in _CLAUSE_BREAK.split(_PARENTHETICAL.sub(" ", raw)):
-            clause = fragment.strip().strip(_CLAUSE_EDGE)
+        for clause in _clauses_of(raw):
             if _is_unit(clause):
                 counts[("clause", clause)] += 1
     return counts
@@ -164,11 +186,14 @@ def unexpected_growth(base_text: str, head_text: str) -> list[tuple[str, str, in
     )
 
 
-def _clauses_of(raw: str) -> list[str]:
-    """The same clause split `mirror_units` uses, so the scoping key cannot drift from it."""
+def _clauses_of(masked_line: str) -> list[str]:
+    """The same clause split `mirror_units` uses, so the scoping key cannot drift from it.
+
+    `masked_line` is a line of `_mask_parentheticals` output, so a wrapped aside is already gone.
+    """
     return [
         fragment.strip().strip(_CLAUSE_EDGE)
-        for fragment in _CLAUSE_BREAK.split(_PARENTHETICAL.sub(" ", raw))
+        for fragment in _CLAUSE_BREAK.split(masked_line)
     ]
 
 
@@ -183,7 +208,7 @@ def _is_duplicate_new_unit(kind: str, unit: str, head_text: str) -> bool:
         return True
     owners = Counter(
         raw.strip()
-        for raw in head_text.splitlines()
+        for raw in _mask_parentheticals(head_text).splitlines()
         for clause in _clauses_of(raw)
         if clause == unit
     )
@@ -764,6 +789,47 @@ def test_the_union_growth_detector_fires_on_a_planted_duplicate() -> int:
     return failed
 
 
+def test_a_wrapped_parenthetical_aside_is_stripped_whole() -> int:
+    """Issue #1605: an aside that OPENS on one line and CLOSES on a later one is dropped WHOLE.
+
+    The stripper ran PER LINE, so `(check-runs endpoint empty, `gh pr checks`` on one line and
+    `said "no checks reported")` on the next never matched; its inner clause was counted a
+    second time against the pinned union base, and a byte-equal mirror reds the no-new-clause
+    pin (#1573 measured exactly that). Wrapping-aware masking keeps the pin's intent: the
+    aside contributes nothing, while text OUTSIDE it is still compared.
+    """
+    base = "- **Sync rule.** Confirm CI registered; `gh pr checks`; then report.\n"
+    head = base + (
+        "- **A 0-job run.** The check-runs endpoint (empty, `gh pr checks`\n"
+        "  said \"no checks reported\") is a never-started run, not a red gate.\n"
+    )
+    failed = 0
+    growth = unexpected_growth(base, head)
+    failed += check(not growth, "a wrapped parenthetical aside leaks no clause past the union base")
+    for kind, unit, before, after in growth:
+        print(f"     {kind} {before}->{after} {unit!r}")
+
+    # teeth: text OUTSIDE the aside is still compared, wrapped or not.
+    interleaved = base + "- **Twin note.** A different bullet; `gh pr checks`; again.\n"
+    failed += check(
+        bool(unexpected_growth(base, interleaved)),
+        "an interleaved repeated clause outside any aside is still detected",
+    )
+    failed += check(bool(unexpected_growth(base, base + base)), "an exact repeated bullet is still detected")
+
+    # the SAME-LINE aside shape #1469 pinned keeps working (no regression).
+    same_line = base + "- **Aside note.** See (`gh pr checks`) for the detail.\n"
+    failed += check(not unexpected_growth(base, same_line), "a same-line parenthetical aside stays stripped")
+
+    # an UNMATCHED opener must not blank the rest of the file — only balanced groups are masked.
+    unbalanced = "- **Unmatched.** An opener with no close (stays as written.\n"
+    failed += check(
+        ("clause", "An opener with no close (stays as written") in mirror_units(unbalanced),
+        "an unmatched opener does not swallow the rest of the text",
+    )
+    return failed
+
+
 def test_third_batch_host_ahead_implementer_notes_are_landed() -> int:
     """Issue #1487: land ONLY the three new implementer notes, exactly once each.
 
@@ -827,6 +893,7 @@ def main() -> int:
         test_second_batch_host_ahead_notes_are_landed,
         test_mirror_unions_add_no_duplicate_or_interleaved_bullets,
         test_the_union_growth_detector_fires_on_a_planted_duplicate,
+        test_a_wrapped_parenthetical_aside_is_stripped_whole,
         test_pr_rebase_skill_is_push_and_verify,
         test_reviewer_skill_carries_landed_host_ahead_notes,
         test_lane_skills_carry_the_push_and_verify_rule,
