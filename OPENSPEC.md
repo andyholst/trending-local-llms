@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **531**
+Active changes: **1** · archived: **532**
 
 ## Active changes
 
@@ -131,6 +131,7 @@ Active changes: **1** · archived: **531**
 | `architecture-check-presence-boundary` | archived | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/archive/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/architecture-check-presence-boundary/proposal.md) |
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
 | `architecture-inventory` | archived | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/archive/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/architecture-inventory/proposal.md) |
+| `architecture-rows-push-proves-ci` | archived | #1648 | #1652 | [architecture-doc-honesty](openspec/changes/archive/architecture-rows-push-proves-ci/specs/architecture-doc-honesty/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/architecture-rows-push-proves-ci/proposal.md) |
 | `archive-check-gates-the-closing-pr` | archived | #779 (measured: qa-validate runs 43014075519 after PR #777 merged, | #785 | [openspec-archive-lifecycle](openspec/changes/archive/archive-check-gates-the-closing-pr/specs/openspec-archive-lifecycle/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/archive-check-gates-the-closing-pr/proposal.md) |
 | `attribute-pipeline-failure-rows-with-proof` | archived | #1053 | #1138 | [pipeline-failure-attribution](openspec/changes/archive/attribute-pipeline-failure-rows-with-proof/specs/pipeline-failure-attribution/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/attribute-pipeline-failure-rows-with-proof/proposal.md) |
 | `auto-merge-carries-pr-message` | archived | #787 (measured: master run 43050329961, landed squash `d3d4116`, job 130625403397) | #790 | [qa-pipeline](openspec/changes/archive/auto-merge-carries-pr-message/specs/qa-pipeline/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/auto-merge-carries-pr-message/proposal.md) |
