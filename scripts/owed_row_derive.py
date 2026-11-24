@@ -2,7 +2,7 @@
 
 `scripts/bot_markers.py` renders and parses the owed-row marker, and
 `scripts/owed_rows_check.py` reads the ledger — but until #765 NOTHING stamped a
-marker at FILING time unless a findings.md carried an explicit `- **Owed-row:**`
+marker at FILING time unless the analysis file carried an explicit `- **Owed-row:**`
 field, so 23 open issues named their owed AGENTS.md row only in prose and
 `make owed-rows-check` could only answer `NO MARKER`.
 

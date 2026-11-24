@@ -32,7 +32,8 @@ deliverable.
   criteria and the scope boundary), or `TRIAGE: close` + `EVIDENCE:` (a file:line, a command with
   its output, a measured behaviour) + `REASON:`. A close with no evidence block is refused.
 - **Only on `TRIAGE: implement`:** the change itself, edited in place in the checkout, plus
-  `findings.md` at the repo root.
+  your analysis at `findings/<issue>.md` (one file per issue; the shared root `findings.md`
+  was the sibling-conflict seam removed in issue #1493).
 - A refine or a close implements **nothing**: no code change, no branch, no PR — the workflow
   applies the verdict (one comment, a label, or a close).
 
@@ -73,14 +74,15 @@ deliverable.
   CREATION as `- [~] <row> — blocked: rule 3c human sign-off (AGENTS.md protected in a headless
   leg)` — a blocked box is green-but-review-required, while a bare `- [ ]` fails the pre-PR
   `make tasks-check` gate and strands the change (measured: #654–657 died exactly that way);
-  (2) record the FULL row text verbatim as a `findings.md` finding with an
+  (2) record the FULL row text verbatim as a finding in `findings/<issue>.md` with an
   `- **Owed-row:**` field carrying the registered owed-row marker — write the field as
   `bot_markers.owed_row_marker(section, needle)` renders it (the ONE writer, rule 6j; a
   half-written field fails `make findings-check` loudly and the error shows the exact shape),
   so `make file-findings` files a ledger issue carrying it and
   `make owed-rows-check` reports the row LANDED once an attended run applies the diff.
 - **Edit the files themselves.** No `*.patch`, `*.rej`, report dumps or backup copies — a change
-  written into a patch file is not an implementation. `findings.md` is the ONE working file.
+  written into a patch file is not an implementation. `findings/<issue>.md` is the ONE
+  analysis file.
 - **Analysis ships issues, never code:** one `## <title>` section per real gap you found, each with
   `**Evidence:**`, `**Why:**`, `**Done when:**`, or the single line `- none`. Never fix a finding
   here. `make findings-check` must pass.

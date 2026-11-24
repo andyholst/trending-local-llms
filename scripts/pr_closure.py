@@ -72,7 +72,7 @@ TRAILING_ISSUE = re.compile(r"-(\d+)$")
 KEEPER_BRANCH = re.compile(r"^ci/keeper(?:-[a-z0-9]+)*$")
 
 # The declared NON-implementation branch shapes (issue #1454). A PR of one of these
-# shapes carries no `findings.md` requirement: keepers, refreshes and the docs/rule
+# shapes carries no analysis-file requirement: keepers, refreshes and the docs/rule
 # shapes do not implement an issue, so rule 6g's mandatory analysis does not bind them.
 # The exemption WINS over any claim in the body — a keeper that writes `Closes #N` is
 # still a keeper. This is a DECLARED list in the ONE parser module (rule 6d), so the
@@ -109,7 +109,7 @@ def implementation_shaped(branch: str | None, body: str = "") -> bool:
 
     `make findings-check` was invisible to `qa-validate`, so rule 6g's mandatory
     analysis could be absent on a green direct worktree PR. Wiring it in bare would
-    red every keeper/refresh/docs PR that carries no `findings.md` (the §6q
+    red every keeper/refresh/docs PR that carries no analysis file (the §6q
     repo-wide-red hazard), so the gate asks THIS question first.
 
     True iff the branch encodes an issue (`implemented_issue`), or the body CLAIMS

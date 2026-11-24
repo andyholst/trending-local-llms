@@ -30,9 +30,10 @@ issue implementable by the implementer bot, or to say what it actually is.
   Plus `comment.md`, your one summary.
 - **`window` path:** `comment.md` only — at most 5 bullets, each with evidence. Never
   `issue-body.md`: the workflow compares the body hash and fails loudly if it changed.
-- **Both paths:** `findings.md` at the repo root, one `## <title>` section per real gap found
-  (`**Evidence:**`, `**Why:**`, `**Done when:**`) or the single line `- none`, and
-  `make findings-check` passing.
+- **Both paths:** your analysis at `findings/<issue>.md` (one file per issue; the shared
+  root `findings.md` was the sibling-conflict seam removed in issue #1493), one
+  `## <title>` section per real gap found (`**Evidence:**`, `**Why:**`, `**Done when:**`)
+  or the single line `- none`, and `make findings-check` passing.
 
 ## Rules
 
@@ -46,5 +47,5 @@ issue implementable by the implementer bot, or to say what it actually is.
   `data-gap-analysis` (the chains key on them) and never remove a label a human added.
 - **Keep the author's intent and wording.** Add, do not rewrite for style.
 - **Analysis ships issues, never code** — a gap you notice becomes its own `tech-debt` issue via
-  `findings.md`, never a fix in this run.
+  your `findings/<issue>.md`, never a fix in this run.
 - **Do not push, do not merge, do not touch `master`, never edit `.github/workflows/**`.**

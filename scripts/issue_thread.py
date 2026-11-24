@@ -63,8 +63,8 @@ write your verdict to `triage.md` at the repo root, in exactly this form:
   gets buried.
 
 Rules that do not change: implement ONLY when the verdict is `implement`; the
-AGENTS.md gates still apply; write `findings.md` for whatever you noticed
-(rule 6g); never push, never merge.
+AGENTS.md gates still apply; write your analysis to `findings/<issue>.md` for
+whatever you noticed (rule 6g); never push, never merge.
 """
 
 

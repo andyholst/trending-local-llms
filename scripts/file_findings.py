@@ -4,10 +4,11 @@
 Every implementation run must ALSO analyse what it touched and file what it
 found — real gaps and technical debt, as their own issues, never folded into the
 change it is implementing (AGENTS.md "Analysis ships issues, not code"). The
-implementer writes those findings to `findings.md` at the repo root; this script
-turns each one into a tracked issue.
+implementer writes those findings to `findings/<issue>.md` — ONE file per issue,
+so two sibling PRs cannot collide on a shared append point (issue #1493); this
+script turns each one into a tracked issue.
 
-    make findings-check     # parse findings.md, no network: fail loudly if it is
+    make findings-check     # parse the analysis, no network: fail loudly if it is
                             # missing or a finding lacks evidence / why / done-when
     make file-findings      # file one issue per finding (gh, host-side)
 
@@ -35,8 +36,9 @@ Format (strict enough to parse, loose enough to write):
     - none                                   (a run that found nothing)
 
 Usage:
-    python3 scripts/file_findings.py --check
+    python3 scripts/file_findings.py --check [--issue <n>] [--branch <ref>]
     python3 scripts/file_findings.py --file [--pr 171] [--issue 170]
+    python3 scripts/file_findings.py --check --path <file>   # an explicit file wins
 """
 
 from __future__ import annotations
@@ -55,7 +57,17 @@ import bot_markers  # noqa: E402  # the ONE owed-row marker definition (rule 6j)
 import owed_row_derive  # noqa: E402  # the ONE Done-when derivation (rule 6d, issue #765)
 import pr_closure  # noqa: E402  # the ONE branch/body shape parser (rule 6d, issue #1454)
 
-FINDINGS = ROOT / "findings.md"
+#: The per-issue analysis seam (issue #1493). The old root `findings.md` was ONE
+#: shared append point: every implementation PR appended its own `## <title>`
+#: section, so any two open PRs answered `CONFLICT (content): Merge conflict in
+#: findings.md` and GitHub's auto-merge refused them both (measured on PR #1488,
+#: which needed three rebase rounds to land a test-only change). Each run now owns
+#: `findings/<issue>.md`; siblings touch different files and cannot collide.
+FINDINGS_DIR = ROOT / "findings"
+#: The pre-#1493 root file, kept ONLY as the fallback for a caller with neither an
+#: issue nor a branch (a host still on the old skill). It is no longer tracked —
+#: the historical sections live in `findings/history.md`.
+LEGACY_FINDINGS = ROOT / "findings.md"
 LABEL = "tech-debt"
 LABEL_DESCRIPTION = "Real gap / technical debt surfaced by an implementation run"
 
@@ -335,11 +347,32 @@ def _shape_inputs(args: argparse.Namespace) -> tuple[str | None, str]:
     return args.branch, body
 
 
+def analysis_path(*, path: str | None = None, issue: str | None = None,
+                  branch: str | None = None) -> Path:
+    """The ONE resolution order for the analysis file (issue #1493).
+
+    An explicit `--path` always wins (the tests and the shape fixtures name their own
+    files). Otherwise the file is per issue: `--issue`, then the issue the BRANCH
+    encodes (`ci/data-gap-<n>-…`, `ci/<slug>-<n>` — the ONE parser, rule 6d), so the
+    shape-aware gate and the fix loop need no extra flag. With neither, the legacy root
+    file is the fallback, so an old caller still reads what it wrote.
+    """
+    if path:
+        return Path(path)
+    if issue is None and branch:
+        derived = pr_closure.implemented_issue(branch)
+        issue = str(derived) if derived is not None else None
+    if issue is not None:
+        return FINDINGS_DIR / f"{int(str(issue).lstrip('#'))}.md"
+    return LEGACY_FINDINGS
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="File one issue per implementation finding")
-    ap.add_argument("--file", action="store_true", help="file the findings in findings.md")
+    ap.add_argument("--file", action="store_true", help="file the findings in the analysis file")
     ap.add_argument("--check", action="store_true", help="parse only: fail loudly if the analysis is missing")
-    ap.add_argument("--path", default=str(FINDINGS), help="the findings file (default findings.md)")
+    ap.add_argument("--path", default=None,
+                    help="an explicit findings file (default: findings/<issue>.md, from --issue or the branch)")
     ap.add_argument("--pr", default=None, help="PR number the findings came from")
     ap.add_argument("--issue", default=None, help="issue number the run implemented")
     # (issue #1454) the SHAPE inputs: with none of them this is byte-identical to the
@@ -350,21 +383,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--body-file", help="the PR body on disk, when there is no event payload")
     a = ap.parse_args(argv)
 
-    path = Path(a.path)
+    branch, body = _shape_inputs(a)
+    path = analysis_path(path=a.path, issue=a.issue, branch=branch)
     if a.check and (a.event or a.body_file or a.branch):
-        branch, body = _shape_inputs(a)
         if not pr_closure.implementation_shaped(branch, body):
             prefix = pr_closure.non_implementation_prefix(branch)
             if prefix:
                 print(f"[findings] SKIP {branch}: exempt shape ({prefix}) — "
-                      f"no findings.md required")
+                      f"no analysis file required")
             else:
                 print(f"[findings] SKIP {branch or '(no branch)'}: no implementation claim "
                       f"in this PR — nothing here owes an analysis")
             return 0
     if not path.is_file():
         print(
-            f"[findings] FAIL {path.name} is missing — every implementation run must analyse "
+            f"[findings] FAIL {path} is missing — every implementation run must analyse "
             f"what it touched (write `- none` when it found nothing)",
             file=sys.stderr,
         )
