@@ -397,6 +397,7 @@ needed to move the board.
   Before ordering a force-push over a branch, confirm no live lane still owns it — a non-fast-forward
   rejection during a rebase is the tell, and the correct response is a signed STOP plus an ownership ruling
   on the shared thread, not a retry.
+- **Re-read the current head before answering a lane that says it is blocked or waiting for a ruling.** By the time you answer, another host may have pushed the branch, merged the PR, or already recovered the CI. Measure `gh pr view <n> --json state,headRefOid,mergeable`, `gh pr checks <n>`, and the newest issue comment first. Then post ONE explicit ownership ruling on the shared thread — "not handed back, lane X is live" / "handed back, push held head with lease pinned to <sha>" — so nobody force-pushes over a live writer and nobody re-dispatches a finished issue.
 - **A lane a planner cron starts can be hard-interrupted when that cron session ends — verify liveness, then RESUME.** Measured #1495 (2026-11-24): the implementer ran 599 s, cut its worktree and posted its claim, then its profile log recorded `Interrupt requested (hard): explicit stop requested` with NO commit and NO PR, and no `tll-*` process survived. Launch lanes with `terminal(background=true, persist_on_release=true)`, and before trusting that work continues check `ps -p <pid>` AND the lane's `logs/agent.log` for fresh API calls. On death, run `make dispatch-check ISSUE=<n>` and dispatch the bounded RESUME above — never a second implementation.
 
 ## Worktree default (fleet-wide, owner-mandated)
