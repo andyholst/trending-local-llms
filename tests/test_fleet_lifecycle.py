@@ -728,6 +728,35 @@ def test_second_batch_host_ahead_notes_are_landed() -> int:
     return failed
 
 
+def test_implementer_mirror_carries_the_rebase_conflict_note() -> int:
+    """Issue #1639: the #1363 `OPENSPEC.md` rebase-conflict lesson is landed, reconciled.
+
+    The host copy recorded it during #1363/PR #1609 but the in-tree mirror never received
+    it, so the lesson had no delivery path. It lands here merged into the skill's own
+    Pitfalls list: no host timestamp header, no machine name, no absolute path, and its
+    issue reference intact.
+    """
+    failed = 0
+    rel = "agents/tll-implementer/skills/tll-implementer/SKILL.md"
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    phrase = "Resolve an `OPENSPEC.md` rebase conflict with `python3 scripts/openspec_index.py --write`"
+    failed += check(phrase in text, f"{rel} carries {phrase!r}")
+    failed += check(text.count(phrase) == 1, f"{rel} carries {phrase!r} exactly once")
+    #: reconciled INTO the skill's pitfall list, not appended as a host-notes section of its own
+    at = text.find(phrase)
+    failed += check(
+        at != -1
+        and text.find("## Pitfalls") < at < text.find("## Switch-over (catalog flip) pitfalls"),
+        f"{rel} lands the note inside its Pitfalls list",
+    )
+    for reference in ("#1363", "PR #1609"):
+        failed += check(reference in text, f"{rel} keeps the reference {reference!r}")
+    failed += check(HOST_AHEAD_HEADER not in text, f"{rel} dropped the host timestamp header")
+    failed += check(HOST_TIMESTAMP not in text, f"{rel} dropped the host timestamp")
+    failed += check(HOST_NAME not in text, f"{rel} dropped the machine name")
+    return failed
+
+
 def test_mirror_unions_add_no_duplicate_or_interleaved_bullets() -> int:
     """Issue #1469: the union/no-duplicate PROPERTY, compared against the pinned pre-union base.
 
@@ -891,6 +920,7 @@ def main() -> int:
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_second_batch_host_ahead_notes_are_landed,
+        test_implementer_mirror_carries_the_rebase_conflict_note,
         test_mirror_unions_add_no_duplicate_or_interleaved_bullets,
         test_the_union_growth_detector_fires_on_a_planted_duplicate,
         test_a_wrapped_parenthetical_aside_is_stripped_whole,
