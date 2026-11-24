@@ -241,6 +241,49 @@ def test_keeper_pr_body_implements_no_issue_and_closes_none():
           rc2 == 2 and "needs --master-sha" in out2, out2)
 
 
+def test_the_keeper_body_names_the_green_drift_run_it_repairs():
+    """Issue #1651: the body must say what the cited run ACTUALLY concluded.
+
+    Measured on the shipped tree: post-merge push run 4546683307 concluded
+    `completed/success`, yet the body printed by `make
+    openspec-index-repair-pr-body` claimed it "went red at the OpenSpec gate"
+    and the job's checkout step was named "...that went red". This drives the
+    REAL composer with that green-with-drift run through the REAL CLI seam, and
+    pins the workflow step name, so neither can lie again (rules 2/6g).
+    """
+    rp = _load("openspec_index_repair", REPAIR_SCRIPT)
+    run_url = ("https://github.com/andyholst/trending-local-llms/actions/runs/4546683307")
+    master_sha = "a0f9adc5b74f1a34e4886b3d9126397c2ebe81b9"
+    rc, body = _run(rp, ["--print-pr-body", "--master-sha", master_sha,
+                         "--run-url", run_url, "--run-green", "--index-drift", "1"])
+    check("green drift: exit 0", rc == 0, body)
+    check("green drift: names the exact run and tree",
+          "4546683307" in body and "a0f9adc5" in body, body[:240])
+    check("green drift: NEVER claims the run went red", "went red" not in body, body[:300])
+    check("green drift: names the real conclusion",
+          "stayed GREEN" in body and "REPORTED index drift" in body, body[:300])
+    check("green drift: reports the drift count the gate published",
+          "drift=1" in body, body[:300])
+
+    # A red run keeps the ORIGINAL wording — this is a non-breaking additive fix.
+    rc2, red_body = _run(rp, ["--print-pr-body", "--master-sha", master_sha,
+                              "--run-url", run_url])
+    check("red: exit 0", rc2 == 0, red_body)
+    check("red: still names the red honestly", "went red at the OpenSpec gate" in red_body,
+          red_body[:300])
+    check("red: does not claim GREEN", "stayed GREEN" not in red_body, red_body[:300])
+
+    # The step a human reads while diagnosing must be true for both triggers.
+    wf = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    job = wf.split("  index-repair:\n", 1)[1].split("\n  invalid-change-repair:\n", 1)[0]
+    checkout = next((ln for ln in job.splitlines() if "Checkout the exact master commit" in ln), "")
+    check("qa: index-repair's checkout step no longer claims a red",
+          "went red" not in checkout and "the run validated" in checkout, checkout)
+    # The TWO sibling keepers still fire on failure() only, so their step names stay.
+    check("qa: the sibling keepers' step names are left byte-identical",
+          wf.count("- name: Checkout the exact master commit that went red") == 2, "")
+
+
 def test_the_repair_is_wired_through_make_and_qa_validate():
     """Rule 6m/6d: the script is reachable ONLY through the Makefile, and qa-validate
     calls those targets — a workflow that reaches the script directly, or a target no
@@ -282,6 +325,7 @@ def main() -> int:
     test_missing_generated_file_is_index_only_drift()
     test_unreadable_index_is_loud_never_a_silent_clean()
     test_keeper_pr_body_implements_no_issue_and_closes_none()
+    test_the_keeper_body_names_the_green_drift_run_it_repairs()
     test_the_repair_is_wired_through_make_and_qa_validate()
     test_the_suite_is_wired()
     print(f"[test_openspec_index_repair] {_PASS} passed, {_FAIL} failed")

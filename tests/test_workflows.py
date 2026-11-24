@@ -322,7 +322,19 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
           "pull_request" not in str(job), str(job)[:600])
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
           "BODY_TARGET=openspec-index-repair-pr-body" in text
-          and 'BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"' in text, text[:700])
+          and 'BODY_ARGS="$BODY_ARGS"' in text
+          and 'MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL' in text, text[:700])
+    # Issue #1651: the keeper must pass the cited run's REAL conclusion to the body
+    # seam — a red `validate` or a GREEN one that only reported drift. The workflow
+    # publishes both signals through the ONE `validate` output it already reads.
+    step = next((s for s in job.get("steps") or []
+                 if "openspec-index-repair-pr-body" in str(s.get("run") or "")), {})
+    step_env = step.get("env") or {}
+    check("qa: the keeper forwards the run conclusion to its body seam (#1651)",
+          "RUN_GREEN" in step_env and "INDEX_DRIFT" in step_env
+          and "needs.validate.result" in str(step_env.get("RUN_GREEN", ""))
+          and "needs.validate.outputs.index_drift" in str(step_env.get("INDEX_DRIFT", ""))
+          and "RUN_GREEN=$RUN_GREEN" in text, str(step_env)[:400])
     check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869; "
           "#1339: both generated files owned so the keeper is green on both gates)",
           "make keeper-pr" in text and 'FILE="OPENSPEC.md ARCHITECTURE.md"' in text
