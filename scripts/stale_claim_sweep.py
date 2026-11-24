@@ -26,7 +26,11 @@ override per bound and a floor the offline contract refuses to cross:
     LIVE-RUN claim (run id attached): STALE after 180 min  -> PING;  RELEASE after 360 min
 
 A claim counts as run-bearing when its OWN text carries a CI run id (`R:<id>`) or a PR number
-(`PR #<n>`); the bound doubles because CI itself consumes wall clock.
+(`PR #<n>`); the bound doubles because CI itself consumes wall clock. `#1265` §3B is stricter: a
+run that is STILL LIVE — `gh run view <id> --json status` answers `queued`/`in_progress`, or an
+OPEN PR whose NEWEST run is not concluded — is EXEMPT from sweeping at ANY age, because voiding
+it would tell a second lane to push to a branch while CI is reading it. The thin `gh` layer
+resolves that evidence per claim (`liveness_resolver`); a CONCLUDED run keeps the doubled pair.
 
 The three authority limits (`#1265` section 3, named in `AUTHORITY_LIMITS`), enforced by the pure
 half: a HUMAN-OWNED claim is never swept (the lane token is not one of the eight fleet lanes); a
@@ -88,14 +92,28 @@ LIVE_RUN_RELEASE_FLOOR_SECONDS = LIVE_RUN_MULTIPLIER * RELEASE_FLOOR_SECONDS  # 
 #:   "human"    the claim's lane is not one of the eight fleet lanes — the owner's and any
 #:               collaborator's claim is NEVER swept (rule 6v reserves human acts).
 #:   "live-run" the claim's own text carries a CI run id (`R:<id>`) or a PR number (`PR #<n>`)
-#:               — it is NEVER swept under the SILENT bounds; the DOUBLED pair applies because
-#:               CI itself consumes wall clock.
+#:               — it is NEVER swept under the SILENT bounds; a still-LIVE one (resolved through
+#:               `gh`) is exempt ENTIRELY, a CONCLUDED one gets the DOUBLED pair.
 #:   "terminal" the issue is CLOSED, or the newest comment already moved the thread on (a
 #:               `done`/`handover`/`pr`/`reviewing`/`status` line) — no claim is left to sweep.
 AUTHORITY_LIMITS = ("human", "live-run", "terminal")
 REFUSAL_HUMAN = "human"
 REFUSAL_LIVE_RUN = "live-run"
 REFUSAL_TERMINAL = "terminal"
+
+#: A run is LIVE while GitHub still reports it as queued or in progress (`#1265` §3B). PINNED
+#: HERE, so two hosts agree on what "still live" means, and `--check` refuses a changed set.
+LIVE_RUN_STATUSES = frozenset({"queued", "in_progress"})
+#: A run has CONCLUDED once GitHub reports `completed`; an OPEN PR whose newest run answers
+#: anything else (`waiting`, `requested`, `pending`) still has a run that is not concluded.
+CONCLUDED_RUN_STATUS = "completed"
+
+#: The `gh … --json` field lists this seam asks for. Every field is recorded in
+#: `scripts/gh_json_fields.py` (rule 6d: the ONE contract for what `gh` can answer), so an
+#: invented field fails by NAME here rather than inside `gh`.
+RUN_LIVENESS_FIELDS = "status,conclusion"
+PR_LIVENESS_FIELDS = "state,headRefName"
+RUN_LIST_LIVENESS_FIELDS = "databaseId,status,conclusion"
 
 #: `BOT <lane> · working on #<id> · …` — the AGENTS.md section 7b claim grammar. The middle dot
 #: is `·`; `•` is accepted so a hand-typed variant cannot slip past as "not a claim".
@@ -112,6 +130,9 @@ _CLAIM = re.compile(
 #: A CI run id or a PR number attached to the claim's own text.
 _RUN_ID = re.compile(r"\bR:\d+\b")
 _PR_ID = re.compile(r"\bPR\s+#\d+\b")
+#: The same two shapes with the NUMBER captured, so the thin `gh` layer can resolve each one.
+_RUN_ID_NUM = re.compile(r"\bR:(\d+)\b")
+_PR_ID_NUM = re.compile(r"\bPR\s+#(\d+)\b")
 #: Signed work comments that already moved a thread on (the newest-comment discriminators).
 _DONE = re.compile(r"^\s*BOT\s+[a-z0-9][a-z0-9-]*\s*[·•]\s*done\s+#\d+\b")
 _PR_LINE = re.compile(r"^\s*BOT\s+[a-z0-9][a-z0-9-]*\s*[·•]\s*pr\s+#\d+\b")
@@ -181,12 +202,42 @@ def parse_working_claim(body: object) -> tuple[str, int] | None:
 def is_run_bearing(body: object) -> bool:
     """True when the claim's OWN text attaches a CI run id or a PR number (`#1265` 2a).
 
-    This is the "live-run" authority limit: such a claim is NEVER swept under the silent bounds,
-    it gets the doubled pair instead.
+    This is the "live-run" authority limit: such a claim is NEVER swept under the silent bounds.
+    A still-LIVE one is exempt entirely (`#1265` §3B, resolved through `gh`); a CONCLUDED one
+    gets the doubled pair.
     """
     if not isinstance(body, str):
         return False
     return bool(_RUN_ID.search(body) or _PR_ID.search(body))
+
+
+def extract_run_ids(body: object) -> tuple[int, ...]:
+    """Every CI run id the claim's own text carries, in document order."""
+    if not isinstance(body, str):
+        return ()
+    return tuple(int(match.group(1)) for match in _RUN_ID_NUM.finditer(body))
+
+
+def extract_pr_numbers(body: object) -> tuple[int, ...]:
+    """Every PR number the claim's own text carries, in document order."""
+    if not isinstance(body, str):
+        return ()
+    return tuple(int(match.group(1)) for match in _PR_ID_NUM.finditer(body))
+
+
+def run_is_live(status: object) -> bool:
+    """True while a run id's OWN status is `queued`/`in_progress` (`#1265` §3B)."""
+    return str(status or "").strip().lower() in LIVE_RUN_STATUSES
+
+
+def newest_run_unconcluded(status: object) -> bool:
+    """True when an OPEN PR's NEWEST run has not concluded (anything but `completed`).
+
+    The design words the two halves differently on purpose: a bare run id is live only while
+    `queued`/`in_progress`, while a PR is live while its newest run "is not concluded".
+    """
+    text = str(status or "").strip().lower()
+    return bool(text) and text != CONCLUDED_RUN_STATUS
 
 
 def is_human_claim(lane: str, lanes: Collection[str]) -> bool:
@@ -231,14 +282,18 @@ def sweep_thread(thread: Thread, *, now: datetime, lanes: Collection[str] | None
                  release_after: int = RELEASE_AFTER_SECONDS,
                  live_stale_after: int = LIVE_RUN_STALE_SECONDS,
                  live_release_after: int = LIVE_RUN_RELEASE_SECONDS,
-                 announced: Iterable[str] = ()) -> list[Verdict]:
+                 announced: Iterable[str] = (),
+                 live_evidence: bool | None = None) -> list[Verdict]:
     """Every threshold this thread's newest comment crosses — normally zero or one verdict.
 
     The decision, in order: a CLOSED or already-terminal thread has no claim to sweep; a claim by
     a non-fleet lane is a human's and is never stale; a claim naming a different issue is not this
     thread's claim; a run-bearing claim (`R:<id>` / `PR #<n>`) is never measured against the SILENT
-    pair — it gets the doubled bounds; a fresh claim crosses nothing; and a claim the caller
-    already announced is not re-reported (second-tick dedup).
+    pair — a still-LIVE one (`live_evidence=True`, resolved by the caller through `gh`, `#1265` §3B)
+    emits NOTHING at any age, a CONCLUDED one gets the doubled bounds (`live_evidence=False`); a
+    fresh claim crosses nothing; and a claim the caller already announced is not re-reported
+    (second-tick dedup). `live_evidence=None` means "not resolved", which keeps the pre-§3B
+    doubled pair so a pure caller that resolves nothing cannot silently exempt anything.
     """
     if is_terminal_thread(thread):
         return []
@@ -251,6 +306,8 @@ def sweep_thread(thread: Thread, *, now: datetime, lanes: Collection[str] | None
     lane, named_issue = parsed
     known = set(fleet_lanes() if lanes is None else lanes)
     if is_human_claim(lane, known) or named_issue != thread.number:
+        return []
+    if live_evidence is True and is_run_bearing(newest.body):
         return []
     age = (now - newest.created_at).total_seconds()
     if age < 0:
@@ -283,13 +340,27 @@ def sweep_threads(threads: Iterable[Thread], *, now: datetime,
                   release_after: int = RELEASE_AFTER_SECONDS,
                   live_stale_after: int = LIVE_RUN_STALE_SECONDS,
                   live_release_after: int = LIVE_RUN_RELEASE_SECONDS,
-                  announced: Iterable[str] = ()) -> list[Verdict]:
-    """Every thread's verdicts, NEWEST-LAST as the design's output contract states."""
+                  announced: Iterable[str] = (),
+                  live_resolver: object = None) -> list[Verdict]:
+    """Every thread's verdicts, NEWEST-LAST as the design's output contract states.
+
+    `live_resolver` is the ONE optional seam to the external world: a `body -> bool` callable
+    (from `liveness_resolver`) that resolves a run-bearing claim's CI evidence. It is consulted
+    ONLY for a thread whose newest comment is a run-bearing claim; a resolver of None keeps the
+    pre-§3B behaviour (the doubled pair), so the pure half stays usable with no `gh`.
+    """
+    resolve = live_resolver if callable(live_resolver) else None
     found: list[Verdict] = []
     for thread in threads:
+        live: bool | None = None
+        if resolve is not None and not is_terminal_thread(thread):
+            newest = newest_comment(thread)
+            if newest is not None and is_run_bearing(newest.body):
+                live = bool(resolve(newest.body))
         found.extend(sweep_thread(thread, now=now, lanes=lanes, stale_after=stale_after,
                                   release_after=release_after, live_stale_after=live_stale_after,
-                                  live_release_after=live_release_after, announced=announced))
+                                  live_release_after=live_release_after, announced=announced,
+                                  live_evidence=live))
     return sorted(found, key=lambda v: (v.created_at, v.issue, v.claim_id))
 
 
@@ -304,6 +375,83 @@ def _gh(client: str, args: list[str]) -> str:
     if proc.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args)} failed: {proc.stderr.strip() or 'non-zero exit'}")
     return proc.stdout
+
+
+def _assert_gh_fields(command: str, fields: str) -> None:
+    """Build a `--json` list through the ONE gh-field contract when it is importable.
+
+    `scripts/gh_json_fields.py` records what `gh <command> --json` can actually answer (rule 6d),
+    so an invented field fails HERE by name rather than inside `gh`. A fixture tree without the
+    sibling module skips the pre-check; the `make lint` scan still reads every call site.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import gh_json_fields  # noqa: PLC0415
+        gh_json_fields.request(command, fields)
+    except Exception:  # pragma: no cover - the seam only raises for an unknown field
+        pass
+
+
+def fetch_run_status(run_id: int, *, repo: str, client: str) -> str:
+    """`gh run view <id> --json status,conclusion` -> the run's own status, lowercased."""
+    _assert_gh_fields("run view", RUN_LIVENESS_FIELDS)
+    payload = json.loads(_gh(client, ["run", "view", str(run_id), "--repo", repo,
+                                      "--json", RUN_LIVENESS_FIELDS]) or "{}")
+    if not isinstance(payload, dict):
+        return ""
+    return str(payload.get("status") or "").strip().lower()
+
+
+def fetch_pr_newest_run(repo: str, pr_number: int, client: str) -> dict | None:
+    """The NEWEST run of an OPEN PR, or None when the PR is not open / has no run.
+
+    `gh run list --branch <head>` answers newest-first; a MERGED or CLOSED PR, and an OPEN PR
+    with no run at all, carry no live evidence (`#1265` §3B).
+    """
+    _assert_gh_fields("pr view", PR_LIVENESS_FIELDS)
+    pr = json.loads(_gh(client, ["pr", "view", str(pr_number), "--repo", repo,
+                                 "--json", PR_LIVENESS_FIELDS]) or "{}")
+    if not isinstance(pr, dict) or str(pr.get("state") or "").strip().lower() != "open":
+        return None
+    branch = pr.get("headRefName")
+    if not isinstance(branch, str) or not branch.strip():
+        return None
+    _assert_gh_fields("run list", RUN_LIST_LIVENESS_FIELDS)
+    rows = json.loads(_gh(client, ["run", "list", "--repo", repo, "--branch", branch.strip(),
+                                   "--limit", "1", "--json", RUN_LIST_LIVENESS_FIELDS]) or "[]")
+    usable = [row for row in (rows if isinstance(rows, list) else []) if isinstance(row, dict)]
+    return usable[0] if usable else None
+
+
+def claim_evidence_is_live(body: object, *, repo: str = DEFAULT_REPO,
+                           client: str | None = None) -> bool:
+    """True when ANY run id / PR number the claim carries is still live (`#1265` §3B).
+
+    A run id is live while `gh run view <id>` answers `queued`/`in_progress`; an OPEN PR is live
+    while its NEWEST run is not concluded. A CONCLUDED run, a MERGED/CLOSED PR, an OPEN PR with
+    no run, and a claim carrying neither are NOT live — those keep the doubled pair.
+    """
+    if not isinstance(body, str):
+        return False
+    bound_client = client or gh_client()
+    for run_id in extract_run_ids(body):
+        if run_is_live(fetch_run_status(run_id, repo=repo, client=bound_client)):
+            return True
+    for pr_number in extract_pr_numbers(body):
+        newest = fetch_pr_newest_run(repo, pr_number, bound_client)
+        if newest is not None and newest_run_unconcluded(newest.get("status")):
+            return True
+    return False
+
+
+def liveness_resolver(*, repo: str = DEFAULT_REPO, client: str | None = None):
+    """Bind `claim_evidence_is_live` to a repo/client: the `body -> bool` the sweep consumes."""
+    bound_client = client or gh_client()
+
+    def resolve(body: object) -> bool:
+        return claim_evidence_is_live(body, repo=repo, client=bound_client)
+
+    return resolve
 
 
 def comment_from_row(row: dict) -> Comment | None:
@@ -423,6 +571,8 @@ def main(argv: list[str] | None = None) -> int:
             problems.append("the run-bearing test no longer separates a plain claim from a run one")
         if AUTHORITY_LIMITS != (REFUSAL_HUMAN, REFUSAL_LIVE_RUN, REFUSAL_TERMINAL):
             problems.append("the three authority limits are no longer named together")
+        if LIVE_RUN_STATUSES != frozenset({"queued", "in_progress"}):
+            problems.append("the live-run status set is no longer queued/in_progress")
         if MARKER_PREFIX != "S:":
             problems.append("the marker prefix changed")
         if problems:
@@ -439,16 +589,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     try:
-        threads = fetch_open_threads(args.repo, args.gh or gh_client(), args.limit)
+        client = args.gh or gh_client()
+        threads = fetch_open_threads(args.repo, client, args.limit)
+        resolver = liveness_resolver(repo=args.repo, client=client)
+        now = datetime.now(timezone.utc)
+        verdicts = sweep_threads(threads, now=now, stale_after=args.stale_after,
+                                 release_after=args.release_after,
+                                 live_stale_after=args.live_stale_after,
+                                 live_release_after=args.live_release_after,
+                                 live_resolver=resolver)
     except Exception as exc:  # a partial report would read as "nothing is stale"
         print(f"[stale-claim-sweep] READ FAILED: {exc}", file=sys.stderr)
         return 2
 
-    now = datetime.now(timezone.utc)
-    for verdict in sweep_threads(threads, now=now, stale_after=args.stale_after,
-                                release_after=args.release_after,
-                                live_stale_after=args.live_stale_after,
-                                live_release_after=args.live_release_after):
+    for verdict in verdicts:
         print(verdict.marker())
     return 0
 
