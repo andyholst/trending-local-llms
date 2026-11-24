@@ -1,6 +1,7 @@
 # Proposal: auto-merge-rebase-current-bot-regen
 
 Issue: #1645
+PR: #1659
 
 ## Why
 
