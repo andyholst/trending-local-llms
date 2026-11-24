@@ -1,6 +1,7 @@
 # Proposal: filer-skip-cancelled-push-runs
 
 Issue: #1669
+PR: #1673
 
 ## Why
 

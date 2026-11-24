@@ -8,4 +8,4 @@
 - [x] Update the module docstring / `BAD_CONCLUSIONS` comment and regenerate `ARCHITECTURE.md` §10 (`make architecture-refresh`; the inventory block is unchanged — `architecture-check` green)
 - [x] Write `findings/1669.md`, run `make lint` (rc 0), `make architecture-check` (rc 0), `make findings-check ISSUE=1669` (OK) and the focused test module (352 passed / 0 failed)
 - [x] Archive the change with `make openspec-archive NAME=filer-skip-cancelled-push-runs` and regenerate `OPENSPEC.md` (archived as `2026-11-24-filer-skip-cancelled-push-runs`; index 1 active / 536 archived)
-- [ ] Push `fix/filer-skip-cancelled-push-1669`, open a READY PR carrying `Closes #1669`, record `PR: #<n>` and hand over to `tll-reviewer`
+- [x] Push `fix/filer-skip-cancelled-push-1669`, open READY PR #1673 carrying `Closes #1669`, record `PR: #1673` and hand over to `tll-reviewer`
