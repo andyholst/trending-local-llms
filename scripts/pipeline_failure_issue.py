@@ -373,35 +373,81 @@ def bound_pr_block_runs(runs: list[dict], cap: int = PR_BLOCK_MAX_LOG_READS) -> 
     return runs[:cap], max(0, len(runs) - cap)
 
 
-def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str:
-    """The normalised signature deciding whether two failed runs are the SAME failure.
+#: The prefix of `FILLER_MARKER`, the ONE line `extract_error_block` inserts between the failing
+#: step's own quoted lines and the lines it quotes from OTHER step regions (issue #1466). It is a
+#: structural boundary inside a presented block: everything BEFORE it is the failing region's own
+#: diagnosis, everything AFTER it is announced filler (issue #1476).
+_FILLER_MARKER_PREFIX = "[filer] --- "
 
-    Run ids, SHAs, timestamps and counts differ between two PRs hitting one defect, so the shape
-    keeps only the stable skeleton: the failing step names, the `make` targets the log names, and
-    the error block with every run-specific token collapsed. Two runs with the same shape are one
-    error class, which is what makes "the SAME failure shape on two open PRs" decidable (issue
-    #1164).
 
-    The WHOLE bounded block is digested, not its first lines (issue #1175): `block` arrives from
-    `extract_error_block`, already capped at `MAX_ERROR_LINES`, so the cap bounds the digest's
-    input and the shape answers "the same failure" rather than "the same opening". A prefix
-    digest merged two defects that share GitHub's boilerplate (`##[error]…`, `make: *** …`)
-    and differ only later — the threshold is then met by two PRs blocked by different things,
-    which is the one error this pass exists to avoid.
+def region_anchor_lines(block: list[str]) -> list[str]:
+    """The FAILING STEP region's own quoted lines — everything before the FILLER marker.
 
-    The digest is ORDER-SENSITIVE on purpose: the skeleton is joined in the block's own order, so
-    the same lines in a different order are two shapes. A set would hide a re-ordered traceback,
-    and the digest stays deliberately cheap.
+    Issue #1476: a state-gate failure (a thin CI shell step, not a test module) presents as the
+    two diagnosis lines followed by a `[filer] --- … FILLER …` marker and then whatever passing
+    modules printed. Digesting the WHOLE block made the shape depend on that chatter, so the same
+    defect on two branches produced two digests and `PR_BLOCK_MIN_PRS` was unreachable for a
+    per-branch master-move race (measured: five runs, one hour, `filed=0`).
+
+    A block with NO filler marker is digested whole, which keeps issue #1175's discrimination: two
+    failures that share GitHub's boilerplate and differ only in a LATER line are still two shapes,
+    because nothing marks part of such a block as filler.
     """
-    skeleton: list[str] = []
+    out: list[str] = []
     for line in block:
+        if line.startswith(_FILLER_MARKER_PREFIX):
+            break
+        out.append(line)
+    return out
+
+
+def _digest_skeleton(lines: list[str]) -> list[str]:
+    """Collapse every run-specific token (sha, count) out of `lines`, in order."""
+    skeleton: list[str] = []
+    for line in lines:
         s = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
         if not s:
             continue
         s = re.sub(r"\b[0-9a-f]{7,40}\b", "<sha>", s)
         s = re.sub(r"\b\d[\d,]*\b", "<n>", s)
         skeleton.append(s)
-    key = "|".join([*(steps or []), *(targets or []), *skeleton])
+    return skeleton
+
+
+def exact_failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str:
+    """The EXACT whole-block digest — the pre-#1476 shape, kept as the second dedup axis.
+
+    `failure_shape` anchors on the failing region so chatter cannot split one defect across
+    branches; this digest still covers the WHOLE bounded block, so two defects that share a
+    failing region but differ later in their quoted lines stay distinct (issue #1175). A blockage
+    group forms on EITHER key (issue #1476).
+    """
+    key = "|".join([*(steps or []), *(targets or []), *_digest_skeleton(block)])
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+
+
+def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str:
+    """The normalised signature deciding whether two failed runs are the SAME failure.
+
+    Run ids, SHAs, timestamps and counts differ between two PRs hitting one defect, so the shape
+    keeps only the stable skeleton: the failing step names, the `make` targets the log names, and
+    the FAILING REGION's own lines with every run-specific token collapsed. Two runs with the same
+    shape are one error class, which is what makes "the SAME failure shape on two open PRs"
+    decidable (issue #1164).
+
+    The anchor is the failing region, not the whole block and not a fixed prefix (issues #1175 /
+    #1476): `block` arrives from `extract_error_block`, whose PRESENTATION is region-first with ONE
+    `[filer] … FILLER …` marker before the other regions' lines (issue #1466). Digesting past that
+    marker made the shape depend on passing-module chatter, so a master-move race that reds one PR
+    per branch never reached `PR_BLOCK_MIN_PRS` — each head hashed differently. A prefix digest
+    merged two defects sharing GitHub's boilerplate; a whole-block digest splits one defect across
+    branches. The region boundary is the seam both errors point at.
+
+    A block with no filler marker is digested whole, so #1175's later-line discrimination is
+    unchanged. The digest stays ORDER-SENSITIVE on purpose: the skeleton is joined in the block's
+    own order, so the same lines in a different order are two shapes.
+    """
+    key = "|".join([*(steps or []), *(targets or []), *_digest_skeleton(region_anchor_lines(block))])
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
 
@@ -477,7 +523,11 @@ def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime,
                 steps = failing_step_names(job)
                 out.append({"run": r, "job": job, "block": block, "targets": targets,
                             "steps": steps, "region": region, "log_error": log_error,
-                            "shape": failure_shape(block, targets, steps)})
+                            "shape": failure_shape(block, targets, steps),
+                            # Issue #1476's SECOND dedup axis: the pre-#1476 whole-block digest,
+                            # kept so a group still forms when two runs are byte-identical across
+                            # the whole block even if their failing regions were quoted apart.
+                            "exact_shape": exact_failure_shape(block, targets, steps)})
     if stats is not None:
         stats["pr_block_runs_skipped"] = skipped
     return out
@@ -508,20 +558,41 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
 
     A run whose head branch is NOT an open PR is dropped: a merged or closed branch is no longer
     blocked, and counting it would report a blockage that has already cleared.
+
+    TWO dedup axes (issue #1476), because neither alone answers both measured errors:
+
+    - `shape` — the STABLE anchor (failing step names + the failing region's own lines). This is
+      the axis that lets one defect hitting N DIFFERENT branches reach the threshold at all: a
+      master-move race reds one PR per branch, and digesting chatter made every head a new shape.
+    - `exact_shape` — the pre-#1476 WHOLE-block digest, kept so two runs that are byte-identical
+      across their whole quoted block still group even when their regions were quoted apart
+      (issue #1175's later-line discrimination lives here).
+
+    A group forms on EITHER key; groups with the same member set are emitted once, and the stable
+    shape is the one recorded (it is the key the second axis exists to serve).
     """
-    groups: dict[str, list[dict]] = {}
+    keyings: dict[str, dict[str, list[dict]]] = {"shape": {}, "exact_shape": {}}
     for it in items:
         branch = it["run"].get("headBranch")
         if branch not in open_branches:
             continue
-        groups.setdefault(it["shape"], []).append(it)
+        for axis, table in keyings.items():
+            table.setdefault(it.get(axis, it["shape"]), []).append(it)
     out: list[dict] = []
-    for shape, members in groups.items():
-        branches = sorted({m["run"]["headBranch"] for m in members})
-        if len(branches) >= PR_BLOCK_MIN_PRS:
-            out.append({"shape": shape,
-                        "members": sorted(members, key=lambda m: m["run"]["databaseId"]),
-                        "branches": branches})
+    seen: set[tuple[int, ...]] = set()
+    for axis in ("shape", "exact_shape"):
+        for _key, members in keyings[axis].items():
+            branches = sorted({m["run"]["headBranch"] for m in members})
+            if len(branches) < PR_BLOCK_MIN_PRS:
+                continue
+            ids = tuple(sorted(int(m["run"]["databaseId"]) for m in members))
+            if ids in seen:
+                continue
+            seen.add(ids)
+            ordered = sorted(members, key=lambda m: int(m["run"]["databaseId"]))
+            out.append({"shape": ordered[0]["shape"], "axis": axis,
+                        "members": ordered, "branches": branches})
+    out.sort(key=lambda g: int(g["members"][0]["run"]["databaseId"]))
     return out
 
 
@@ -586,7 +657,8 @@ def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path:
                          f"(run {rid})")
             continue
         issue = file_issue(repo, first["run"], first["job"], first["block"], first["targets"],
-                           first["log_error"], now, steps=first["steps"], region=first["region"])
+                           first["log_error"], now, steps=first["steps"], region=first["region"],
+                           branches=group["branches"])
         append_ledger(ledger_path, ledger, {
             "run_id": rid, "workflow": first["run"].get("workflowName"),
             "job": first["job"].get("name"), "head_sha": first["run"].get("headSha"),
@@ -1013,7 +1085,8 @@ def step_provenance(job: dict, steps: list[str] | None, region: str | None) -> s
 
 def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
                  log_error: str | None, when: dt.datetime,
-                 steps: list[str] | None = None, region: str | None = None) -> str:
+                 steps: list[str] | None = None, region: str | None = None,
+                 branches: list[str] | None = None) -> str:
     marker = bot_markers.start_marker(
         "queued-alarm", when, run=run["databaseId"], kind="failure")
     repro = " ".join(f"make {t}" for t in targets[:3]) if targets else \
@@ -1021,6 +1094,12 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
     diagnosis = "\n".join(block) if block else \
         f"(the log could not be read: {log_error or 'no error-shaped line found'})"
     diagnosis = redact(diagnosis)[0]
+    # Issue #1476: a PR-blockage group spans SEVERAL open PRs, so the issue must name them —
+    # otherwise the thread records one run while the ledger row alone carries the fleet-wide
+    # scope. Optional and additive: a caller naming no branches composes today's body verbatim.
+    scope = (f" This failure shape blocks {len(branches)} OPEN pull requests: "
+             f"{', '.join('`' + b + '`' for b in branches)} (issue #1476)."
+             if branches else "")
 
     parts = [
         pr_body.ISSUE_PATTERN_MARKER,
@@ -1038,7 +1117,7 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
         f"The job `{job.get('name')}` (conclusion `{job.get('conclusion')}`) failed. "
         + (f"Failing target(s) named by the log: {', '.join('`make ' + t + '`' for t in targets)}."
            if targets else "The log names no `make` target — the job step itself is the unit.")
-        + " " + step_provenance(job, steps, region),
+        + " " + step_provenance(job, steps, region) + scope,
         "",
         "## How",
         "Reproduce on the base commit:\n\n"
@@ -1074,11 +1153,12 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
 
 def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[str],
                log_error: str | None, when: dt.datetime,
-               steps: list[str] | None = None, region: str | None = None) -> dict:
+               steps: list[str] | None = None, region: str | None = None,
+               branches: list[str] | None = None) -> dict:
     title = (f"tech-debt: {run.get('workflowName')} / {job.get('name')} failed "
              f"(run {run['databaseId']}"
              + (f", {' + '.join(targets[:3])}" if targets else "") + ")")
-    body = compose_body(run, job, block, targets, log_error, when, steps, region)
+    body = compose_body(run, job, block, targets, log_error, when, steps, region, branches)
     out = _gh("issue", "create", "--repo", repo, "--title", title, "--body", body,
               "--label", LABEL)
     url = out.stdout.strip()

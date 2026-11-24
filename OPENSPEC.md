@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **493**
+Active changes: **1** · archived: **494**
 
 ## Active changes
 
@@ -375,6 +375,7 @@ Active changes: **1** · archived: **493**
 | `pr-block-grace-derived-1176` | archived | #1176 — "The 24 h grace is a guess, and it is the only thing standing between | #1289 | [pipeline-failure-ledger](openspec/changes/archive/pr-block-grace-derived-1176/specs/pipeline-failure-ledger/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/pr-block-grace-derived-1176/proposal.md) |
 | `pr-block-log-budget-1174` | archived | #1174 | #1262 | [pipeline-failure](openspec/changes/archive/pr-block-log-budget-1174/specs/pipeline-failure/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-block-log-budget-1174/proposal.md) |
 | `pr-blockage-read-cap-after-filters` | archived | #1405 | #1443 | [pr-blockage-selection](openspec/changes/archive/pr-blockage-read-cap-after-filters/specs/pr-blockage-selection/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/pr-blockage-read-cap-after-filters/proposal.md) |
+| `pr-blockage-stable-shape` | archived | #1476 | #1555 | [pr-blockage-failure-shape](openspec/changes/archive/pr-blockage-stable-shape/specs/pr-blockage-failure-shape/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-blockage-stable-shape/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |
