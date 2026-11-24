@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import sys
+import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -49,6 +51,22 @@ def check(name, cond, detail: object = ""):
     else:
         _FAIL += 1
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
+
+
+def _scratch(prefix: str) -> Path:
+    """Build a replay scratch tree OUTSIDE the checkout (issue #1583).
+
+    A tree that survives inside ROOT is one `git add -A` away from being
+    committed by any lane, and it silently changes the tree a generated-artifact
+    guard reads. `mkdtemp` also gives every run a unique path.
+    """
+    return Path(tempfile.mkdtemp(prefix=prefix))
+
+
+def _remove(path: Path) -> None:
+    """Remove a scratch tree LOUDLY — `ignore_errors=True` is the silent
+    laundering this repo's own guards refuse (issue #1583)."""
+    shutil.rmtree(path)
 
 
 def _store() -> dict:
@@ -244,10 +262,7 @@ def test_ingest_refuses_a_re_capture_before_it_merges():
         print(f"CONTRADICTORY_PRESENT={contra}")
         print(f"LEGIT_MERGED={legit}")
     """)
-    import shutil
-    tmp = ROOT / "tmp-ig615-e2e"
-    shutil.rmtree(tmp, ignore_errors=True)
-    tmp.mkdir(parents=True, exist_ok=True)
+    tmp = _scratch("tmp-ig615-e2e-")
     buf = io.StringIO()
     with redirect_stdout(buf):
         r = subprocess.run([sys.executable, "-c", script, str(ROOT), str(tmp)],
@@ -261,7 +276,34 @@ def test_ingest_refuses_a_re_capture_before_it_merges():
           "LEGIT_MERGED=True" in out, r.stdout)
     check("the refusal is loud in the ingest log",
           "REFUSED weight-gb contradiction" in out, r.stderr)
-    shutil.rmtree(tmp, ignore_errors=True)
+    _remove(tmp)
+
+
+def test_scratch_tree_is_built_outside_the_checkout_and_leaves_no_residue():
+    # Issue #1583: the replay tree used to be `ROOT / "tmp-ig615-e2e"`, inside the
+    # checkout, so a surviving one was sweepable by any lane's `git add -A`.
+    tmp = _scratch("tmp-ig615-guard-")
+    check("the scratch tree is built outside the checkout",
+          tmp != ROOT and ROOT not in tmp.parents, str(tmp))
+    _remove(tmp)
+    check("the scratch tree is gone after the run", not tmp.exists(), str(tmp))
+    leftovers = sorted(p.name for p in ROOT.glob("tmp-ig615-*"))
+    check("no scratch tree is left inside the checkout", not leftovers, str(leftovers))
+
+
+def test_a_failing_removal_raises_loudly():
+    # `ignore_errors=True` used to swallow a failed removal; the loud seam must
+    # raise instead (issue #1583).
+    tmp = _scratch("tmp-ig615-loud-")
+    probe = tmp / "not-a-directory"
+    probe.write_text("x")
+    try:
+        _remove(probe)
+        check("a failing removal raises loudly", False, "rmtree returned on a non-directory")
+    except OSError:
+        check("a failing removal raises loudly", True)
+    _remove(tmp)
+    check("a healthy removal leaves nothing behind", not tmp.exists(), str(tmp))
 
 
 def test_the_store_scan_is_clean_and_a_regression_is_reported():
@@ -317,6 +359,8 @@ def main() -> int:
     test_upper_boundary_of_the_factor_is_kept()
     test_the_ingest_wiring()
     test_ingest_refuses_a_re_capture_before_it_merges()
+    test_scratch_tree_is_built_outside_the_checkout_and_leaves_no_residue()
+    test_a_failing_removal_raises_loudly()
     test_the_store_scan_is_clean_and_a_regression_is_reported()
     test_the_check_is_wired_into_the_data_stage()
     print(f"weight-gb-contradiction: {_PASS} passed, {_FAIL} failed")
