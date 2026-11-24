@@ -138,6 +138,15 @@ def test_every_validate_gate_is_on_a_list():
     unchecked = a.unchecked_gates(wf_text)
     check("gates: every validate-job `make` gate is on the keeper OR alarm list",
           not unchecked, f"uncovered={unchecked}")
+    # Issue #1454: membership alone is not enough. The shape-aware findings gate
+    # regenerates nothing, so it must be an ALARM — pin the classification too, or
+    # re-registering it as a keeper with no real repairer would pass the check above
+    # while leaving a red push-to-master with nobody to repair it.
+    check("gates: findings-check-for-pr is alarm-backed, not a keeper (issue #1454)",
+          "findings-check-for-pr" in a.ALARMED
+          and "findings-check-for-pr" not in a.KEEPERS
+          and a.GATES["findings-check-for-pr"][1] == "master-alarm",
+          a.GATES.get("findings-check-for-pr"))
     # issue #1281 — the extractor reads a SHELL terminator and ignores PROSE. Both
     # halves were measured on PR #1242's head: the echo literal manufactured a
     # phantom `openspec-index` while the REAL `make openspec-index-check;` on the
