@@ -246,6 +246,102 @@ def test_a_change_made_after_the_snapshot_is_this_runs_own_artifact():
         baseline.unlink(missing_ok=True)
 
 
+def test_a_restored_dismantle_emits_the_verdict_marker():
+    """Issue #1582: the outcome must survive `make` rewriting the exit code."""
+    repo, baseline = fixture(active=("foo",))
+    try:
+        run_guard(repo, "snapshot", baseline)
+        (repo / "openspec" / "changes" / "archive").mkdir(exist_ok=True)
+        shutil.move(str(repo / "openspec" / "changes" / "foo"),
+                    str(repo / "openspec" / "changes" / "archive" / "foo"))
+        c = run_guard(repo, "check", baseline, restore=True)
+        check("restored dismantle: still red", c.returncode == 1, c.stdout)
+        check("restored dismantle: prints the restored verdict",
+              "[self-archive] verdict=restored" in c.stdout, c.stdout)
+        check("restored dismantle: exactly one verdict line",
+              c.stdout.count("[self-archive] verdict=") == 1, c.stdout)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+        baseline.unlink(missing_ok=True)
+
+
+def test_a_clean_tree_prints_the_ok_verdict():
+    repo, baseline = fixture(active=("foo",))
+    try:
+        run_guard(repo, "snapshot", baseline)
+        c = run_guard(repo, "check", baseline)
+        check("clean tree: ok verdict", "[self-archive] verdict=ok" in c.stdout, c.stdout)
+        check("clean tree: exactly one verdict line",
+              c.stdout.count("[self-archive] verdict=") == 1, c.stdout)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+        baseline.unlink(missing_ok=True)
+
+
+def test_an_unreadable_baseline_has_no_restored_marker():
+    repo, _ = fixture(active=("foo",))
+    missing = Path(tempfile.mkstemp(prefix="sa-guard-missing.", text=True)[1])
+    missing.unlink()
+    try:
+        c = run_guard(repo, "check", missing, restore=True)
+        check("missing baseline: loud exit 2", c.returncode == 2, c.stdout + c.stderr)
+        check("missing baseline: prints the unreadable verdict on stdout",
+              "[self-archive] verdict=unreadable" in c.stdout, c.stdout)
+        check("missing baseline: no restored marker", "verdict=restored" not in c.stdout, c.stdout)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+        missing.unlink(missing_ok=True)
+
+
+def test_fix_loop_branches_on_the_verdict_marker():
+    """Drives the REAL classification block out of scripts/fix_loop.sh.
+
+    A stub `make` on PATH emits the guard's restored marker and exits 2 — the exact
+    shape GNU make produces for a restored dismantle — so the old
+    `[ "$sa_rc" = "1" ]` branch could never fire and this block can.
+    """
+    src = (ROOT / "scripts" / "fix_loop.sh").read_text()
+    start = src.index('sa_out="$(mktemp')
+    end = src.index("\n\t\tfi\n", start) + len("\n\t\tfi\n")
+    block = src[start:end]
+    check("fix_loop.sh carries the classification block", "verdict=restored" in block, block[:80])
+    check("fix_loop.sh dropped the unreachable sa_rc==1 branch",
+          '[ "$sa_rc" = "1" ]' not in src, "the make-rewritten code cannot equal 1")
+
+    tmp = Path(tempfile.mkdtemp(prefix="sa-fixloop-driver."))
+    try:
+        stub = tmp / "make"
+        stub.write_text("#!/bin/sh\n"
+                        'echo "[self-archive] verdict=restored"\n'
+                        'echo "self-archive: openspec/changes/foo was dismantled mid-run — the guard restored it"\n'
+                        "exit 2\n")
+        stub.chmod(0o755)
+        notes = tmp / "notes.txt"
+        driver = tmp / "driver.sh"
+        # the extracted block is indented inside the loop; strip one tab level so sh parses it
+        driver.write_text(
+            "#!/bin/sh\n"
+            f"PATH={tmp}:$PATH\n"
+            f"TMPDIR={tmp}\n"
+            "MAKE=make\n"
+            f"NOTES={notes}\n"
+            "round=1\n"
+            "sa_out=\"$(mktemp \"${TMPDIR}/fix-loop-self-archive-out.XXXXXX\")\"\n"
+            + "\n".join(line[2:] if line.startswith("\t\t") else line
+                        for line in block.splitlines()[1:]) + "\n")
+        d = subprocess.run(["sh", str(driver)], capture_output=True, text=True,
+                           env=dict(os.environ, PATH=f"{tmp}:{os.environ.get('PATH', '')}",
+                                    TMPDIR=str(tmp)))
+        out = notes.read_text() if notes.exists() else ""
+        check("fix_loop classifies the make-rewritten exit as a RESTORATION",
+              "dismantled its own OpenSpec change — the guard restored it" in d.stdout,
+              f"rc={d.returncode} stdout={d.stdout!r} stderr={d.stderr!r}")
+        check("the guard's own output is folded into the repair notes",
+              "[self-archive] verdict=restored" in out, repr(out))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main() -> int:
     if not shutil.which("git"):
         print("SKIP: git not available")
@@ -259,6 +355,10 @@ def main() -> int:
     test_an_unrecoverable_loss_is_reported_loudly_not_silently()
     test_a_missing_baseline_is_a_loud_error()
     test_a_change_made_after_the_snapshot_is_this_runs_own_artifact()
+    test_a_restored_dismantle_emits_the_verdict_marker()
+    test_a_clean_tree_prints_the_ok_verdict()
+    test_an_unreadable_baseline_has_no_restored_marker()
+    test_fix_loop_branches_on_the_verdict_marker()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

@@ -316,9 +316,16 @@ for ((round = 1; round <= ROUNDS; round++)); do
 		sa_out="$(mktemp "${TMPDIR:-/tmp}/fix-loop-self-archive-out.XXXXXX")"
 		SELF_ARCHIVE_RESTORE=1 "$MAKE" self-archive-guard >"$sa_out" 2>&1
 		sa_rc=$?
-		if [ "$sa_rc" = "1" ]; then
+		# `make` rewrites ANY non-zero recipe exit into its own `2`, so the guard's
+		# `1` (dismantled, restored) and `2` (unreadable inputs) arrive identically.
+		# Classify from the guard's OWN verdict marker (issue #1582), never from
+		# sa_rc: a restored dismantle is a real finding, not "could not run".
+		if grep -q '\[self-archive\] verdict=restored' "$sa_out"; then
 			cat "$sa_out" >>"$NOTES"
 			echo "[fix-loop] round $round dismantled its own OpenSpec change — the guard restored it (issue #812); the finding is in the repair notes"
+		elif grep -q '\[self-archive\] verdict=dismantled' "$sa_out"; then
+			cat "$sa_out" >>"$NOTES"
+			echo "[fix-loop] round $round dismantled its own OpenSpec change and the guard could NOT restore it (issue #812); the finding is in the repair notes"
 		elif [ "$sa_rc" != "0" ]; then
 			echo "[fix-loop] self-archive guard could not run (exit $sa_rc): $(head -1 "$sa_out")" >>"$NOTES"
 		fi
