@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import recipe  # noqa: E402  (the ONE Makefile-recipe locator)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "check_conflict_markers.py"
 
@@ -160,7 +162,7 @@ def test_the_bots_and_lint_run_the_guard():
     check("issue-bot: the guard runs BEFORE the branch is adopted",
           ib.find("make check-conflict-markers") < ib.find("make branch-adopt"), "")
     makefile = (ROOT / "Makefile").read_text()
-    check("makefile: `lint` runs the guard", "check-conflict-markers" in makefile.split("lint:")[1][:600], "")
+    check("makefile: `lint` runs the guard", "check-conflict-markers" in recipe(makefile, "lint"), "")
     check("makefile: the target exists",
           "\ncheck-conflict-markers:" in makefile, "")
 

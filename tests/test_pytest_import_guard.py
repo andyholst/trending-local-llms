@@ -17,6 +17,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import recipe  # noqa: E402  (the ONE Makefile-recipe locator)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "check_pytest_imports.py"
 
@@ -110,12 +112,12 @@ def test_the_real_tests_pass_the_guard():
 
 def test_lint_runs_the_guard():
     makefile = (ROOT / "Makefile").read_text()
-    check("makefile: `lint` runs the guard", "check-pytest-imports" in makefile.split("lint:")[1][:800], "")
+    check("makefile: `lint` runs the guard", "check-pytest-imports" in recipe(makefile, "lint"), "")
     check("makefile: the public target exists", "\ncheck-pytest-imports:" in makefile, "")
     check("makefile: the public target delegates to the internal recipe",
-          "_check-pytest-imports" in makefile.split("\ncheck-pytest-imports:")[1][:300], "")
+          "_check-pytest-imports" in recipe(makefile, "check-pytest-imports"), "")
     check("makefile: the internal recipe calls the script",
-          "check_pytest_imports.py" in makefile.split("\n_check-pytest-imports:")[1][:300], "")
+          "check_pytest_imports.py" in recipe(makefile, "_check-pytest-imports"), "")
 
 
 def main(tmp_path=None) -> int:
