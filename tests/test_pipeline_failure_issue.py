@@ -244,7 +244,13 @@ case "$1" in
       if [ -n "$num" ] && [ -f "$d/thread-$num.json" ]; then cat "$d/thread-$num.json"; fi
       exit 0
     fi
-    if [ -e "$d/log-fail" ]; then echo "stub gh: job logs unavailable (502)" >&2; exit 1; fi
+    if [ -e "$d/log-fail" ]; then echo "stub gh: job logs unavailable (502)" >&2; exit 1 ; fi
+    # Per-job log override (issue #1476): a test planting two runs of ONE defect with DIVERGENT
+    # passing-module chatter needs two different logs, so `log-job-<id>.txt` wins over the shared
+    # `log.txt`. The job id comes from the real REST path `…/actions/jobs/<id>/logs`.
+    job=""
+    [[ "$2" =~ /actions/jobs/([0-9]+)/logs ]] && job="${BASH_REMATCH[1]}"
+    if [ -n "$job" ] && [ -f "$d/log-job-$job.txt" ]; then cat "$d/log-job-$job.txt" ; exit 0 ; fi
     if [ -e "$d/log-escape" ]; then
       # gh's measured refusal (issue #923): a plain logs fetch on an escape-bearing log is
       # refused verbatim; ONLY a call carrying gh's own suggested flag gets the log.
@@ -1640,6 +1646,110 @@ def test_pr_blockage_pass_records_a_shared_failure_shape_once() -> None:
         check("the ledger still holds exactly one PR-blockage row", len(rows2) == 1, str(rows2))
 
 
+#: Two logs of ONE state-gate defect on two DIFFERENT branches (issue #1476, measured from run
+#: 45335805042): the failing region's own lines are byte-identical, the passing-module chatter
+#: around them is not. Digesting the whole block made the two heads two shapes, so a master-move
+#: race that reds one PR per branch never reached PR_BLOCK_MIN_PRS and nothing was filed.
+CHATTER_LOG_A = "\n".join([
+    "2026-11-24T05:59:50Z ##[group]Run make test",
+    "2026-11-24T05:59:51Z   FAIL: m1: engines not ordered newest-date-first",
+    "2026-11-24T05:59:52Z PASSED 199 | FAILED 0",
+    "2026-11-24T05:59:53Z ##[endgroup]",
+    "2026-11-24T06:00:40Z ##[group]OpenSpec index on the merge tree (issue",
+    "2026-11-24T06:00:41Z [merge-tree-index] MERGE CONFLICT: rebase on current master and retry",
+    "2026-11-24T06:00:41Z make: *** [Makefile:2022: openspec-index-check] Error 1",
+    "2026-11-24T06:00:41Z ##[error]Process completed with exit code 1.",
+    "2026-11-24T06:00:42Z ##[endgroup]",
+]) + "\n"
+
+CHATTER_LOG_B = "\n".join([
+    "2026-11-24T05:59:50Z ##[group]Run make test",
+    "2026-11-24T05:59:51Z   FAIL: nvidia-2.json/m1: duplicate engine row (llama.cpp)",
+    "2026-11-24T05:59:52Z PASSED 17 | FAILED 0",
+    "2026-11-24T05:59:53Z ##[endgroup]",
+    "2026-11-24T06:00:40Z ##[group]OpenSpec index on the merge tree (issue",
+    "2026-11-24T06:00:41Z [merge-tree-index] MERGE CONFLICT: rebase on current master and retry",
+    "2026-11-24T06:00:41Z make: *** [Makefile:2022: openspec-index-check] Error 1",
+    "2026-11-24T06:00:41Z ##[error]Process completed with exit code 1.",
+    "2026-11-24T06:00:42Z ##[endgroup]",
+]) + "\n"
+
+#: The SAME failing step name on both jobs — GitHub's own `steps[]` conclusion is the first half
+#: of the stable anchor.
+CHATTER_JOB_A = {"jobs": [
+    {"databaseId": 910, "name": "validate", "conclusion": "failure",
+     "steps": [{"name": "OpenSpec index on the merge tree (issue", "conclusion": "failure"}]}]}
+CHATTER_JOB_B = {"jobs": [
+    {"databaseId": 913, "name": "validate", "conclusion": "failure",
+     "steps": [{"name": "OpenSpec index on the merge tree (issue", "conclusion": "failure"}]}]}
+
+
+def test_one_state_gate_defect_on_two_branches_files_once_not_zero() -> None:
+    print("\nPR-blockage (#1476): ONE defect on two DIFFERENT branches files once, not zero")
+    # -- the mechanism, asserted directly on the seam (this is what the OLD code keyed on) --
+    block_a = F.extract_error_block(CHATTER_LOG_A)
+    block_b = F.extract_error_block(CHATTER_LOG_B)
+    check("both runs quote a non-empty error block", bool(block_a) and bool(block_b), "")
+    check("the presented blocks carry the FILLER boundary (issue #1466)",
+          any(l.startswith("[filer] --- ") for l in block_a)
+          and any(l.startswith("[filer] --- ") for l in block_b), str(block_a))
+    targets, steps = ["openspec-index-check"], ["OpenSpec index on the merge tree (issue"]
+    check("#1476: the two chatter-padded blocks have DIFFERENT exact (whole-block) shapes",
+          F.exact_failure_shape(block_a, targets, steps)
+          != F.exact_failure_shape(block_b, targets, steps), "the old axis split one defect")
+    check("#1476: the two runs share the STABLE region anchor shape",
+          F.failure_shape(block_a, targets, steps)
+          == F.failure_shape(block_b, targets, steps), "the new axis must collapse them")
+    check("#1175 is not weakened: a block with no filler marker is digested WHOLE",
+          F.region_anchor_lines([*block_a[:1], "a later line"])
+          == [*block_a[:1], "a later line"], "")
+    # The anchor keys on the marker's literal prefix, so the constant and the marker it slices
+    # must not drift apart — a renamed marker would silently digest the whole block again.
+    check("the anchor prefix IS the FILLER marker's prefix (no drift)",
+          F.FILLER_MARKER.format(n=1, region="x").startswith(F._FILLER_MARKER_PREFIX),
+          F.FILLER_MARKER)
+    # -- end to end through the REAL filer against the stub gh --
+    canned = dict(BASE_CANNED)
+    canned["window-qa-validate_yml-pull_request-p1.json"] = [PR_RUNS_REST[0], PR_RUNS_REST[1]]
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"}]
+    canned["jobs-700.json"] = CHATTER_JOB_A
+    canned["jobs-701.json"] = CHATTER_JOB_B
+    canned["log-job-910.txt"] = CHATTER_LOG_A
+    canned["log-job-913.txt"] = CHATTER_LOG_B
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        # BASE_CANNED still carries the two master/schedule runs (100 push-master, 104 schedule),
+        # so the scene files THREE issues; the blockage under test is the ONE carrying run=700.
+        count = int((tmp / "canned" / "create-count").read_text().strip())
+        bodies = {p.name: p.read_text() for p in (tmp / "canned").glob("body-*.txt")}
+        pr_body_txt = next((b for b in bodies.values() if "run=700" in b), None)
+        check("#1476: exactly ONE issue is filed for the two-branch blockage",
+              pr_body_txt is not None and count == 3,
+              f"create-count={count}\n{proc.stdout}")
+        check("#1476: the filed issue NAMES BOTH blocked branches",
+              pr_body_txt is not None and "`ci/a`" in pr_body_txt and "`ci/b`" in pr_body_txt,
+              (pr_body_txt or "no run=700 body")[-500:])
+        data = json.loads(ledger.read_text())
+        rows = [e for e in data["failures"] if e.get("trigger") == "pull_request"]
+        check("exactly one PR-blockage ledger row", len(rows) == 1, str(rows))
+        if rows:
+            row = rows[0]
+            check("the row names BOTH open PRs and pr_count 2",
+                  row.get("blocked_prs") == ["ci/a", "ci/b"] and row.get("pr_count") == 2,
+                  str(row.get("blocked_prs")))
+            check("the row carries the STABLE failure shape",
+                  isinstance(row.get("failure_shape"), str) and row["failure_shape"], "")
+        # IDEMPOTENT: a second sweep must not file a second issue for the same group.
+        proc2 = run_filer(env, ledger)
+        count2 = int((tmp / "canned" / "create-count").read_text().strip())
+        check("a second sweep files nothing more", proc2.returncode == 0 and count2 == count,
+              f"count {count} -> {count2}\n{proc2.stdout}")
+
+
 def test_pr_blockage_dry_run_previews_without_writing() -> None:
     print("\nPR-blockage (#1164): --dry previews the filing and writes nothing")
     canned = dict(BASE_CANNED)
@@ -1988,6 +2098,7 @@ def main() -> int:
     test_wiring_rulebook_and_registry()
     test_the_module_docstring_names_the_dispatch_only_entry_point()
     test_failure_shape_groups_the_same_defect_and_separates_others()
+    test_one_state_gate_defect_on_two_branches_files_once_not_zero()
     test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
     test_pr_blockage_dry_run_previews_without_writing()
