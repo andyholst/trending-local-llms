@@ -150,6 +150,13 @@ jobs:
       - name: Fleet lane behaviour matches the checked-out base (issue #1209)
         run: make fleet-host-sync-check BASE=HEAD PROFILES_HOME=agents
 
+      # (issue #1464) The sync check refuses divergence but names no direction and offers no
+      # remedy. This is the READ-ONLY half of the reconciliation seam: against the repo tree
+      # it proves the classify/union logic on every PR without a host profile home. The write
+      # path (WRITE=1, host home or DEST=<worktree>) is host-only by design.
+      - name: Fleet mirror reconciliation seam (issue #1464)
+        run: make fleet-host-reconcile BASE=HEAD PROFILES_HOME=agents
+
       # (issue #1266) The watcher's change detector is repo-owned: every host installs the
       # same markers. This is the offline half — no network, no credentials — so a PR
       # cannot remove the C/R/M contract or the check mode silently.
