@@ -17,10 +17,15 @@ external system is the filesystem, which is real):
   5. report-only writes NOTHING (bytes and mtime unchanged);
   6. an unresolvable base exits 2 writing nothing;
   7. the target is wired to the Makefile, qa-validate and ARCHITECTURE.md (rules 6d/6h/6m).
+  8. a macOS-shaped home (reached through a symlinked ancestor, `/var` -> `/private/var`)
+     still prints the BACKUP path in the SPELLING THE CALLER HANDED, never a rewritten one
+     (#1552) -- RED on the pre-fix seam on any host, because the symlink reproduces the shape;
+  9. the Linux-shaped plain tree agrees: handed and resolved spellings coincide there.
 """
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -85,6 +90,28 @@ def run_seam(repo: Path, home: Path, *extra: str) -> subprocess.CompletedProcess
          "--profiles-home", str(home), *extra],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
+
+
+def _printed_backup(stdout: str) -> str | None:
+    """The path token on the seam's `[fleet-reconcile] BACKUP <path>` line, if any."""
+    match = re.search(r"\[fleet-reconcile\] BACKUP (\S+)", stdout)
+    return match.group(1) if match else None
+
+
+def _check_backup_spelling(home: Path, written: subprocess.CompletedProcess[str], before: bytes) -> int:
+    """One backup exists, holds the pre-write bytes, and is printed in the handed spelling."""
+    failed = check(written.returncode == 0, "WRITE=1 lands the union")
+    backups = sorted(home.glob("tll-tester/SOUL.md.bak-*"))
+    failed += check(len(backups) == 1, "exactly one timestamped backup was written")
+    if not backups:
+        return failed
+    failed += check(backups[0].read_bytes() == before, "the backup is the pre-write bytes")
+    failed += check(f"BACKUP {backups[0]}" in written.stdout,
+                    "the printed path keeps the caller's spelling, never a rewritten one")
+    printed = _printed_backup(written.stdout)
+    failed += check(printed is not None and Path(printed).resolve() == backups[0].resolve(),
+                    "the printed path resolves to the backup that exists")
+    return failed
 
 
 def test_forward_host_classifies_and_write_keeps_a_backup() -> int:
@@ -199,6 +226,32 @@ def test_the_target_is_wired_to_make_ci_and_the_description() -> int:
     return failed
 
 
+def test_backup_path_keeps_the_handed_spelling_on_a_symlinked_macos_shaped_home() -> int:
+    """macOS shape (#1552): `/var` is a symlink to `/private/var`, so a home under
+    `/var/folders/...` resolves to a DIFFERENT spelling. The seam must print the path it was
+    handed. A symlink reproduces that shape on ANY host, so this is RED against the pre-fix
+    seam in Linux CI too -- not just on a mac."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp).resolve()
+        repo, home = build(root, "alpha\nbeta\n", "alpha\nNOTE forward\nbeta\n")
+        link = root / "homed"
+        link.symlink_to(home, target_is_directory=True)
+        before = (link / "tll-tester" / "SOUL.md").read_bytes()
+        written = run_seam(repo, link, "--write")
+        return _check_backup_spelling(link, written, before)
+
+
+def test_backup_path_keeps_the_handed_spelling_on_a_plain_linux_shaped_home() -> int:
+    """Linux shape: no symlinked ancestor, so handed and resolved spellings coincide. Pin
+    that the seam still prints the handed path rather than inventing a canonical one."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp).resolve()
+        repo, home = build(root, "alpha\nbeta\n", "alpha\nNOTE forward\nbeta\n")
+        before = (home / "tll-tester" / "SOUL.md").read_bytes()
+        written = run_seam(repo, home, "--write")
+        return _check_backup_spelling(home, written, before)
+
+
 def main() -> int:
     return sum(fn() for fn in (
         test_forward_host_classifies_and_write_keeps_a_backup,
@@ -208,6 +261,8 @@ def main() -> int:
         test_report_only_leaves_bytes_and_mtime_untouched,
         test_unresolvable_base_exits_two_writing_nothing,
         test_the_target_is_wired_to_make_ci_and_the_description,
+        test_backup_path_keeps_the_handed_spelling_on_a_symlinked_macos_shaped_home,
+        test_backup_path_keeps_the_handed_spelling_on_a_plain_linux_shaped_home,
     ))
 
 

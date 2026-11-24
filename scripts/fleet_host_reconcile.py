@@ -145,10 +145,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.dest:
         dest_root = Path(args.dest).expanduser().resolve()
     else:
+        # Issue #1552: keep the caller's SPELLING -- absolute, but never symlink-resolved --
+        # so every path this seam prints names the tree the operator pointed at. `resolve()`
+        # rewrote `/var/folders/...` to `/private/var/folders/...` on macOS (`/var` is a
+        # symlink there), so the printed BACKUP path disagreed with the handed spelling and
+        # the guard reds on a healthy mac. The reads/writes below follow symlinks
+        # transparently, so nothing else changes.
         home = (
-            Path(args.profiles_home).expanduser().resolve()
+            Path(args.profiles_home).expanduser().absolute()
             if args.profiles_home
-            else (Path.home() / ".hermes" / "profiles").resolve()
+            else (Path.home() / ".hermes" / "profiles")
         )
         if not home.is_dir():
             print(f"[fleet-reconcile] REFUSED: no profile home at {home}")
