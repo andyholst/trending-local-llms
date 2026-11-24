@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Guard the report-only stale-claim sweep seam (issue #1610, #1265 design section 5 Child 1).
+"""Guard the report-only stale-claim sweep seam (issue #1610, #1626, #1265 design section 5 Child 1-2).
 
 The DECISION is the real product: every test drives `stale_claim_sweep.sweep_thread` /
 `sweep_threads` against gh-shaped payloads and asserts the exact marker lines. The external
 `gh` CLI is stubbed only where a test must prove the REQUEST layer itself (`rule 6m`).
 
+Child 2 pins both grace pairs as module constants with `Makefile ?=` overrides and floors,
+names the three authority limits, and locks them with the same-age proof assertion.
+
 RED half: the wiring checks read the REAL tree, so they fail on the base revision (no target,
-no workflow step, no ARCHITECTURE.md row, no `master_alarm.GATES` entry).
+no workflow step, no ARCHITECTURE.md row, no `master_alarm.GATES` entry); the Child 2 guards
+fail on `origin/master`'s script, which carries neither the pinned live pair nor the limits.
 """
 from __future__ import annotations
 
@@ -147,6 +151,70 @@ def test_a_terminal_thread_is_never_swept() -> None:
           markers([status]) == [], markers([status]))
 
 
+def test_the_threshold_pairs_are_pinned_with_floors_and_makefile_overrides() -> None:
+    print("\nPinned thresholds: two pairs, floors, and the Makefile ?= overrides (#1265 2a)")
+    check("the SILENT pair is pinned at 90/180 minutes",
+          (S.STALE_AFTER_SECONDS, S.RELEASE_AFTER_SECONDS) == (90 * 60, 180 * 60),
+          (S.STALE_AFTER_SECONDS, S.RELEASE_AFTER_SECONDS))
+    check("the LIVE-RUN pair is pinned at the doubled 180/360 minutes",
+          (S.LIVE_RUN_STALE_SECONDS, S.LIVE_RUN_RELEASE_SECONDS)
+          == (S.STALE_AFTER_SECONDS * S.LIVE_RUN_MULTIPLIER,
+              S.RELEASE_AFTER_SECONDS * S.LIVE_RUN_MULTIPLIER)
+          == (180 * 60, 360 * 60),
+          (S.LIVE_RUN_STALE_SECONDS, S.LIVE_RUN_RELEASE_SECONDS))
+    for label, value, floor in (
+        ("silent stale", S.STALE_AFTER_SECONDS, S.STALE_FLOOR_SECONDS),
+        ("silent release", S.RELEASE_AFTER_SECONDS, S.RELEASE_FLOOR_SECONDS),
+        ("live-run stale", S.LIVE_RUN_STALE_SECONDS, S.LIVE_RUN_STALE_FLOOR_SECONDS),
+        ("live-run release", S.LIVE_RUN_RELEASE_SECONDS, S.LIVE_RUN_RELEASE_FLOOR_SECONDS),
+    ):
+        check(f"the pinned {label} bound sits at or above its floor", value >= floor, (value, floor))
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    for knob, value in (
+        ("STALE_CLAIM_STALE_SECONDS", S.STALE_AFTER_SECONDS),
+        ("STALE_CLAIM_RELEASE_SECONDS", S.RELEASE_AFTER_SECONDS),
+        ("STALE_CLAIM_LIVE_STALE_SECONDS", S.LIVE_RUN_STALE_SECONDS),
+        ("STALE_CLAIM_LIVE_RELEASE_SECONDS", S.LIVE_RUN_RELEASE_SECONDS),
+    ):
+        check(f"the Makefile pins {knob} at the same seconds", f"{knob} ?= {value}" in makefile, "")
+    check("the recipe forwards every override to the script",
+          all(flag in makefile for flag in ("--stale-after", "--release-after",
+                                           "--live-stale-after", "--live-release-after")), "")
+    check("--check refuses a silent bound below its floor",
+          S.main(["--check", "--stale-after", str(S.STALE_FLOOR_SECONDS - 1)]) == 2, "")
+    check("--check refuses a live-run bound below its floor",
+          S.main(["--check", "--live-stale-after", str(S.LIVE_RUN_STALE_FLOOR_SECONDS - 1)]) == 2, "")
+    check("--check accepts the floors themselves",
+          S.main(["--check", "--stale-after", str(S.STALE_FLOOR_SECONDS),
+                  "--release-after", str(S.RELEASE_FLOOR_SECONDS),
+                  "--live-stale-after", str(S.LIVE_RUN_STALE_FLOOR_SECONDS),
+                  "--live-release-after", str(S.LIVE_RUN_RELEASE_FLOOR_SECONDS)]) == 0, "")
+
+
+def test_the_three_authority_limits_emit_nothing_at_the_same_age() -> None:
+    print("\nAuthority limits: human and live-run emit NO line at 120 min; a silent one does (#1265 3)")
+    check("the three limits are named in ONE place",
+          S.AUTHORITY_LIMITS == (S.REFUSAL_HUMAN, S.REFUSAL_LIVE_RUN, S.REFUSAL_TERMINAL)
+          == ("human", "live-run", "terminal"), S.AUTHORITY_LIMITS)
+    age = 120  # past the 90 min silent bound, short of the 180 min live-run bound
+    silent = markers([claim_thread(minutes_ago=age)])
+    human = markers([claim_thread(minutes_ago=age,
+                                  body="BOT contractor · working on #1610 · branch b")])
+    live_run = markers([claim_thread(minutes_ago=age,
+                                     body=CLAIM.format(n=1610) + " — CI run R:45123456789")])
+    open_pr = markers([claim_thread(minutes_ago=age,
+                                    body=CLAIM.format(n=1610) + " — opened PR #1611")])
+    terminal = markers([claim_thread(minutes_ago=age, state="closed")])
+    check("a HUMAN claim at 120 min emits NO line", human == [], human)
+    check("a LIVE-RUN claim at 120 min emits NO line (never swept under the silent bound)",
+          live_run == [], live_run)
+    check("an OPEN-PR claim at 120 min emits NO line (never swept under the silent bound)",
+          open_pr == [], open_pr)
+    check("a TERMINAL thread at 120 min emits NO line", terminal == [], terminal)
+    check("a SILENT claim past the threshold DOES emit one stale line",
+          len(silent) == 1 and silent[0].endswith(":stale"), silent)
+
+
 def test_a_second_tick_does_not_re_report_the_same_claim() -> None:
     print("\nSecond tick: dedup is the caller's announced set, stable across ticks")
     th = claim_thread(minutes_ago=200)
@@ -276,6 +344,8 @@ def main() -> int:
     test_a_run_bearing_claim_gets_the_doubled_bound()
     test_a_human_claim_is_never_swept()
     test_a_terminal_thread_is_never_swept()
+    test_the_threshold_pairs_are_pinned_with_floors_and_makefile_overrides()
+    test_the_three_authority_limits_emit_nothing_at_the_same_age()
     test_a_second_tick_does_not_re_report_the_same_claim()
     test_output_is_newest_last_and_one_line_per_claim()
     test_the_real_request_layer_reads_a_thread_end_to_end()

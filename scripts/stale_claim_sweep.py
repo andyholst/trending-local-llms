@@ -19,7 +19,8 @@ Output, one line per claim that crosses a threshold, NEWEST-LAST:
 already returns, so it is stable across ticks and needs no state file. `released` is the higher
 verdict: the claim is unanswered past the release bound.
 
-Grace (`#1265` section 2a, proposed values, NOT yet pinned as a floor — that is Child 2):
+Grace (`#1265` section 2a, PINNED here as module constants — Child 2), with a `Makefile ?=`
+override per bound and a floor the offline contract refuses to cross:
 
     SILENT claim   (no CI evidence):  STALE after 90 min   -> PING;  RELEASE after 180 min
     LIVE-RUN claim (run id attached): STALE after 180 min  -> PING;  RELEASE after 360 min
@@ -27,11 +28,11 @@ Grace (`#1265` section 2a, proposed values, NOT yet pinned as a floor — that i
 A claim counts as run-bearing when its OWN text carries a CI run id (`R:<id>`) or a PR number
 (`PR #<n>`); the bound doubles because CI itself consumes wall clock.
 
-Authority limits (`#1265` section 3), enforced by the pure half: a claim is NEVER swept when the
-issue is CLOSED, when the newest comment is not a signed working-claim (a `done`/`handover`/
-`pr`/`reviewing`/`status` line already moved the thread on), when the claim's lane is not one of
-the eight fleet lanes (a human's claim is never stale), or when the claim names a DIFFERENT issue
-than the thread it sits on. Silence is the only stale signal trusted here.
+The three authority limits (`#1265` section 3, named in `AUTHORITY_LIMITS`), enforced by the pure
+half: a HUMAN-OWNED claim is never swept (the lane token is not one of the eight fleet lanes); a
+LIVE-RUN/OPEN-PR claim is never swept under the silent bounds (it gets the doubled pair); and an
+ALREADY-TERMINAL thread is never swept (a newer `done`/`handover`/`pr`/`reviewing`/`status`
+comment, or a closed issue). Silence is the only stale signal trusted here.
 
 This seam EMITS nothing and WRITES nothing: no comment, no label, no branch, no state file. It
 is a report the caller reads. Dedup is available to the caller through the pure function's
@@ -63,12 +64,38 @@ ROOT = Path(__file__).resolve().parents[1]
 #: deliberately NOT registered in bot_markers.REGISTRY (that dict is the BOT-WINDOW registry).
 MARKER_PREFIX = "S:"
 
-#: Grace thresholds, in seconds (`#1265` section 2a's proposed pair). Child 1 uses them; Child 2
-#: pins them with floors and a rulebook row. Override per run for a test or a tighter policy.
-STALE_AFTER_SECONDS = 90 * 60
-RELEASE_AFTER_SECONDS = 180 * 60
+#: Grace thresholds, in seconds (`#1265` section 2a). PINNED HERE, in ONE place, so two hosts
+#: compute identical verdicts on the same thread; each pair is a `Makefile ?=` override and the
+#: offline contract refuses any value below its floor (Child 2).
+STALE_AFTER_SECONDS = 90 * 60        # SILENT claim: PING at 90 min
+RELEASE_AFTER_SECONDS = 180 * 60     # SILENT claim: release at 180 min
 #: A run-bearing claim gets twice the bound: CI itself consumes wall clock.
 LIVE_RUN_MULTIPLIER = 2
+LIVE_RUN_STALE_SECONDS = STALE_AFTER_SECONDS * LIVE_RUN_MULTIPLIER      # 180 min
+LIVE_RUN_RELEASE_SECONDS = RELEASE_AFTER_SECONDS * LIVE_RUN_MULTIPLIER  # 360 min
+
+#: The floors a caller may NOT tighten past (`make stale-claim-sweep CHECK=1` refuses them, and
+#: the contract also asserts the PINNED values sit at or above their own floor): no claim is
+#: called stale inside an hour, none released inside two hours, and the live-run pair keeps the
+#: same proportions. Mirrors `watch_monitor.CLAIM_SETTLE_FLOOR_SECONDS`.
+STALE_FLOOR_SECONDS = 60 * 60
+RELEASE_FLOOR_SECONDS = 120 * 60
+LIVE_RUN_STALE_FLOOR_SECONDS = LIVE_RUN_MULTIPLIER * STALE_FLOOR_SECONDS      # 120 min
+LIVE_RUN_RELEASE_FLOOR_SECONDS = LIVE_RUN_MULTIPLIER * RELEASE_FLOOR_SECONDS  # 240 min
+
+#: The three authority limits (`#1265` section 3), named so a reader can enumerate them:
+#:
+#:   "human"    the claim's lane is not one of the eight fleet lanes — the owner's and any
+#:               collaborator's claim is NEVER swept (rule 6v reserves human acts).
+#:   "live-run" the claim's own text carries a CI run id (`R:<id>`) or a PR number (`PR #<n>`)
+#:               — it is NEVER swept under the SILENT bounds; the DOUBLED pair applies because
+#:               CI itself consumes wall clock.
+#:   "terminal" the issue is CLOSED, or the newest comment already moved the thread on (a
+#:               `done`/`handover`/`pr`/`reviewing`/`status` line) — no claim is left to sweep.
+AUTHORITY_LIMITS = ("human", "live-run", "terminal")
+REFUSAL_HUMAN = "human"
+REFUSAL_LIVE_RUN = "live-run"
+REFUSAL_TERMINAL = "terminal"
 
 #: `BOT <lane> · working on #<id> · …` — the AGENTS.md section 7b claim grammar. The middle dot
 #: is `·`; `•` is accepted so a hand-typed variant cannot slip past as "not a claim".
@@ -152,10 +179,36 @@ def parse_working_claim(body: object) -> tuple[str, int] | None:
 
 
 def is_run_bearing(body: object) -> bool:
-    """True when the claim's OWN text attaches a CI run id or a PR number (`#1265` 2a)."""
+    """True when the claim's OWN text attaches a CI run id or a PR number (`#1265` 2a).
+
+    This is the "live-run" authority limit: such a claim is NEVER swept under the silent bounds,
+    it gets the doubled pair instead.
+    """
     if not isinstance(body, str):
         return False
     return bool(_RUN_ID.search(body) or _PR_ID.search(body))
+
+
+def is_human_claim(lane: str, lanes: Collection[str]) -> bool:
+    """True when the claim's lane is outside the eight fleet lanes (the "human" limit, `#1265` 3A).
+
+    The owner's and any collaborator's claim is never stale — rule 6v reserves human acts.
+    """
+    return lane not in set(lanes)
+
+
+def is_terminal_thread(thread: Thread) -> bool:
+    """True when a CLOSED issue, an empty thread, or one whose newest comment already moved on.
+
+    The "terminal" limit (`#1265` 3C): a `done`/`handover`/`pr`/`reviewing`/`status` line, or any
+    comment that is not a signed working-claim, means no claim is left to sweep.
+    """
+    if str(thread.state).strip().lower() != "open":
+        return True
+    newest = newest_comment(thread)
+    if newest is None:
+        return True
+    return parse_working_claim(newest.body) is None
 
 
 def newest_comment(thread: Thread) -> Comment | None:
@@ -176,16 +229,18 @@ def fleet_lanes(root: Path | None = None) -> tuple[str, ...]:
 def sweep_thread(thread: Thread, *, now: datetime, lanes: Collection[str] | None = None,
                  stale_after: int = STALE_AFTER_SECONDS,
                  release_after: int = RELEASE_AFTER_SECONDS,
+                 live_stale_after: int = LIVE_RUN_STALE_SECONDS,
+                 live_release_after: int = LIVE_RUN_RELEASE_SECONDS,
                  announced: Iterable[str] = ()) -> list[Verdict]:
     """Every threshold this thread's newest comment crosses — normally zero or one verdict.
 
-    The decision, in order: a CLOSED thread has no claim to sweep; a thread whose newest comment
-    is not a signed working-claim has already moved on (a `done`/`handover`/`pr`/`reviewing`/
-    `status` line, or a human's note); a claim by a non-fleet lane is a human's and is never
-    stale; a claim naming a different issue is not this thread's claim; a fresh claim crosses
-    nothing; and a claim the caller already announced is not re-reported (second-tick dedup).
+    The decision, in order: a CLOSED or already-terminal thread has no claim to sweep; a claim by
+    a non-fleet lane is a human's and is never stale; a claim naming a different issue is not this
+    thread's claim; a run-bearing claim (`R:<id>` / `PR #<n>`) is never measured against the SILENT
+    pair — it gets the doubled bounds; a fresh claim crosses nothing; and a claim the caller
+    already announced is not re-reported (second-tick dedup).
     """
-    if str(thread.state).strip().lower() != "open":
+    if is_terminal_thread(thread):
         return []
     newest = newest_comment(thread)
     if newest is None:
@@ -195,14 +250,14 @@ def sweep_thread(thread: Thread, *, now: datetime, lanes: Collection[str] | None
         return []
     lane, named_issue = parsed
     known = set(fleet_lanes() if lanes is None else lanes)
-    if lane not in known or named_issue != thread.number:
+    if is_human_claim(lane, known) or named_issue != thread.number:
         return []
     age = (now - newest.created_at).total_seconds()
     if age < 0:
         age = 0.0
     stale, release = stale_after, release_after
     if is_run_bearing(newest.body):
-        stale, release = stale * LIVE_RUN_MULTIPLIER, release * LIVE_RUN_MULTIPLIER
+        stale, release = live_stale_after, live_release_after
     if age >= release:
         kind = "released"
     elif age >= stale:
@@ -226,12 +281,15 @@ def sweep_threads(threads: Iterable[Thread], *, now: datetime,
                   lanes: Collection[str] | None = None,
                   stale_after: int = STALE_AFTER_SECONDS,
                   release_after: int = RELEASE_AFTER_SECONDS,
+                  live_stale_after: int = LIVE_RUN_STALE_SECONDS,
+                  live_release_after: int = LIVE_RUN_RELEASE_SECONDS,
                   announced: Iterable[str] = ()) -> list[Verdict]:
     """Every thread's verdicts, NEWEST-LAST as the design's output contract states."""
     found: list[Verdict] = []
     for thread in threads:
         found.extend(sweep_thread(thread, now=now, lanes=lanes, stale_after=stale_after,
-                                  release_after=release_after, announced=announced))
+                                  release_after=release_after, live_stale_after=live_stale_after,
+                                  live_release_after=live_release_after, announced=announced))
     return sorted(found, key=lambda v: (v.created_at, v.issue, v.claim_id))
 
 
@@ -312,18 +370,47 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--check", action="store_true",
                     help="offline contract check; no network, no state")
     ap.add_argument("--stale-after", type=int, default=STALE_AFTER_SECONDS,
-                    dest="stale_after", help=f"seconds before a silent claim is stale "
+                    dest="stale_after", help=f"seconds before a SILENT claim is stale "
                                             f"(default {STALE_AFTER_SECONDS})")
     ap.add_argument("--release-after", type=int, default=RELEASE_AFTER_SECONDS,
-                    dest="release_after", help=f"seconds before a silent claim is released "
+                    dest="release_after", help=f"seconds before a SILENT claim is released "
                                                f"(default {RELEASE_AFTER_SECONDS})")
+    ap.add_argument("--live-stale-after", type=int, default=LIVE_RUN_STALE_SECONDS,
+                    dest="live_stale_after", help=f"seconds before a RUN-BEARING claim is stale "
+                                                  f"(default {LIVE_RUN_STALE_SECONDS})")
+    ap.add_argument("--live-release-after", type=int, default=LIVE_RUN_RELEASE_SECONDS,
+                    dest="live_release_after", help=f"seconds before a RUN-BEARING claim is "
+                                                    f"released (default {LIVE_RUN_RELEASE_SECONDS})")
     args = ap.parse_args(argv)
 
     if args.check:
         problems: list[str] = []
-        if args.stale_after <= 0 or args.release_after <= args.stale_after:
-            problems.append(f"the grace pair is not positive and ordered: "
-                            f"stale={args.stale_after}s release={args.release_after}s")
+        pairs = (
+            ("silent", args.stale_after, args.release_after),
+            ("live-run", args.live_stale_after, args.live_release_after),
+        )
+        for label, stale, release in pairs:
+            if stale <= 0 or release <= stale:
+                problems.append(f"the {label} grace pair is not positive and ordered: "
+                                f"stale={stale}s release={release}s")
+        floors = (
+            ("STALE_AFTER_SECONDS", STALE_AFTER_SECONDS, STALE_FLOOR_SECONDS),
+            ("RELEASE_AFTER_SECONDS", RELEASE_AFTER_SECONDS, RELEASE_FLOOR_SECONDS),
+            ("LIVE_RUN_STALE_SECONDS", LIVE_RUN_STALE_SECONDS, LIVE_RUN_STALE_FLOOR_SECONDS),
+            ("LIVE_RUN_RELEASE_SECONDS", LIVE_RUN_RELEASE_SECONDS, LIVE_RUN_RELEASE_FLOOR_SECONDS),
+        )
+        for name, value, floor in floors:
+            if value < floor:
+                problems.append(f"the pinned {name}={value}s is below its {floor}s floor")
+        override_floors = (
+            ("--stale-after", args.stale_after, STALE_FLOOR_SECONDS),
+            ("--release-after", args.release_after, RELEASE_FLOOR_SECONDS),
+            ("--live-stale-after", args.live_stale_after, LIVE_RUN_STALE_FLOOR_SECONDS),
+            ("--live-release-after", args.live_release_after, LIVE_RUN_RELEASE_FLOOR_SECONDS),
+        )
+        for flag, value, floor in override_floors:
+            if value < floor:
+                problems.append(f"{flag}={value}s is below the {floor}s floor")
         samples = (
             "BOT tll-implementer · working on #1610 · branch b · blocked on none · next y",
             "BOT tll-implementer (host asimov@omarchy) · working on #1610 · branch b",
@@ -334,6 +421,8 @@ def main(argv: list[str] | None = None) -> int:
         plain = samples[0]
         if is_run_bearing(plain) or not is_run_bearing(f"{plain} — run R:12345"):
             problems.append("the run-bearing test no longer separates a plain claim from a run one")
+        if AUTHORITY_LIMITS != (REFUSAL_HUMAN, REFUSAL_LIVE_RUN, REFUSAL_TERMINAL):
+            problems.append("the three authority limits are no longer named together")
         if MARKER_PREFIX != "S:":
             problems.append("the marker prefix changed")
         if problems:
@@ -341,8 +430,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"CHECK FAILED: {problem}", file=sys.stderr)
             return 2
         print(f"[stale-claim-sweep] OK: {MARKER_PREFIX}<issue>:<claim-id>:<stale|released>, "
-              f"grace stale={args.stale_after}s release={args.release_after}s "
-              f"(x{LIVE_RUN_MULTIPLIER} when the claim carries a run id), read-only, no state")
+              f"grace silent stale={args.stale_after}s release={args.release_after}s, "
+              f"live-run stale={args.live_stale_after}s release={args.live_release_after}s "
+              f"(x{LIVE_RUN_MULTIPLIER} when the claim carries a run id), floors "
+              f"{STALE_FLOOR_SECONDS}/{RELEASE_FLOOR_SECONDS}/"
+              f"{LIVE_RUN_STALE_FLOOR_SECONDS}/{LIVE_RUN_RELEASE_FLOOR_SECONDS}s, "
+              f"read-only, no state")
         return 0
 
     try:
@@ -353,7 +446,9 @@ def main(argv: list[str] | None = None) -> int:
 
     now = datetime.now(timezone.utc)
     for verdict in sweep_threads(threads, now=now, stale_after=args.stale_after,
-                                release_after=args.release_after):
+                                release_after=args.release_after,
+                                live_stale_after=args.live_stale_after,
+                                live_release_after=args.live_release_after):
         print(verdict.marker())
     return 0
 

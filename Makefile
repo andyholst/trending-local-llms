@@ -1836,11 +1836,18 @@ watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`
 
 .PHONY: _stale-claim-sweep stale-claim-sweep
 STALE_CLAIM_SWEEP_ARGS := $(if $(REPO),--repo $(REPO),)$(if $(GH),--gh $(GH),)$(if $(LIMIT),--limit $(LIMIT),)$(if $(CHECK),--check,)
+# The grace pairs (`#1265` §2a / Child 2), pinned in `scripts/stale_claim_sweep.py` and overridable
+# HERE so the owner can tune them without a code change; `--check` refuses any value below the
+# floors the module also pins. Seconds: 90/180 min silent, doubled to 180/360 when run-bearing.
+STALE_CLAIM_STALE_SECONDS ?= 5400
+STALE_CLAIM_RELEASE_SECONDS ?= 10800
+STALE_CLAIM_LIVE_STALE_SECONDS ?= 10800
+STALE_CLAIM_LIVE_RELEASE_SECONDS ?= 21600
 
 _stale-claim-sweep:
-	python3 scripts/stale_claim_sweep.py$(if $(STALE_CLAIM_SWEEP_ARGS), $(STALE_CLAIM_SWEEP_ARGS),)
+	python3 scripts/stale_claim_sweep.py --stale-after $(STALE_CLAIM_STALE_SECONDS) --release-after $(STALE_CLAIM_RELEASE_SECONDS) --live-stale-after $(STALE_CLAIM_LIVE_STALE_SECONDS) --live-release-after $(STALE_CLAIM_LIVE_RELEASE_SECONDS)$(if $(STALE_CLAIM_SWEEP_ARGS), $(STALE_CLAIM_SWEEP_ARGS),)
 
-stale-claim-sweep: ## Report-only stale working-claim sweep over open issue threads (`S:<issue>:<claim-id>:<verdict>` lines; `CHECK=1` is the offline CI contract, issue #1610 / #1265 Child 1)
+stale-claim-sweep: ## Report-only stale working-claim sweep over open issue threads (`S:<issue>:<claim-id>:<verdict>` lines; `CHECK=1` is the offline CI contract, issue #1610 / #1626 / #1265 Child 1-2)
 	@$(MAKE) --no-print-directory _stale-claim-sweep
 
 # ---- the dispatch guard: refuse a stale target, bound lane concurrency (#1416) --
