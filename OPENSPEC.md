@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **513**
+Active changes: **1** · archived: **514**
 
 ## Active changes
 
@@ -532,6 +532,7 @@ Active changes: **1** · archived: **513**
 | `workflow-concurrency-groups-1560` | archived | #1560 | #1564 | [ci-concurrency](openspec/changes/archive/workflow-concurrency-groups-1560/specs/ci-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/workflow-concurrency-groups-1560/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
+| `wrapped-aside-union-pin` | archived | #1605 | #1607 | [fleet-union-aside-normalisation](openspec/changes/archive/wrapped-aside-union-pin/specs/fleet-union-aside-normalisation/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/wrapped-aside-union-pin/proposal.md) |
 | `write-raw-snapshot-copy-payload` | archived | #646 | #898 | [write-raw-payload-immutability](openspec/changes/archive/write-raw-snapshot-copy-payload/specs/write-raw-payload-immutability/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/write-raw-snapshot-copy-payload/proposal.md) |
 | `write-raw-verifies-links` | archived | #644 | #850 | [write-raw-link-verification](openspec/changes/archive/write-raw-verifies-links/specs/write-raw-link-verification/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/write-raw-verifies-links/proposal.md) |
 
