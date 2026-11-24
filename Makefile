@@ -325,8 +325,13 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 # Inside a container there is no docker to run, so the SAME assignment forks to
 # an EMPTY harness and the recipe uses the container's own interpreter (issue
 # #1411). The fork lives here, never in a second definition.
-PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -w /workspace \
-	-e PYTHONUNBUFFERED=1 $(PYTHON_IMAGE))
+# Slice 4b (#1495) adds the SAME GIT_COMMON_DIR mount TEST_RUN uses so a routed
+# recipe can read the repo's real git dir (a worktree's gitdir lives outside
+# $PWD), plus conditional forwarding of the fix-loop self-archive baseline path
+# and its SELF_ARCHIVE_* env so `self-archive-snapshot`/`-guard` behave on a real
+# repository exactly as they do on the host. Both stay pure `python3 scripts/…`.
+PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
+	-e PYTHONUNBUFFERED=1 $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
 
 # ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
 # Not every host `python3 scripts/…` target routes through PYTHON_RUN; these stay
@@ -1566,7 +1571,7 @@ check-commit-authorship: ## CI: fail when a commit's author/committer identity o
 commit-authorship-report: ## Show every commit in the range with its author, committer and subject
 	python3 scripts/check_commit_authorship.py report
 
-# ---- fix-loop self-archive guard (issue #812, host-only like check-commit-authorship) --
+# ---- fix-loop self-archive guard (issue #812; container-routed since #1495) --
 # `scripts/fix_loop.sh` runs these two around every Hermes round. A round once ran
 # `make openspec-archive` on its OWN change: the tree landed with the change moved
 # into openspec/changes/archive/ while the PR was still open — green on every gate,
@@ -1575,11 +1580,14 @@ commit-authorship-report: ## Show every commit in the range with its author, com
 # (a merge may legitimately archive; a round may not); `self-archive-guard` refuses
 # (and, with SELF_ARCHIVE_RESTORE=1, restores) a baseline-active change that vanished
 # from the tree mid-run. Git-only: it reads the tree the loop is repairing.
+# #712 Slice 4b (#1495) routes both through $(PYTHON_RUN) with the git-common-dir
+# mount and the fix-loop baseline env/path forwarding added to that seam, keeping
+# each recipe a PURE `python3 scripts/…` command.
 .PHONY: self-archive-snapshot self-archive-guard
-self-archive-snapshot: ## Record the OpenSpec changes active now as the fix loop's baseline (SELF_ARCHIVE_BASELINE)
-	python3 scripts/self_archive_guard.py snapshot
-self-archive-guard: ## Fail when a change active at the baseline is gone from the tree (issue #812); SELF_ARCHIVE_RESTORE=1 restores it first
-	python3 scripts/self_archive_guard.py check
+self-archive-snapshot: python-env-image ## Record the OpenSpec changes active now as the fix loop's baseline (SELF_ARCHIVE_BASELINE)
+	$(PYTHON_RUN) python3 scripts/self_archive_guard.py snapshot
+self-archive-guard: python-env-image ## Fail when a change active at the baseline is gone from the tree (issue #812); SELF_ARCHIVE_RESTORE=1 restores it first
+	$(PYTHON_RUN) python3 scripts/self_archive_guard.py check
 
 # ---- fleet model chain: ONE source, rendered lane configs, a gate (issue #1140) --
 # `agents/model_chain.json` is the ONE definition of the model chain every Hermes fleet

@@ -3218,8 +3218,8 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
               f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
     # Slice 4 of #712 (#1494): the remaining PURE utility batch routes through the
     # SAME seam, each still a pure `python3 scripts/…` command (no per-recipe
-    # docker harness). The two `self-archive-*` targets are deliberately NOT here
-    # — they need a `GIT_COMMON_DIR` mount added to PYTHON_RUN (#712 Slice 4b).
+    # docker harness). The two `self-archive-*` targets need the git-common-dir
+    # mount and are covered by the Slice 4b block below (#712 Slice 4b / #1495).
     slice4 = {
         "architecture-refresh: python-env-image": "python3 scripts/architecture_bot.py --write",
         "openspec-record-pr: python-env-image":
@@ -3237,6 +3237,29 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
               target_line in make
               and f"$(PYTHON_RUN) {cmd}" in make,
               f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
+
+    # Slice 4b of #712 (#1495): the two self-archive targets read the repo's git
+    # common dir AND a host-side baseline file, so PYTHON_RUN gains the SAME
+    # GIT_COMMON_DIR mount TEST_RUN has plus conditional forwarding of the
+    # SELF_ARCHIVE_* env/path. Both recipes stay PURE `python3 scripts/…` commands.
+    seam = make[make.index("PYTHON_RUN :="):].split("\n\n", 1)[0]
+    check("seam (Slice 4b): PYTHON_RUN mounts the git common dir",
+          "-v \"$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)\"" in seam, seam)
+    check("seam (Slice 4b): PYTHON_RUN forwards the host baseline path and env",
+          "-v \"$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))\"" in seam
+          and "-e SELF_ARCHIVE_BASELINE" in seam
+          and "-e SELF_ARCHIVE_REF" in seam
+          and "-e SELF_ARCHIVE_RESTORE" in seam, seam)
+    slice4b = {
+        "self-archive-snapshot: python-env-image": "python3 scripts/self_archive_guard.py snapshot",
+        "self-archive-guard: python-env-image": "python3 scripts/self_archive_guard.py check",
+    }
+    for target_line, cmd in slice4b.items():
+        check(f"seam (Slice 4b): {target_line.split(':')[0]} routes through $(PYTHON_RUN)",
+              target_line in make
+              and f"$(PYTHON_RUN) {cmd}" in make,
+              f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
+
     # The gh-bound and pre-image-ensure targets stay HOST-side (documented
     # exceptions) — they must NOT gain a PYTHON_RUN prefix in this slice. The
     # pr-closure.yml message gates join them in Slice 3: that workflow runs them
