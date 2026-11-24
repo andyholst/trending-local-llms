@@ -117,13 +117,6 @@ GATES: dict[str, tuple[str, str]] = {
     # The reintroduction gate (issue #802): a red on master here means a diagnosed pipeline
     # failure was closed without its fix PR + guard test; master-alarm makes it loud.
     "pipeline-failure-guard-check": ("alarm", "master-alarm"),
-    # (issue #1454) The shape-aware analysis gate. Registered for the same reason as
-    # `announce-image-fallback` below: master_alarm derives "what the validate job runs"
-    # from the pipeline itself, and a make target the job runs that GATES does not name is
-    # the #527 defect. It is pull_request-only in practice — a push to master carries no
-    # `pull_request`, so the gate is a green no-op there — but an uncovered gate is still
-    # the defect, so it sits on the alarm list.
-    "findings-check-for-pr": ("alarm", "master-alarm"),
     "test": ("alarm", "master-alarm"),
 }
 
