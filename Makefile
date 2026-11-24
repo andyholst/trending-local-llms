@@ -411,7 +411,7 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #   `refresh-sync` `reset-working-files` `review-issue-body-hash` `review-issue-check-markers`
 #   `review-issue-finish` `review-issue-guard` `review-issue-mark` `review-issue-pick`
 #   `secret-scan` `secret-scan-history` `secret-scan-self-test` `security-scan-self-test`
-#   `sweep-alarm` `verify-closure` `watch-monitor` `worktree-new` `worktree-resume`
+#   `stale-claim-sweep` `sweep-alarm` `verify-closure` `watch-monitor` `worktree-new` `worktree-resume`
 # HOST-EXCEPTIONS-END
 
 .PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check image-manifest-check test-image-smoke
@@ -1833,6 +1833,15 @@ _watch-monitor:
 
 watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`CHECK=1` for the offline CI contract, issues #1266/#1282)
 	@$(MAKE) --no-print-directory _watch-monitor
+
+.PHONY: _stale-claim-sweep stale-claim-sweep
+STALE_CLAIM_SWEEP_ARGS := $(if $(REPO),--repo $(REPO),)$(if $(GH),--gh $(GH),)$(if $(LIMIT),--limit $(LIMIT),)$(if $(CHECK),--check,)
+
+_stale-claim-sweep:
+	python3 scripts/stale_claim_sweep.py$(if $(STALE_CLAIM_SWEEP_ARGS), $(STALE_CLAIM_SWEEP_ARGS),)
+
+stale-claim-sweep: ## Report-only stale working-claim sweep over open issue threads (`S:<issue>:<claim-id>:<verdict>` lines; `CHECK=1` is the offline CI contract, issue #1610 / #1265 Child 1)
+	@$(MAKE) --no-print-directory _stale-claim-sweep
 
 # ---- the dispatch guard: refuse a stale target, bound lane concurrency (#1416) --
 # The owner directive (measured on asimov@mac 2026-11-23: 7 concurrent tll-implementer

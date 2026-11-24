@@ -183,6 +183,14 @@ jobs:
       - name: Watch monitor contract (issue #1266)
         run: make watch-monitor CHECK=1
 
+      # (issue #1610 / #1265 design §5 Child 1) The report-only stale-claim sweep is repo-owned:
+      # the DECISION about whether a working-claim is stale lives in ONE script, not in an
+      # agent's prose. This is the offline half — no network, no credentials, no writes — so a
+      # PR cannot remove the claim grammar, the grace pair or the marker shape silently. The
+      # live half (`make stale-claim-sweep`) is a host read and emits nothing itself.
+      - name: Stale claim sweep contract (issue #1610)
+        run: make stale-claim-sweep CHECK=1
+
       # The only identities on this repo are Andy Holst and Asimov Agent. Nothing
       # read a commit's MESSAGE or a commit's IDENTITY, so a
       # `Co-authored-by: Hermes Agent <hermes@nousresearch.com>` trailer landed on

@@ -162,6 +162,7 @@ EXCEPTIONS: dict[str, str] = {
     "fleet-host-sync-check": "compares the HOST profile home with the tree",
     "fleet-host-reconcile": "repairs the host profile mirrors",
     "watch-monitor": "the heartbeat monitor loop (long-running host process)",
+    "stale-claim-sweep": "reads open issue threads (gh)",
     "agent-profile-provision": "provisions profiles in the host Hermes home",
     "agent-aux-local-sync": "syncs host auxiliary state",
     "agent-model-chain-check": "reads the host fleet model chain",
