@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **488**
+Active changes: **1** · archived: **489**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `dead-lane-resume-discipline` | active | #1501 | — | [fleet-watch](openspec/changes/dead-lane-resume-discipline/specs/fleet-watch/spec.md) | 5/5 | [proposal.md](openspec/changes/dead-lane-resume-discipline/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -184,6 +183,7 @@ Active changes: **2** · archived: **488**
 | `data-gap-issue-dedup-per-entry` | archived | #996 — "The data-gap filer's signature is a whole-SET hash, so one volatile | #1000 | [data-gap-dedup](openspec/changes/archive/data-gap-issue-dedup-per-entry/specs/data-gap-dedup/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/data-gap-issue-dedup-per-entry/proposal.md) |
 | `data-gap-measurement-dimensions` | archived | #376 — `data-gap: storage_offload (38 models)` | — | [data-gap-capture](openspec/changes/archive/data-gap-measurement-dimensions/specs/data-gap-capture/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-measurement-dimensions/proposal.md) |
 | `data-gap-storage-offload` | archived | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/archive/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-storage-offload/proposal.md) |
+| `dead-lane-resume-discipline` | archived | #1501 | #1503 | [fleet-watch](openspec/changes/archive/dead-lane-resume-discipline/specs/fleet-watch/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/dead-lane-resume-discipline/proposal.md) |
 | `declared-coverage-external-binary` | archived | #1154 | #1168 | [declared-coverage-external-binary](openspec/changes/archive/declared-coverage-external-binary/specs/declared-coverage-external-binary/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/declared-coverage-external-binary/proposal.md) |
 | `declared-est-reask-pipeline` | archived | #936 | #941 | [data-gap-analysis](openspec/changes/archive/declared-est-reask-pipeline/specs/data-gap-analysis/spec.md) | 9/11 · 2 blocked | [proposal.md](openspec/changes/archive/declared-est-reask-pipeline/proposal.md) |
 | `dedupe-mirrors-1468` | archived | #1468 | #1472 | [agent-skill-mirrors](openspec/changes/archive/dedupe-mirrors-1468/specs/agent-skill-mirrors/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/dedupe-mirrors-1468/proposal.md) |

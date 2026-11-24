@@ -1,6 +1,7 @@
 # Proposal: dead-lane-resume-discipline
 
 Issue: #1501
+PR: #1503
 
 ## Why
 
