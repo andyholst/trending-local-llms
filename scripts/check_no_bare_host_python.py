@@ -7,9 +7,9 @@ a seam (`PYTHON_RUN` for the python-env image, `TEST_RUN`/`DOCKER_RUN` for the t
 the runner's Python becomes part of the pipeline.
 
 This guard is the mechanical half of the rule. It reads the REAL Makefile (never a copy) and asks
-of every public target: does a recipe line, or one `$(MAKE) _x` hop, invoke `python3`/`pip`/`uv`
-with NO container harness on that line? A target that does is reported UNLESS it is one of the
-DELIBERATE host-only seams in `EXCEPTIONS` below — image build/selection, gh/GitHub-state
+of every public target: does a recipe line, or one make hop into a PRIVATE `_x` recipe, invoke
+`python3`/`pip`/`uv` with NO container harness on that line? A target that does is reported UNLESS
+it is one of the DELIBERATE host-only seams in `EXCEPTIONS` below — image build/selection, gh/GitHub-state
 verifiers, host git identity/worktree, and the cheapest pre-image-ensure guards. That list is the
 ONE machine-readable exception list; the Makefile comment block above the `PYTHON_RUN` seam
 carries the same names between `# HOST-EXCEPTIONS-BEGIN/END`, and `tests/test_os_agnostic_make.py`
@@ -55,7 +55,21 @@ INTERP_RE = re.compile(
 #: while `cmd | python3 x` is not.
 SEGMENT_SPLIT = re.compile(r"\|+|&&|\|\||;|&")
 
-HOP_RE = re.compile(r"\$\(MAKE\)[^\n]*?\b(_[A-Za-z0-9_-]+)")
+#: A hop into a PRIVATE recipe, in BOTH spellings the Makefile uses (#1596): `$(MAKE) … _x` and the
+#: repo's own dominant idiom, the plain `make _x`. `HOP_RE` recognised only the recursive spelling,
+#: so the file's plain hops (the whole `_refresh` chain, `_search`'s fan-out) were invisible: a bare
+#: host interpreter planted in a private recipe reached through a PUBLIC target's plain `make _x`
+#: hop exited 0 while the guard's docstring promised to follow one hop. The hop carries an OPTIONAL
+#: run of make FLAGS (`-j4`, `--no-print-directory`) before the target, because the fan-out writes
+#: `@make -j4 _search-nvidia …`; the caller strips the recipe-echo `@` first (HOP_AT_PREFIX) and
+#: filters any line that already carries a container harness, so both spellings stay suppressed
+#: together when the hop runs inside an image.
+HOP_RE = re.compile(
+    r"(?<![\w.$@\\/-])(?:make|\$\(MAKE\))"
+    r"([ \t]*(?:-{1,2}[A-Za-z0-9_=-]+[ \t]+)*(_[A-Za-z0-9_-]+))?"
+)
+#: The recipe-echo prefix: `@make … _x` is the same command as `make … _x`.
+HOP_AT_PREFIX = re.compile(r"^@")
 SHELL_RE = re.compile(r"\$\(shell\s+([^)]*)\)", re.S)
 
 MAX_HOP_DEPTH = 4
@@ -262,7 +276,7 @@ def walk(target: str, targets, macros, seen=None, depth=0) -> list[Finding]:
 
     Its own recipes, the bodies of any `$(call NAME,…)` macros those recipes invoke (analysed as
     SEPARATE lines, so a harness in the caller's argument cannot launder a bare command inside the
-    macro body), and one bare `$(MAKE) _x` hop into a private recipe.
+    macro body), and one make hop into a private `_x` recipe — BOTH spellings (#1596).
     """
     if seen is None:
         seen = set()
@@ -289,12 +303,14 @@ def walk(target: str, targets, macros, seen=None, depth=0) -> list[Finding]:
                 if macro in macros and macro not in macros_seen:
                     macros_seen.add(macro)
                     queue.append(("macro", macro))
-            # A bare `$(MAKE) _x` hop reaches the private recipe too (it is how `_search-preflight`,
-            # `_git-identity`, … are driven). A HARNESSED hop (`$(DOCKER_RUN) make _x`) is a container
-            # already, so its private recipe's host-looking commands run inside the image.
+            # A make hop reaches the private recipe too — `$(MAKE) _x` AND the plain `make _x`
+            # spelling the file itself uses (`_refresh`'s whole chain, `_setup`'s registers; #1596).
+            # A HARNESSED hop (`$(DOCKER_RUN) make _x`) is a container already, so its private
+            # recipe's host-looking commands run inside the image.
             if kind == "target" and not any(token in blanked for token in HARNESS_TOKENS):
-                for hop in HOP_RE.finditer(blanked):
-                    private = hop.group(1)
+                # The recipe-echo `@` is not part of the command, so drop it before matching.
+                for hop in HOP_RE.finditer(HOP_AT_PREFIX.sub("", blanked)):
+                    private = hop.group(2)
                     if private in targets:
                         queue.append(("target", private))
     return found

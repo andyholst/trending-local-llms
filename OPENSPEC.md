@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **513**
+Active changes: **1** · archived: **514**
 
 ## Active changes
 
@@ -317,6 +317,7 @@ Active changes: **1** · archived: **513**
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `live-smoke-merge-gate-claim` | archived | #1033 | #1135 | [architecture-job-behaviour-claim](openspec/changes/archive/live-smoke-merge-gate-claim/specs/architecture-job-behaviour-claim/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/live-smoke-merge-gate-claim/proposal.md) |
 | `local-endpoint-probe-1352` | archived | #1352 | #1353 | [local-endpoint-probe](openspec/changes/archive/local-endpoint-probe-1352/specs/local-endpoint-probe/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/local-endpoint-probe-1352/proposal.md) |
+| `make-hop-reachability-both-spellings-1596` | archived | #1596 | #1614 | [no-bare-host-python](openspec/changes/archive/make-hop-reachability-both-spellings-1596/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/make-hop-reachability-both-spellings-1596/proposal.md) |
 | `mark-untraceable-engine-build-prose-unverified` | archived | #883 | #1101 | [data-gap-analysis](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
 | `master-alarm-gate-extractor` | archived | #1281 | #1285 | [master-alarm-gate-extractor](openspec/changes/archive/master-alarm-gate-extractor/specs/master-alarm-gate-extractor/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/master-alarm-gate-extractor/proposal.md) |
