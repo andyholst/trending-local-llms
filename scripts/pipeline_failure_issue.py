@@ -616,6 +616,24 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
                        for h in out)]
 
 
+def _one_member_per_run(members: list[dict]) -> list[dict]:
+    """ONE member per RUN — the earliest job of that run (issue #1615).
+
+    A single run can conclude with SEVERAL bad jobs: measured on merged master, qa-validate
+    push run 45380383434 carried SIX cancelled jobs (`validate`, `live-smoke`,
+    `invalid-change-repair`, `architecture-repair`, `announce-fallback`, `index-repair`). The
+    sweep builds ONE item per (run, job), so grouping the items whole listed that run five
+    times over — and the ledger loop appended one row PER ITEM, i.e. duplicate `run_id` rows,
+    which breaks every reader that keys on the run id (the guard, the stamp pass #1099, the
+    attribution pass #1053, `rediagnose_pending` #1136) and inflates the class's member scope.
+    The ledger's contract is one row per run, so a class keeps each run ONCE.
+    """
+    by_run: dict[int, dict] = {}
+    for m in sorted(members, key=lambda m: int(m["run"]["databaseId"])):
+        by_run.setdefault(int(m["run"]["databaseId"]), m)
+    return [by_run[rid] for rid in sorted(by_run)]
+
+
 def group_failure_classes(items: list[dict]) -> list[dict]:
     """Group concluded-bad runs by STABLE error class — ONE issue per class per window (#1557).
 
@@ -630,6 +648,8 @@ def group_failure_classes(items: list[dict]) -> list[dict]:
     No threshold here (unlike `PR_BLOCK_MIN_PRS`): a class of ONE run files exactly as it did
     before, a class of N files once. Groups whose member runs are a strict SUBSET of another
     group's are dropped — ONE defect, ONE issue — the same dedup #1565 added for the PR half.
+    Every group is collapsed to ONE member per RUN (`_one_member_per_run`, issue #1615), so a
+    run with several bad jobs contributes one ledger row and one member, never N.
     """
     keyings: dict[str, dict[str, list[dict]]] = {"shape": {}, "exact_shape": {}}
     for it in items:
@@ -639,11 +659,11 @@ def group_failure_classes(items: list[dict]) -> list[dict]:
     seen: set[tuple[int, ...]] = set()
     for axis in ("shape", "exact_shape"):
         for _key, members in keyings[axis].items():
-            ids = tuple(sorted(int(m["run"]["databaseId"]) for m in members))
+            ordered = _one_member_per_run(members)
+            ids = tuple(int(m["run"]["databaseId"]) for m in ordered)
             if ids in seen:
                 continue
             seen.add(ids)
-            ordered = sorted(members, key=lambda m: int(m["run"]["databaseId"]))
             out.append({"shape": ordered[0]["shape"], "axis": axis, "members": ordered})
     out.sort(key=lambda g: int(g["members"][0]["run"]["databaseId"]))
     return [g for g in out

@@ -2218,6 +2218,46 @@ def test_the_error_class_dry_run_previews_without_writing() -> None:
               and not (tmp / "canned" / "create-count").exists(), "")
 
 
+def test_a_run_with_several_bad_jobs_is_one_member_and_one_ledger_row() -> None:
+    print("\nerror classes (#1615): a run carrying N bad jobs is ONE member and ONE ledger row")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        runs = [{"databaseId": 300, "workflowName": "qa-validate.yml", "name": "r300",
+                 "headBranch": "master", "headSha": "e" * 40, "event": "push",
+                 "createdAt": "2026-11-11T20:40:00Z", "conclusion": "cancelled",
+                 "status": "completed",
+                 "url": "https://github.com/octo/repo/actions/runs/300"}]
+        canned = {"window-qa-validate_yml-none-p1.json": [_rest(r) for r in runs],
+                  "issues.json": [],
+                  # The measured shape of qa-validate push run 45380383434: SIX cancelled jobs.
+                  "jobs-300.json": {"jobs": [
+                      {"databaseId": 940, "name": "validate", "conclusion": "cancelled"},
+                      {"databaseId": 941, "name": "live-smoke", "conclusion": "cancelled"},
+                      {"databaseId": 942, "name": "auto-merge", "conclusion": "cancelled"},
+                      {"databaseId": 943, "name": "index-repair", "conclusion": "cancelled"},
+                      {"databaseId": 944, "name": "architecture-repair", "conclusion": "cancelled"},
+                      {"databaseId": 945, "name": "announce-fallback", "conclusion": "cancelled"},
+                  ]}}
+        for jid in (940, 941, 942, 943, 944, 945):
+            canned[f"log-job-{jid}.txt"] = CLASS_LOG_A
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip())
+        check("ONE issue filed", created == 1, f"create-count={created}\n{proc.stdout}")
+        data = json.loads(ledger.read_text())
+        rows = [e for e in data["failures"] if e["run_id"] == 300]
+        check("EXACTLY ONE ledger row for the run — no duplicate run_id", len(rows) == 1,
+              str([e.get("job") for e in rows]))
+        check("the row's class_runs holds the run ONCE", rows[0].get("class_runs") == [300],
+              str(rows[0]))
+        body = next(p.read_text() for p in (tmp / "canned").glob("body-*.txt")
+                    if "run=300" in p.read_text())
+        check("the body claims NO further member runs", "further run(s)" not in body, body[:300])
+        check("the FILED line says 1 run(s), not 6", "1 run(s): 300" in proc.stdout, proc.stdout)
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -2276,6 +2316,7 @@ def main() -> int:
     test_the_marker_scan_has_one_implementation()
     test_the_master_schedule_half_files_one_issue_per_error_class()
     test_the_error_class_dry_run_previews_without_writing()
+    test_a_run_with_several_bad_jobs_is_one_member_and_one_ledger_row()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
