@@ -422,7 +422,8 @@ jobs:
         id: salvage
         if: steps.iss.outputs.implement == 'true' && steps.recheck.outputs.closed != 'true'
         run: |
-          # `git status --porcelain` ignores the gitignored scratch (implement.log, findings.md),
+          # `git status --porcelain` ignores the gitignored scratch (implement.log, a
+          # stray root findings.md),
           # so what it reports is the change itself.
           if [ -n "$(git status --porcelain)" ]; then
             echo "dirty=true" >> "$GITHUB_OUTPUT"
@@ -596,6 +597,10 @@ jobs:
       - name: Fix loop against the PR branch
         id: loop
         if: steps.pr.outputs.pr_url != ''
+        env:
+          # REQUIRE_FINDINGS' `make findings-check` resolves the PER-ISSUE analysis
+          # file (issue #1493), so the loop needs the issue number in its environment.
+          ISSUE: ${{ steps.iss.outputs.issue }}
         run: |
           set +e
           scripts/fix_loop.sh
@@ -604,8 +609,9 @@ jobs:
           exit 0
 
       # ANALYSIS SHIPS ISSUES, NEVER CODE (AGENTS.md): the implementation recorded
-      # what it touched in `findings.md`. `make findings-check` fails LOUDLY when
-      # that analysis is missing (`- none` is the honest "found nothing"), and
+      # what it touched in its per-issue `findings/<issue>.md` (issue #1493).
+      # `make findings-check` fails LOUDLY when that analysis is missing (`- none`
+      # is the honest "found nothing"), and
       # `make file-findings` opens ONE issue per finding — label `tech-debt`,
       # deduped by signature, linked to #ISSUE and the PR — so a gap the change
       # noticed becomes its own tracked work item instead of being folded in.

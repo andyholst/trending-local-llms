@@ -12,8 +12,9 @@ name: issue-review-bot
 # window with a start comment before it implements, and for REVIEW_GAP_HOURS (3 h)
 # around that start this pipeline edits NO body and adds NO label. What it does
 # instead: ONE bounded reply on the issue (the reminders its review found) and a
-# `tech-debt` issue per real finding, filed through the same `make file-findings`
-# path the implementer's own analysis uses.
+# `tech-debt` issue per real finding, filed from the review's per-issue
+# `findings/<issue>.md` through the same `make file-findings` path the
+# implementer's own analysis uses.
 #
 # ONE queue, ONE window: both bots read `make issue-queue`
 # (`scripts/issue_queue.py`), so the rule has exactly one implementation
@@ -361,6 +362,7 @@ jobs:
       # ANALYSIS SHIPS ISSUES (rule 6g): whatever the review noticed becomes its
       # own `tech-debt` issue through the SAME filing path the implementer's
       # analysis uses — deduped by signature, label-verified, linked back here.
+      # Since #1493 the review's analysis is its per-issue `findings/<issue>.md`.
       # `- none` is the honest "found nothing" and files nothing.
       - name: File the gaps the review surfaced (its own issues)
         if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success'

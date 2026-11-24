@@ -72,7 +72,7 @@ BASE_CONFLICT_PENDING=0
 CHECKS=(lint validate-search validate-mapped openspec-check architecture-check findings-check-for-pr)
 # An IMPLEMENTATION run must also have recorded what it found (AGENTS.md,
 # "analysis ships issues, not code"): issue-bot sets REQUIRE_FINDINGS=1, so a
-# missing findings.md is a red check Hermes has to fix. The data-PR repair path
+# missing findings/<issue>.md is a red check Hermes has to fix. The data-PR repair path
 # repairs a data PR nobody implemented by hand, so it does not demand the file.
 # `findings-check-for-pr` (issue #1454) is the shape-aware form of the same demand:
 # it self-skips an exempt branch (keeper/refresh/docs) through the ONE parser, so it can

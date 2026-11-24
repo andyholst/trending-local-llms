@@ -207,7 +207,9 @@ jobs:
       # so a direct worktree PR could be green while its analysis was absent. This is
       # the same gate made SHAPE-AWARE through scripts/pr_closure.implementation_shaped
       # (the ONE parser, rule 6d): it reads the webhook payload by PATH and requires
-      # findings.md ONLY when the branch or body claims an implementation. A keeper,
+      # the analysis file ONLY when the branch or body claims an implementation. Since
+      # #1493 that file is per issue (`findings/<issue>.md`, resolved from the branch),
+      # so two sibling PRs never collide on it. A keeper,
       # refresh, docs or architecture PR carries none and stays green (a bare wiring
       # would red every one of them — the §6q repo-wide-red hazard); a push to master
       # or a dispatch has no `pull_request` and is a green no-op.

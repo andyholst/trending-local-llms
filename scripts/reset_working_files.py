@@ -6,9 +6,11 @@ A bot run writes its inputs and logs at the repository root (`issue.md`, `pr-bod
 before `git add -A`, because a name written before the `.gitignore` entry lands — or created in
 another checkout — can be staged anyway, and a commit carrying scratch publishes it
 inside the repository (issue #390 measured the sibling case: a 0-byte
-`qa-report.txt.notes` reached PR #387). Since issue #1454 `findings.md` is deliberately
-NOT on the list and NOT gitignored: it is a reviewed artifact of an implementation
-head, required by the shape-aware `make findings-check-for-pr` gate.
+`qa-report.txt.notes` reached PR #387). Since issue #1454 the root `findings.md` was
+deliberately NOT on the list and NOT gitignored: it was a reviewed artifact of an
+implementation head, required by the shape-aware `make findings-check-for-pr` gate.
+Issue #1493 moves that analysis to the tracked, PER-ISSUE `findings/<issue>.md`; the
+root path is ignored again, so a stray write is scratch but still not on this list.
 
 That unstage used to be one long `git reset -q -- …` line, copied verbatim into two steps of
 `issue-bot.yml` and a third time into `fix-bot.yml`, with `.gitignore` as the fourth copy. This

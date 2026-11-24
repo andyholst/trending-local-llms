@@ -487,15 +487,17 @@ openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check ope
 	docker run $(OS_OPTS) openspec validate --changes
 	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, every ACTIVE change carries proposal.md + specs/<capability>/spec.md + tasks.md, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
-file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
+file-findings: ## File ONE issue per finding in the per-issue analysis file findings/<issue>.md (host-side: needs gh + the repo; ISSUE=<n>)
 	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))
 
-findings-check: python-env-image ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
-	$(PYTHON_RUN) python3 scripts/file_findings.py --check
+findings-check: python-env-image ## Fail when the analysis file (findings/<issue>.md, from ISSUE=<n>) is missing or a finding lacks evidence / why / done-when (issue #1493)
+	$(PYTHON_RUN) python3 scripts/file_findings.py --check $(if $(ISSUE),--issue "$(ISSUE)",)
 
 # (issue #1454) The SAME gate, made SHAPE-AWARE so a direct worktree PR cannot be green
 # while rule 6g's mandatory analysis is absent — without reddening every keeper, refresh,
-# docs or architecture PR that carries no `findings.md` (the §6q repo-wide-red hazard).
+# docs or architecture PR that carries no analysis file (the §6q repo-wide-red hazard).
+# Since #1493 the file it requires is PER ISSUE (`findings/<issue>.md`, resolved from the
+# branch), so two sibling PRs never collide on it.
 # The predicate is `scripts/pr_closure.implementation_shaped`, the ONE parser (rule 6d):
 # only a branch/body that CLAIMS an implementation owes the file. HOST-SIDE, like
 # `make pr-closure`: it reads the webhook payload by PATH (`--event "$GITHUB_EVENT_PATH"`),
@@ -504,7 +506,7 @@ findings-check: python-env-image ## Fail when findings.md is missing or a findin
 # (rule 3f/#351). `FINDINGS_BRANCH` defaults to the checkout's own branch for the fix loop,
 # which has no PR yet; a push or dispatch event carries no `pull_request` and is a green no-op.
 FINDINGS_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-findings-check-for-pr: ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings.md; keepers/refreshes/docs are exempt (issue #1454)
+findings-check-for-pr: ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings/<issue>.md; keepers/refreshes/docs are exempt (issue #1454, per-issue seam #1493)
 	python3 scripts/file_findings.py --check $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
 
 # Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
@@ -1821,7 +1823,7 @@ dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR i
 # exactly that issue, additive only, with everything wired to a make target.
 .PHONY: _implement-issue
 _implement-issue:
-	hermes -z "Follow the preloaded skill issue-implement. Parameters: issue=#$(ISSUE); input=issue.md at the repo root; base=the freshly fetched origin/master that make base-check proved. Write triage.md first, then the change and findings.md. Do not push, do not merge, do not touch master." \
+	hermes -z "Follow the preloaded skill issue-implement. Parameters: issue=#$(ISSUE); input=issue.md at the repo root; base=the freshly fetched origin/master that make base-check proved. Write triage.md first, then the change and its analysis at findings/<issue>.md (one file per issue; the shared root findings.md was the sibling-conflict seam removed in #1493). Do not push, do not merge, do not touch master." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-implement,bot-unattended
 
 # The implementer's stream is redacted LIVE, inside the target (issue #629): the
@@ -2185,7 +2187,7 @@ review-issue-finish: _review-issue-number ## Close the reviewer's window on ISSU
 # container.
 .PHONY: _review-issue
 _review-issue:
-	hermes -z "Follow the preloaded skill issue-review on its BODY path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root (body and whole thread). Write issue-body.md, comment.md and findings.md." \
+	hermes -z "Follow the preloaded skill issue-review on its BODY path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root (body and whole thread). Write issue-body.md, comment.md and findings/<issue>.md." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-review,bot-unattended
 
 # Live redaction inside the target, the same seam as `implement-issue` (issue #629).
@@ -2201,11 +2203,11 @@ review-issue: HERMES_LOG_SCRUBBED := review.scrubbed.log
 # The WINDOW path: an implementer has STARTED this issue. The body is off-limits
 # for REVIEW_GAP_HOURS, so the reviewer replies instead - one bounded comment
 # with the reminders its review found - and files what it found as its own
-# `tech-debt` issues. It writes comment.md (the reply) and findings.md, and it
+# `tech-debt` issues. It writes comment.md (the reply) and findings/<issue>.md, and it
 # must NOT write issue-body.md: the workflow proves the body is unchanged.
 .PHONY: _review-issue-window
 _review-issue-window:
-	hermes -z "Follow the preloaded skill issue-review on its WINDOW path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root. Write comment.md and findings.md, never issue-body.md." \
+	hermes -z "Follow the preloaded skill issue-review on its WINDOW path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root. Write comment.md and findings/<issue>.md, never issue-body.md." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-review,bot-unattended
 
 # Live redaction inside the target, the same seam (issue #629).

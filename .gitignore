@@ -8,9 +8,17 @@ qa-report.txt.*
 comment.md
 # issue-bot working files: the issue text it implements and the PR body it opens
 # (AGENTS.md: every implementation run analyses what it touched and files what it
-# found). `findings.md` is deliberately NOT here and NOT gitignored since issue
-# #1454: it is a reviewed artifact of an implementation head, which the shape-aware
-# `make findings-check-for-pr` gate in qa-validate requires.
+# found). The analysis itself is NOT scratch since issue #1493 — it is the tracked,
+# per-issue `findings/<issue>.md` the shape-aware `make findings-check-for-pr` gate
+# in qa-validate reads.
+# (issue #1493) The pre-#1493 shared append point: ONE root `findings.md` that every
+# implementation run appended a `## <title>` section to, so any two open PRs answered
+# `CONFLICT (content): Merge conflict in findings.md` and GitHub's auto-merge refused
+# them both (measured on PR #1488). The historical sections moved to
+# `findings/history.md`; a stray root write is scratch and must never reach a commit,
+# so the path is ignored here but stays OFF scripts/issue_bot_working_files.txt
+# because nothing writes it anymore.
+findings.md
 issue.md
 pr-body.md
 # issue-bot's start comment (the window the reviewer defers to) and the reviewer's
