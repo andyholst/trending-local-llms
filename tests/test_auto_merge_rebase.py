@@ -43,6 +43,11 @@ TASK_BOXES = ROOT / "scripts" / "task_boxes.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "qa-validate.yml"
 MAKEFILE = ROOT / "Makefile"
 PR_HEALTH = ROOT / "scripts" / "pr_health.py"
+ARCH_BOT = ROOT / "scripts" / "architecture_bot.py"
+#: `architecture_bot.py`'s own imports — copied beside it so the fixture runs the REAL generator.
+ARCH_DEPS = ("bot_markers.py", "check_agent_skills.py")
+ARCH_BEGIN = "<!-- architecture-bot:begin -->"
+ARCH_END = "<!-- architecture-bot:end -->"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import yaml  # noqa: E402
@@ -65,6 +70,40 @@ GIT_ENV = {**os.environ, "GIT_CONFIG_NOSYSTEM": "1", "GIT_TERMINAL_PROMPT": "0"}
 
 HEAD_BRANCH = "ci/data-gap-77-x"
 ARCHIVE_SLUG = "2026-11-16-alpha"
+
+
+#: A minimal repo `architecture_bot.py` accepts: FLOW's three targets, a workflow, the README
+#: sections and the data dirs it verifies (`_flow_problems`).
+FIXTURE_MAKEFILE = (
+    ".PHONY: search merge render-readme\n"
+    "search: ## search the mirror\n\techo search\n"
+    "merge: ## merge the raw snapshots\n\techo merge\n"
+    "render-readme: ## render the README\n\techo render-readme\n"
+)
+FIXTURE_README = "# Fixture\n\n## ❤️ Most loved\n\n### 8 GB\n\n## License\n"
+FIXTURE_WORKFLOW = (
+    "name: fixture-bot\n\n"
+    "on:\n  workflow_dispatch:\n\n"
+    "jobs:\n"
+    "  guard:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo guard\n"
+    "  work:\n    needs: guard\n    runs-on: ubuntu-latest\n    steps:\n"
+    "      - name: do it\n        run: |\n          make merge\n"
+)
+FIXTURE_SCRIPT = '#!/usr/bin/env python3\n"""Fold raw snapshots into the store."""\n'
+
+#: The second active change the conflicting branch adds (its `OPENSPEC.md` row is what
+#: collides with master's archive on the count line).
+CHANGE_BETA_FILES = {
+    "openspec/changes/change-beta/proposal.md": (
+        "# Change Beta\n\nIssue: #78\n\n## Why\n\nA second active change for the fixture.\n"
+    ),
+    "openspec/changes/change-beta/tasks.md": "# Tasks\n\n- [x] land beta\n",
+    "openspec/changes/change-beta/specs/cap/spec.md": (
+        "# Cap spec\n\n## Requirement: Beta\n\nBeta is listed in the index.\n\n"
+        "#### Scenario: Beta lands\n\nGiven a repo\nWhen beta lands\nThen it is listed\n"
+        "- **Test:** tests/test_auto_merge_rebase.py::test_behind_clean_bot_branch_is_rebased_with_a_current_index\n"
+    ),
+}
 
 
 def check(name, cond, detail: object = ""):
@@ -228,6 +267,129 @@ def _worktree_check(clone: Path, ref: str, td: Path, tag: str) -> int:
         _must(clone, "worktree", "remove", "--force", str(wt))
 
 
+def _ref_script_check(clone: Path, ref: str, td: Path, tag: str, script: str,
+                      *flags: str) -> subprocess.CompletedProcess:
+    """Add a worktree at `ref` and run the TREE'S OWN `<script> <flags>` on it (real generator)."""
+    wt = td / f"wt-{tag}"
+    _must(clone, "worktree", "add", "--detach", str(wt), ref)
+    try:
+        return subprocess.run([sys.executable, str(wt / "scripts" / script), *flags],
+                              capture_output=True, text=True, cwd=str(wt), env=GIT_ENV)
+    finally:
+        _must(clone, "worktree", "remove", "--force", str(wt))
+
+
+def _run_arch(tree: Path, *flag: str) -> subprocess.CompletedProcess:
+    """Run the tree's OWN `architecture_bot.py` (the exact command `make architecture-refresh`)."""
+    return subprocess.run([sys.executable, str(tree / "scripts" / "architecture_bot.py"), *flag],
+                          capture_output=True, text=True, cwd=str(tree), env=GIT_ENV)
+
+
+# ------------------------------------------------- generated-pair fixtures --
+
+def _seed_generated(td: Path) -> tuple[str, Path]:
+    """A bare origin + a seeded clone carrying BOTH generated artifacts current: the openspec
+    change + `OPENSPEC.md`, and a real `ARCHITECTURE.md` block rendered by the REAL
+    `architecture_bot.py` over a minimal tree its `_flow_problems` accepts."""
+    origin = td / "origin.git"
+    origin.mkdir(parents=True)
+    _must(origin, "init", "--bare", "-q", ".")
+    seed = td / "seed"
+    _must(td, "clone", "-q", str(origin), "seed")
+    _must(seed, "config", "user.name", "Test Bot")
+    _must(seed, "config", "user.email", "test-bot@example.com")
+    (seed / "scripts").mkdir()
+    for name in ("openspec_index.py", "task_boxes.py", "architecture_bot.py", *ARCH_DEPS):
+        shutil.copy(ROOT / "scripts" / name, seed / "scripts" / name)
+    _write(seed / "scripts" / "update_trending.py", FIXTURE_SCRIPT)
+    _write(seed / "Makefile", FIXTURE_MAKEFILE)
+    _write(seed / "README.md", FIXTURE_README)
+    _write(seed / ".github" / "workflows" / "ci.yml", FIXTURE_WORKFLOW)
+    (seed / "data" / "raw").mkdir(parents=True)
+    (seed / "data" / "snapshots").mkdir(parents=True)
+    _write(seed / "data" / "models.json", "{}\n")
+    # git tracks no empty directory: the FLOW probes `data/raw` and `data/snapshots` by name, so
+    # each carries a real file (a refresh's raw snapshot / store snapshot shape).
+    _write(seed / "data" / "raw" / "nvidia-2026-11-24T000000Z.json", "{}\n")
+    _write(seed / "data" / "snapshots" / "trending-2026-11-24T000000Z.json", "{}\n")
+    for rel, text in CHANGE_FILES.items():
+        _write(seed / rel, text)
+    _write(seed / "ARCHITECTURE.md",
+           "# ARCHITECTURE\n\n## 3. Every `make` target\n\n| Target | What |\n|---|---|\n"
+           "| `merge` | does it |\n\n## 4. The pipelines\n\n"
+           "## 10. The living inventory\n\n" + ARCH_BEGIN + "\n" + ARCH_END + "\n")
+    gen = _run_generator(seed, "--write")
+    assert gen.returncode == 0, gen.stderr
+    arch = _run_arch(seed, "--write")
+    assert arch.returncode == 0, f"seed architecture block must render: {arch.stdout}{arch.stderr}"
+    _must(seed, "add", "-A")
+    _must(seed, "branch", "-M", "master")
+    _git_commit(seed, "seed: both generated artifacts current")
+    _must(seed, "push", "-q", "origin", "master")
+    return str(origin), seed
+
+
+def _archive_change(seed: Path) -> None:
+    """Master archives the fixture's active change and regenerates the index (the merge-wave shape)."""
+    (seed / "openspec" / "changes" / "archive").mkdir(parents=True, exist_ok=True)
+    _must(seed, "mv", "openspec/changes/change-alpha",
+          f"openspec/changes/archive/{ARCHIVE_SLUG}")
+    gen = _run_generator(seed, "--write")
+    assert gen.returncode == 0, gen.stderr
+
+
+def _fixture_clean_arch(td: Path, *, head: str = HEAD_BRANCH):
+    """A CLEAN rebase whose merged tree makes `ARCHITECTURE.md` stale: master archives the change
+    AND adds a script WITHOUT refreshing the description (the drift #1601 exists to repair). The
+    branch never touches either generated file, so git rebases cleanly — only the regeneration
+    step can leave the block current."""
+    origin_url, seed = _seed_generated(td)
+    _must(seed, "checkout", "-q", "-b", head)
+    _write(seed / "feature.txt", "feat\n")
+    _git_commit(seed, "feat: the PR's own commit")
+    _must(seed, "push", "-q", "origin", head)
+    _must(seed, "checkout", "-q", "master")
+    _archive_change(seed)
+    _write(seed / "scripts" / "master_tool.py",
+           '#!/usr/bin/env python3\n"""Master added this tool."""\n')
+    _git_commit(seed, "master archives the change and adds a script")
+    _must(seed, "push", "-q", "origin", "master")
+    clone = td / "clone"
+    _must(td, "clone", "-q", origin_url, "clone")
+    return origin_url, seed, clone
+
+
+def _fixture_conflict_pair(td: Path, *, head: str = HEAD_BRANCH):
+    """BOTH generated files conflict while every hand-written file merges cleanly: the branch
+    adds one script and master adds another (each regenerates the block), so the two insertions
+    land in the SAME hunk of the one-line-per-script list and git stops on the pair alone."""
+    origin_url, seed = _seed_generated(td)
+    _must(seed, "checkout", "-q", "-b", head)
+    for rel, text in CHANGE_BETA_FILES.items():
+        _write(seed / rel, text)
+    _write(seed / "scripts" / "zz_branch_tool.py",
+           '#!/usr/bin/env python3\n"""The branch added this tool."""\n')
+    gen = _run_generator(seed, "--write")
+    assert gen.returncode == 0, gen.stderr
+    arch = _run_arch(seed, "--write")
+    assert arch.returncode == 0, arch.stderr
+    _git_commit(seed, "feat: the PR adds a change and its own script")
+    _must(seed, "push", "-q", "origin", head)
+    _must(seed, "checkout", "-q", "master")
+    _archive_change(seed)
+    _write(seed / "scripts" / "zz_master_tool.py",
+           '#!/usr/bin/env python3\n"""Master added this tool."""\n')
+    gen = _run_generator(seed, "--write")
+    assert gen.returncode == 0, gen.stderr
+    arch = _run_arch(seed, "--write")
+    assert arch.returncode == 0, arch.stderr
+    _git_commit(seed, "master archives the change and adds its own script")
+    _must(seed, "push", "-q", "origin", "master")
+    clone = td / "clone"
+    _must(td, "clone", "-q", origin_url, "clone")
+    return origin_url, seed, clone
+
+
 # ------------------------------------------------------------------ tests --
 
 def test_behind_clean_bot_branch_is_rebased_with_a_current_index():
@@ -377,6 +539,101 @@ def test_regeneration_failure_keeps_the_branch_untouched():
               proc.stdout)
         _must(clone, "fetch", "-q", "origin", f"refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
         check("regen-fail: the remote branch never moved", _head_oid(clone, HEAD_BRANCH) == old)
+
+
+def test_rebase_regenerates_the_architecture_block_too():
+    """(#1601) A CLEAN rebase of a behind-and-clean bot branch must leave BOTH generated
+    artifacts current. The premise is the measured drift: master added a script WITHOUT
+    refreshing the description, so the rebased tree's `ARCHITECTURE.md` is stale until the
+    seam regenerates it — which the pre-#1601 seam never did."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _, _, clone = _fixture_clean_arch(td)
+        old = _head_oid(clone, HEAD_BRANCH)
+
+        check("clean-arch premise: the branch head's block predates master's new script",
+              "scripts/master_tool.py" not in _show(clone, HEAD_BRANCH, "ARCHITECTURE.md"),
+              _show(clone, HEAD_BRANCH, "ARCHITECTURE.md")[-200:])
+
+        proc, _ = _run_seam(clone, _pr_json())
+        out = proc.stdout + proc.stderr
+        check("clean-arch: exit 0", proc.returncode == 0, out)
+        check("clean-arch: verdict=rebased", "verdict=rebased" in proc.stdout, proc.stdout)
+        check("clean-arch: rebased=true", "rebased=true" in proc.stdout, proc.stdout)
+        check("clean-arch: the report names the architecture regeneration",
+              "ARCHITECTURE.md regenerated on the rebased tree" in proc.stdout, proc.stdout)
+
+        _must(clone, "fetch", "-q", "origin",
+              f"+refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
+        new = _head_oid(clone, HEAD_BRANCH)
+        check("clean-arch: the remote branch MOVED (rebased + regen commits)", new != old,
+              (old, new))
+        doc = _show(clone, HEAD_BRANCH, "ARCHITECTURE.md")
+        check("clean-arch: the new head's block lists master's new script",
+              "`scripts/master_tool.py`" in doc, doc[-300:])
+        arch = _ref_script_check(clone, f"refs/remotes/origin/{HEAD_BRANCH}", td, "arch",
+                                 "architecture_bot.py", "--check")
+        check("clean-arch: `make architecture-refresh`'s own check is GREEN on the new head",
+              arch.returncode == 0, arch.stdout + arch.stderr)
+        idx = _ref_script_check(clone, f"refs/remotes/origin/{HEAD_BRANCH}", td, "idx",
+                                "openspec_index.py", "--check")
+        check("clean-arch: the index check stays GREEN", idx.returncode == 0,
+              idx.stdout + idx.stderr)
+
+
+def test_a_conflict_in_the_two_generated_files_is_resolved_by_regeneration():
+    """(#1601) When a rebase conflicts ONLY in the two generated files, the seam takes the
+    branch's side, continues, and regenerates BOTH from the merged tree — instead of aborting
+    and stalling the bot branch until a lane resolves the pair by hand (measured 2026-11-24:
+    run 45376351524 left `git diff --diff-filter=U` = ARCHITECTURE.md + OPENSPEC.md)."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _, _, clone = _fixture_conflict_pair(td)
+        old = _head_oid(clone, HEAD_BRANCH)
+
+        # Premise: git itself stops on exactly the two generated paths.
+        wt = td / "premise"
+        _must(clone, "worktree", "add", "--detach", str(wt), f"refs/remotes/origin/{HEAD_BRANCH}")
+        rb = _git(wt, "rebase", "refs/remotes/origin/master")
+        unmerged = sorted(p for p in
+                          _git(wt, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
+                          if p.strip())
+        check("conflict-pair premise: git stops on BOTH generated files",
+              rb.returncode != 0 and unmerged == ["ARCHITECTURE.md", "OPENSPEC.md"], str(unmerged))
+        _must(clone, "worktree", "remove", "--force", str(wt))
+
+        proc, _ = _run_seam(clone, _pr_json())
+        out = proc.stdout + proc.stderr
+        check("conflict-pair: exit 0", proc.returncode == 0, out)
+        check("conflict-pair: verdict=rebased (not kept)", "verdict=rebased" in proc.stdout,
+              proc.stdout)
+        check("conflict-pair: rebased=true", "rebased=true" in proc.stdout, proc.stdout)
+        check("conflict-pair: the generated conflict is named as resolved",
+              "resolved the generated conflict in " in proc.stdout
+              and "ARCHITECTURE.md" in proc.stdout and "OPENSPEC.md" in proc.stdout, proc.stdout)
+
+        _must(clone, "fetch", "-q", "origin",
+              f"+refs/heads/{HEAD_BRANCH}:refs/remotes/origin/{HEAD_BRANCH}")
+        ref = f"refs/remotes/origin/{HEAD_BRANCH}"
+        check("conflict-pair: the remote branch MOVED", _head_oid(clone, HEAD_BRANCH) != old,
+              (old, _head_oid(clone, HEAD_BRANCH)))
+        idx_doc = _show(clone, HEAD_BRANCH, "OPENSPEC.md")
+        check("conflict-pair: the branch's own change survived the resolution",
+              "change-beta" in idx_doc, idx_doc[:300])
+        check("conflict-pair: master's archive landed", ARCHIVE_SLUG in idx_doc, idx_doc[:300])
+        for path in ("OPENSPEC.md", "ARCHITECTURE.md"):
+            text = _show(clone, HEAD_BRANCH, path)
+            check(f"conflict-pair: {path} carries no conflict marker",
+                  "<<<<<<<" not in text and ">>>>>>>" not in text, text[:200])
+        idx = _ref_script_check(clone, ref, td, "idx2", "openspec_index.py", "--check")
+        check("conflict-pair: openspec-index-check GREEN on the rebased head",
+              idx.returncode == 0, idx.stdout + idx.stderr)
+        arch = _ref_script_check(clone, ref, td, "arch2", "architecture_bot.py", "--check")
+        check("conflict-pair: the architecture generator is GREEN on the rebased head",
+              arch.returncode == 0, arch.stdout + arch.stderr)
+        log = _git(clone, "log", "--format=%s", ref).stdout
+        check("conflict-pair: the architecture regeneration commit landed",
+              "regenerate the inventory block on the rebased tree (issue #1601)" in log, log)
 
 
 def test_the_auto_merge_wiring_refuses_the_merge_as_is_flow():
@@ -784,6 +1041,10 @@ def main():
         test_human_owned_behind_branch_is_reported_and_untouched,
         test_conflicting_branches_are_never_rewritten,
         test_regeneration_failure_keeps_the_branch_untouched,
+        # (issue #1601) the generated PAIR: a clean rebase refreshes ARCHITECTURE.md too, and a
+        # conflict confined to the pair is resolved by regeneration instead of stalling.
+        test_rebase_regenerates_the_architecture_block_too,
+        test_a_conflict_in_the_two_generated_files_is_resolved_by_regeneration,
         test_the_auto_merge_wiring_refuses_the_merge_as_is_flow,
         test_classification_is_pure_and_partitions,
         # (issue #1115) the push-identity fix and the ghost-run alarm it pairs with.
