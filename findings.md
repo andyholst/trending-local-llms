@@ -53,3 +53,10 @@
 - **Done when:** an attended run lands the §6r presentation sentence and the §8 guard row declared on issue #1466
 - **Owed-row:** <!-- owed-row: section=8 needle="make pipeline-failure-issue" -->
 
+## The host RED-first note was forward work and must be landed, not wiped
+
+- **Evidence:** `make fleet-host-sync-check BASE=origin/master` RED against `ea823544` on `tll-implementer/skills/tll-implementer/SKILL.md`; `diff -u` of base blob vs live host file gives 3 added content lines and 0 deletions (`7. RED-first: ...` plus a duplicate `## This lane`). The live file mtime 2026-11-24 04:34:40Z falls inside the active `tll-planner` lane run `8e5417464966` (started 03:26:17Z).
+- **Why:** the sync gate compares bytes and cannot distinguish a legitimate forward note from staleness; copying the base over it would delete work an active lane just wrote and repeat the false-alarm this step exists to prevent. The duplicate heading is noise and is excluded from the landing.
+- **Done when:** a reviewed PR lands only the genuinely-new clause in the tracked skill, the host file stays intact with a timestamped backup, and the fleet-sync gate goes green after the merge and base re-sync.
+
+
