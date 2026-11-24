@@ -259,6 +259,7 @@ def mode_check(args: argparse.Namespace) -> int:
     print(f"base={args.remote}/{args.base}")
     print(f"base_sha={tip}")
     print(f"head={head}")
+    print(f"path={cwd}")
     print("fresh=true")
     print(f"OK: this checkout IS the freshly fetched {args.remote}/{args.base} ({tip[:12]}).")
     return 0
@@ -333,6 +334,7 @@ def mode_advance(args: argparse.Namespace) -> int:
         print(f"base={args.remote}/{args.base}")
         print(f"base_sha={tip}")
         print(f"head={head}")
+        print(f"path={cwd}")
         print("fresh=true")
         print(f"OK: this checkout IS the freshly fetched {args.remote}/{args.base} ({tip[:12]}).")
         return 0
@@ -359,6 +361,7 @@ def mode_advance(args: argparse.Namespace) -> int:
     print(f"base_sha={tip}")
     print(f"head_before={head}")
     print(f"head={after}")
+    print(f"path={cwd}")
     print(f"advanced={behind}")
     print("fresh=true")
     print(f"OK: advanced {head[:12]} -> {tip[:12]} ({behind} commit(s)) onto the freshly "
@@ -605,6 +608,7 @@ def mode_adopt(args: argparse.Namespace) -> int:
     print(f"branch={branch}")
     print(f"how={how}")
     print(f"head={head}")
+    print(f"path={cwd}")
     print(f"behind_base={behind}")
     if behind:
         print(f"NOTE: HEAD is {behind} commit(s) behind {args.remote}/{args.base} "

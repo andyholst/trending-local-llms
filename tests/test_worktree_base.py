@@ -265,6 +265,58 @@ def test_advance_refuses_a_head_with_its_own_commits(tmp: Path) -> None:
           "local work" in git(["log", "--oneline"], fx["ci"]).stdout, "")
 
 
+def _path_of(stdout: str) -> str:
+    """The value of the ONE `path=` line a mode prints (EMPTY when it prints none).
+
+    The empty string is deliberate: `Path("")` resolves to the subprocess CWD, which IS the
+    fixture here, so a boolean-less comparison would pass VACUOUSLY on a mode that never
+    learned to print the line. Every caller asserts the line is present first.
+    """
+    return next((ln[len("path="):] for ln in stdout.splitlines()
+                 if ln.startswith("path=")), "")
+
+
+def test_check_advance_and_adopt_name_the_checkout_they_read(tmp: Path) -> None:
+    """Issue #1334 (reviewer ruling `7123282471`): the three modes that take NO target branch
+    cannot refuse a wrong-branch mismatch, so they must NAME the working tree they read.
+
+    `_summary` (`:247`) and `mode_resume` (`:489`) already print `path=`; `mode_check`,
+    `mode_advance` (both its fresh and its moved branches) and `mode_adopt` did not. The
+    #1330 harm class is exactly this: `make base-rebase` answered `up-to-date` for a branch
+    dozens of commits behind because it ran in the WRONG checkout, and `head=<sha>` alone is
+    ambiguous on a host carrying the owner clone plus N worktrees.
+    """
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    want = ci.resolve()
+
+    # check: reads this checkout and asserts it IS the fetched tip.
+    proc = run_script("check", ci)
+    check("check: names the checkout it verified (one additive path=<abs> line)",
+          proc.returncode == 0 and _path_of(proc.stdout) != "" \
+        and Path(_path_of(proc.stdout)).resolve() == want, proc.stdout)
+
+    # advance, fresh: a no-op that reports fresh=true.
+    proc = run_script("advance", ci)
+    check("advance(fresh): names the checkout it read",
+          proc.returncode == 0 and _path_of(proc.stdout) != "" \
+        and Path(_path_of(proc.stdout)).resolve() == want, proc.stdout)
+
+    # advance, moved: a destructive `git reset --hard <tip>` on an unnamed directory.
+    advance(fx["seed"], "moved\n")
+    proc = run_script("advance", ci)
+    check("advance(moved): names the checkout it reset",
+          proc.returncode == 0 and _path_of(proc.stdout) != "" \
+        and Path(_path_of(proc.stdout)).resolve() == want, proc.stdout)
+
+    # adopt: cuts the branch from a dirty HEAD (the implementation being carried).
+    (ci / "impl.py").write_text("print(42)\n")
+    proc = run_script("adopt", ci, "--branch", "ci/data-gap-2-x")
+    check("adopt: names the checkout it wrote",
+          proc.returncode == 0 and _path_of(proc.stdout) != "" \
+        and Path(_path_of(proc.stdout)).resolve() == want, proc.stdout)
+
+
 def test_check_fails_loudly_when_the_fetch_fails(tmp: Path) -> None:
     fx = fixture(tmp)
     git(["remote", "set-url", "origin", str(tmp / "gone.git")], fx["ci"])
@@ -855,6 +907,7 @@ def main() -> int:
         test_advance_is_a_no_op_on_a_fresh_checkout(tmp / "c3b")
         test_advance_refuses_a_dirty_tree(tmp / "c3c")
         test_advance_refuses_a_head_with_its_own_commits(tmp / "c3d")
+        test_check_advance_and_adopt_name_the_checkout_they_read(tmp / "c3e")
         test_new_creates_a_worktree_at_the_fetched_tip(tmp / "c4")
         test_new_refuses_an_existing_branch(tmp / "c5")
         test_new_never_touches_the_checkout_the_caller_stands_on(tmp / "c5b")
