@@ -44,3 +44,12 @@
 - **Evidence:** `findings.md` is tracked on master and each implementation PR APPENDS its own `## <title>` section (rule 3b additive). Measured on this lane's PR #1488 inside one run: master `198901c7` -> `9c15447` (#1487 appended a section) and then -> `6924f02` (#1186 appended a section); after EACH move `git merge-tree origin/master HEAD` answered `CONFLICT (content): Merge conflict in findings.md`, and `auto-merge` refused twice with `Pull request #1488 is not mergeable: the merge commit cannot be cleanly created`.
 - **Why:** one shared append point means EVERY landing implementation PR invalidates the merge commit of EVERY other open one — the quiet queue-wide red class (#1359), now mechanical and reproducible instead of occasional.
 - **Done when:** each implementation's analysis lands where it cannot collide (a per-PR path, or an issue-linked artifact the gate reads), or the gate unions the file mechanically instead of demanding a rebase per sibling.
+
+## The AGENTS.md §6r sentence and §8 guard row for the filer's error-block order are owed to a protected rulebook
+
+- **Signature:** owed-row-filer-error-block-order
+- **Evidence:** `scripts/pipeline_failure_issue.py::extract_error_block` now presents the failing region's own lines first and marks everything from another step region as `[filer] … FILLER …`, while `AGENTS.md:926` still says that chatter is "always presented in log order" and the §8 guard row at `AGENTS.md:2425` still says "the block keeps log order"; a headless leg is REFUSED the write to that protected agent-instruction file (rule 3c), and the replacement wording is declared on issue #1466
+- **Why:** the rulebook would keep describing the pre-#1466 ordering the code no longer has, so a later reader re-derives the defect the issue exists to remove; the rule 3c sign-off is a human act
+- **Done when:** an attended run lands the §6r presentation sentence and the §8 guard row declared on issue #1466
+- **Owed-row:** <!-- owed-row: section=8 needle="make pipeline-failure-issue" -->
+
