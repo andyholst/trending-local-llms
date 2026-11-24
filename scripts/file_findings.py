@@ -170,12 +170,27 @@ def _fields(chunk: str) -> dict[str, str]:
 
 
 def parse(text: str) -> tuple[list[dict], str | None]:
-    """(findings, error). `- none` with no sections is a valid empty result."""
+    """(findings, error). `- none` with no sections is a valid empty result.
+
+    Issue #1662: the checks are ORDERED so the `- none` short-circuit cannot swallow
+    a real finding. A file carrying BOTH a `## <title>` section and a `- none` line
+    is self-contradicting — the old order returned `([], None)` ("found nothing")
+    and the recorded analysis was silently dropped (measured on the shipped
+    `findings/1586.md` and `findings/1612.md`, and on PR #1650's `findings/1644.md`).
+    The MIXED shape is refused loudly; `- none`-only stays a valid empty result.
+    """
     if not text.strip():
         return [], "findings.md is empty — write `- none` or the findings"
-    if re.search(r"^\s*[-*]\s+none\s*$", text, re.MULTILINE | re.IGNORECASE):
-        return [], None
     sections = list(_SECTION.finditer(text))
+    has_none = re.search(r"^\s*[-*]\s+none\s*$", text, re.MULTILINE | re.IGNORECASE)
+    if has_none and sections:
+        return [], (
+            "findings file carries both a `## <title>` finding section and a "
+            "`- none` line — the analysis would be silently dropped; remove the "
+            "stray `- none` line or the section"
+        )
+    if has_none:
+        return [], None
     if not sections:
         return [], "findings.md has no `## <title>` section and no `- none` line"
     findings = []

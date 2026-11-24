@@ -257,6 +257,75 @@ def test_none_is_a_valid_empty_analysis():
     check("none: zero findings reported", "0 finding(s)" in proc.stdout, proc.stdout)
 
 
+def test_a_mixed_finding_and_none_file_is_refused():
+    """Issue #1662: a section AND a `- none` line is self-contradicting and is refused.
+
+    The old order short-circuited on `- none` first, so this exact shape read as
+    `([], None)` — "found nothing" — and the recorded finding was silently dropped.
+    """
+
+    # Given a complete finding followed by a stray template `- none` line
+    text = ("# Findings\n\n## A real gap\n\n- **Evidence:** measured it\n"
+            "- **Why:** it rots\n- **Done when:** fixed\n\n- none\n")
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "findings.md"
+        path.write_text(text, encoding="utf-8")
+
+        # When  the REAL check runs
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--check", "--path", str(path)],
+                              cwd=ROOT, capture_output=True, text=True)
+
+    # Then  the parser refuses the MIXED shape instead of reading it as empty
+    got, err = mod.parse(text)
+    check("mixed: parse() returns no findings", got == [], str(got))
+    check("mixed: parse() names BOTH conflicting shapes",
+          bool(err) and "## <title>" in err and "`- none`" in err and "silently dropped" in err,
+          err or "<no error>")
+    # And   --check exits non-zero and names the file
+    check("mixed: --check exits non-zero", proc.returncode != 0, str(proc.returncode))
+    check("mixed: --check names the file", "findings.md" in proc.stderr, proc.stderr)
+
+
+def test_a_sections_only_file_still_parses():
+    """A sections-only file is byte-identical to the old behaviour (issue #1662)."""
+
+    # Given one complete finding and NO `- none` line
+    text = ("# Findings\n\n## Only a finding\n\n- **Evidence:** seen it\n"
+            "- **Why:** it matters\n- **Done when:** fixed\n")
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "findings.md"
+        path.write_text(text, encoding="utf-8")
+
+        # When  the REAL check runs
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--check", "--path", str(path)],
+                              cwd=ROOT, capture_output=True, text=True)
+
+    # Then  it is green and reports exactly one finding
+    check("sections-only: exit 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("sections-only: one finding reported", "1 finding(s)" in proc.stdout, proc.stdout)
+
+
+def test_the_shipped_findings_files_are_not_mixed():
+    """Issue #1662: the two shipped mixed files now report their real findings.
+
+    `findings/1586.md` (three) and `findings/1612.md` (one) carried a stray
+    `- none` line beside their sections; after the change each parses its own
+    findings instead of answering `0 finding(s)`.
+    """
+
+    mod = _module()
+    for name, expected in (("1586.md", 3), ("1612.md", 1)):
+        path = ROOT / "findings" / name
+        if not path.is_file():
+            check(f"shipped {name}: present", False, str(path))
+            continue
+        text = path.read_text(encoding="utf-8")
+        got, err = mod.parse(text)
+        check(f"shipped {name}: parses its {expected} finding(s)",
+              err is None and len(got) == expected, err or f"got {len(got)}")
+
+
 def test_finding_is_filed_once_with_evidence_and_origin():
     """One finding -> exactly one labelled issue carrying evidence + origin."""
 
@@ -627,6 +696,9 @@ def main() -> int:
     test_missing_findings_file_is_a_loud_failure()
     test_finding_without_why_is_rejected()
     test_none_is_a_valid_empty_analysis()
+    test_a_mixed_finding_and_none_file_is_refused()
+    test_a_sections_only_file_still_parses()
+    test_the_shipped_findings_files_are_not_mixed()
     test_finding_is_filed_once_with_evidence_and_origin()
     test_already_filed_finding_is_skipped()
     test_two_immediate_invocations_file_exactly_one_issue()
