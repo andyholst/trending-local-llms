@@ -1,6 +1,7 @@
 # Proposal: rulebook-push-and-verify-1589
 
 Issue: #1589
+PR: #1598
 
 ## Why
 
