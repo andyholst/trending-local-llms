@@ -95,7 +95,13 @@ needed to move the board.
 
 - Read the latest refresh on https://github.com/andyholst/trending-local-llms. Say whether it landed, whether `data/models.json` lost a key or shrank a value, and whether the rendered tables still match the store. Cite the sha and the run.
 - If the owner asks for a sync, check the weekly refresh. Do not install a timer and do not start a second scheduler.
-- Dispatch one lane at a time. The comment names the profile, the `origin/master` sha, what done means, and the handover target. Architect, security, and reviewer file findings. Only `tll-implementer` gets a write.
+- Dispatch lanes in PARALLEL whenever their target files differ — the owner requires continuous work,
+  not a serial queue, and worktrees isolate the trees (#1423/#1424 removed the local-VM reason for a
+  serial cap). The comment still names the profile, the `origin/master` sha, what done means, and the
+  handover target. Serialise ONLY shared files via `make dispatch-check ISSUE=<n> MACHINE=<user@host>
+  CLAIMS="p1 p2"` (#1458 path overlap, #1569 cross-host claims): `agents/*/skills/*/SKILL.md`, `OPENSPEC.md`
+  and generated artifacts. Architect, security, and reviewer file findings; only `tll-implementer` gets a
+  write. Never answer a full board with a status report while a distinct issue or PR is movable.
 - Keep the board current on each issue's OWN thread (the parent fleet issue #682 is closed): who commented, which lane is in progress, and that nothing is scheduled.
 
 - You do not open a branch, push, or open a pull request.
@@ -224,12 +230,14 @@ needed to move the board.
   Every head passes the containerised `make validate` in CI (#712), so N lanes do not finish N times
   faster — they contend for ONE container VM. Unbounded lanes do not finish faster: every head must pass
   the containerised gate, so N lanes contend for ONE host VM while each lane process idles at ~0% CPU in
-  `sleep` polls — and a lane can burn an hour on an issue that is already CLOSED. Dispatch the next lane only when
-  one reports `done`, and queue the rest. Enforce BOTH halves mechanically BEFORE
-  spawning: `make dispatch-check ISSUE=<n>` refuses a CLOSED issue or a bound PR that is already MERGED,
-  prints `active_lanes=<n>/<ceiling>`, and refuses above it. Do not rely on your own recollection of the
-  board — a state or sha from chat is stale, and the guard reads live GitHub state (repo guard: issue
-  #1416).
+  `sleep` polls — and a lane can burn an hour on an issue that is already CLOSED. The ceiling was calibrated when
+  lanes pre-ran the containerised suite locally; push-and-verify (#1423/#1424) removed that CPU cost, so treat it as
+  a safety bound, NOT a reason to idle — dispatch every movable lane whose target files differ, up to the
+  ceiling. Enforce BOTH halves mechanically BEFORE spawning: `make dispatch-check ISSUE=<n> MACHINE=<user@host>
+  CLAIMS="<paths>"` refuses a CLOSED issue or a bound PR that is already MERGED, prints `active_lanes=<n>/<ceiling>`
+  and refuses above it, and refuses a path another ACTIVE lane claims (#1458) or a NEWER working-claim ANOTHER
+  host holds (#1569). Do not rely on your own recollection of the board — a state or sha from chat is stale, and
+  the guard reads live GitHub state (repo guard: issue #1416).
 - **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
   do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
   refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
@@ -264,14 +272,19 @@ needed to move the board.
   push, confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`), and
   report. Measured effect: the same class of delivery dropped from ~3h to ~23 min. Never write "gate green
   on the exact head before push" into a dispatch — that phrasing reproduces the waste.
-- **Serialise SHARED FILES — one lane per target file at a time.** The dispatch guard (#1416) bounds lane COUNT,
-  not file collisions, and the recent run proves the difference: #1418, #1432, #1445/#1449 and #1448 all edited
-  the SAME two `agents/<lane>/skills/<lane>/SKILL.md` mirrors, so they raced — duplicated bullets reached master
-  (#1448 merged duplicates as `0df63311`; three planner bullets measured x2), PRs went CONFLICTING, and
-  auto-merge failed repeatedly. BEFORE spawning a lane, list the LIVE lanes and their target files; if any
-  overlap, QUEUE this dispatch until that lane reports `done`. Never start a second session on a branch another
-  lane holds, and never let two live dispatches name the same mirror or generated file. If a collision still
-  lands, measure the duplication on master and file a dedupe PR — do NOT force a third overlapping push.
+- **Parallel by default — serialise ONLY the shared files.** Lanes whose TARGET FILES DIFFER run at the same
+  time: worktrees isolate every tree and push-and-verify (#1423/#1424) removed the local-VM reason for a serial
+  cap, so a serial "dispatch one at a time" habit is obsolete. The FILE collision is what remains, and the recent
+  run proves the cost: #1418, #1432, #1445/#1449 and #1448 all edited the SAME two
+  `agents/<lane>/skills/<lane>/SKILL.md` mirrors, so they raced — duplicated bullets reached master (#1448 merged
+  duplicates as `0df63311`; three planner bullets measured x2), PRs went CONFLICTING, and auto-merge failed
+  repeatedly. BEFORE spawning a lane, run `make dispatch-check ISSUE=<n> MACHINE=<user@host> CLAIMS="<path> <path>"`
+  with EVERY repo-relative path it will write; it refuses when an ACTIVE registry lane already claims an
+  overlapping path (#1458) or when ANOTHER host holds a newer ACTIVE working-claim on the issue thread (#1569).
+  A refusal on a SHARED file means QUEUE this dispatch until that lane reports `done`; a refusal for any other
+  reason (closed issue, merged PR, at the ceiling) stands too. Never start a second session on a branch another
+  lane holds. If a collision still lands, measure the duplication on master and file a dedupe PR — do NOT force
+  a third overlapping push.
 - **Two hosts dispatching the same issue need a BOARD-VISIBLE ordering; a local timer cannot provide one.**
   The issue thread is the only surface every host shares. Before spawning, `make dispatch-check
   ISSUE=<n> MACHINE=<user@host>` must also refuse when another host has a NEWER ACTIVE working-claim

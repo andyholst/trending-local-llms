@@ -692,7 +692,7 @@ def test_second_batch_host_ahead_notes_are_landed() -> int:
     failed = 0
     cases = {
         "tll-planner": (
-            "Serialise SHARED FILES",
+            "Parallel by default — serialise ONLY the shared files",
             "another status report on the same wait",
             "A dispatch's `done` is push-and-verify",
             "Verify a landed change against `origin/master`",
@@ -944,9 +944,49 @@ def test_reviewer_skill_carries_the_live_pr_preflight() -> int:
     failed += check(PREFLIGHT_REFUSAL in text, "reviewer skill carries the non-zero refusal")
     return failed
 
+
+def test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule() -> int:
+    """Issue #1644: land the owner's PARALLEL dispatch rule in the planner mirror.
+
+    The host copy ran ahead of master with the parallel rule while master still said
+    "Dispatch one lane at a time", so `make fleet-host-sync-check` refused the host and
+    PR #1624/#1618 could not land it without an owner ruling. The ruling is now the repo
+    text: lanes whose target files differ run in PARALLEL (worktrees isolate the trees;
+    push-and-verify removed the local-VM reason for a serial cap), only SHARED files are
+    serialised through `make dispatch-check ... CLAIMS=`, and the comment-before-work,
+    claim-twice race guard, issue-thread handover and signed done rules stay intact.
+    """
+    failed = 0
+    rel = "agents/tll-planner/skills/tll-planner/SKILL.md"
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    failed += check("Dispatch one lane at a time" not in text,
+                    f"{rel} no longer caps the fleet at one lane at a time")
+    for needle in (
+        "Dispatch lanes in PARALLEL whenever their target files differ",
+        "`make dispatch-check ISSUE=<n> MACHINE=<user@host>",
+        'CLAIMS="p1 p2"`',
+        "#1458",
+        "#1569",
+        "#1423/#1424",
+        "Comment on the issue BEFORE you do the work.",
+        "Claim twice before starting (race guard).",
+        "A PR is never the handover.",
+        "done #<id> · handover",
+    ):
+        failed += check(needle in text, f"{rel} carries {needle!r}")
+    # The PARALLEL rule block must carry no host stamp, machine name or absolute owner path;
+    # the skill's own pre-existing wording elsewhere is out of this change's scope.
+    rule_block = text.split("- Dispatch lanes in PARALLEL", 1)[-1].split("\n## ", 1)[0]
+    for banned in ("/home/asimov/", "asimov@", "20:", "CET", "## Host notes ahead of master"):
+        failed += check(banned not in rule_block,
+                        f"{rel}'s parallel rule carries no host-specific {banned!r}")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
+        test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule,
         test_fourth_batch_host_ahead_notes_are_landed,
         test_third_batch_host_ahead_implementer_notes_are_landed,
         test_every_lane_carries_the_pr_handover_shapes,
