@@ -50,7 +50,7 @@ This lane opens, rebases and pushes branches; it does not decide that anything l
   - `openspec/changes/<slug>/` change dirs: keep both sides' additive changes; never invent a third behaviour.
   - If the two sides genuinely contradict (a real redesign), stop and report instead of inventing a third behaviour inside a rebase.
 - Keep the branch at one commit; preserve author (`Andy Holst <andy.holst@protonmail.com>`); never re-author.
-- Gate before push: run the repo gate green on the rebased head — `validate` + `live-smoke` + closure + guard (the exact set `qa-validate` requires). A rebase that ships a red head is not a rebase.
+- Change/rebase locally, run only the FAST offline checks (`make lint`, the targeted unit module), PUSH, then confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`) (owner directive #1423). The full `make validate`, the whole `make test`, closure and guard are CI-ONLY. CI red at your head means the rebase is not done.
 - `git push --force-with-lease` ONLY against the ref you actually fetched; verify `git rev-parse HEAD` == `git rev-parse origin/<branch>` after.
 - If a job that fails on the branch ALSO fails on a pristine `origin/master` worktree, it is pre-existing/inherited — disclose it and the sha, do not call the rebase red for it. (Two known host-environment tests fail regardless: `test_openspec_archive_check` and `test_worktree_base`.)
 - Bookend every rebase with a start comment (PR id, branch, the `origin/master` sha branched from) and a finish comment (new head sha, what changed, the run id/command that proves it); report both lines to `@tll-planner`.
