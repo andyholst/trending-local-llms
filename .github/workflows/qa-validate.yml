@@ -52,6 +52,26 @@ env:
   # reporting its key missing, loudly, never a different provider.
   TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 
+# ---- run cancellation: a re-push stops this PR's superseded run (#1560) -----
+#
+# Owner directive (2026-11-24): a new push must STOP the previous CI run for that
+# PR. This pipeline had NO `concurrency:` block, so a re-push left the old run
+# going: measured on #1434, six master tips re-ran `qa-validate` while earlier
+# runs were still queued, and the board has held five concurrent runs at once.
+#
+# `cancel-in-progress: true`: the next run in the SAME group cancels this one.
+# The key carries the event name and the target, so a `pull_request`, `push`,
+# `workflow_dispatch` or `issues` run never shares a group — each purpose
+# cancels only its own superseded work. On a pull_request the target is the PR
+# NUMBER (this PR's own group, e.g. `qa-validate-pull_request-1560`); every
+# other event falls back to `github.ref` (`refs/heads/master` on push and
+# dispatch). Another PR's number differs, so this can never touch another PR's
+# run; a genuinely live, current run is cancelled only by a NEWER push to the
+# same PR — exactly the superseded-head case.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Before anything reads a secret: owner, a write+ collaborator, or the bot
   # itself (rule 6j, issue #238). qa-validate is the ONLY pipeline that also runs

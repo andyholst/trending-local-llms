@@ -42,6 +42,12 @@ permissions:
   issues: write
   pull-requests: write
 
+# ONE implementer per issue (and per sweep). The key is the DISPATCHED ISSUE
+# NUMBER, falling back to 'sweep' when none was given, so a second dispatch for
+# the SAME issue QUEUES (`cancel-in-progress` stays FALSE: a queued implementation
+# must still run, dropping it would silently skip the issue) while a DIFFERENT
+# issue gets a different group and can never cancel this one. Scope is this
+# workflow only — no other pipeline shares the prefix.
 concurrency:
   group: issue-bot-${{ github.event.issue.number || inputs.issue_number || 'sweep' }}
   cancel-in-progress: false

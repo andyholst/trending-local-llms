@@ -41,7 +41,10 @@ permissions:
   issues: write
 
 # Two reviews of one issue queue instead of racing: the run-level group serialises
-# whole runs, and the review job adds a per-issue group.
+# whole runs, and the review job adds a per-issue group. The run-level key is this
+# workflow's own name — no other pipeline shares it — and `cancel-in-progress`
+# stays FALSE because a QUEUED review must still complete: dropping it would
+# silently skip an issue nobody else looks at.
 concurrency:
   group: issue-review-bot
   cancel-in-progress: false

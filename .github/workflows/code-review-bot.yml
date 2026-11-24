@@ -29,6 +29,11 @@ permissions:
   contents: read
   issues: write
 
+# One scan at a time: the sweep files one issue per finding against the whole
+# tree, so a second dispatch QUEUES instead of filing duplicates of the first.
+# The key is this workflow's own name — no other pipeline shares it — and
+# `cancel-in-progress` stays FALSE because a started scan must complete and
+# report its findings rather than be dropped silently.
 concurrency:
   group: code-review-bot
   cancel-in-progress: false
