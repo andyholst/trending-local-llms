@@ -414,7 +414,7 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #   `stale-claim-sweep` `sweep-alarm` `verify-closure` `watch-monitor` `worktree-new` `worktree-resume`
 # HOST-EXCEPTIONS-END
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check image-manifest-check test-image-smoke
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-drift openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check image-manifest-check test-image-smoke
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -482,6 +482,15 @@ openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from o
 
 openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a change on disk has no row
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --check
+
+# Issue #1634: `--check` only WARNs inside MAX_OPENSPEC_INDEX_DRIFT and exits 0,
+# so a drifted index keeps `validate` GREEN and the event-driven `index-repair`
+# keeper (gated on a RED validate) never wakes. This target reports the SAME
+# `index_drift()` count as one line, `drift=<n>`, and exits 0 for ANY drift — it
+# is a REPORT, never a gate, so nothing newly reds. qa-validate's validate job
+# reads it and wakes `index-repair` on a green push whose index drifted.
+openspec-index-drift: python-env-image ## Print the ONE root-index drift measure as `drift=<n>` (exit 0 for any drift; a report beside `--check`, issue #1634)
+	@$(PYTHON_RUN) python3 scripts/openspec_index.py --drift
 
 # The event-driven keeper for a red master index gate (issue #304, rule 6q). A
 # merged PR archives its change, so `master`'s tree no longer matches the

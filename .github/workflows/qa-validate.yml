@@ -134,6 +134,10 @@ jobs:
       # steps captured; `announce-fallback` is the only consumer, and it is the
       # only job in this pipeline that can write an issue comment.
       corrupt_fallback: ${{ steps.collect-fallback.outputs.corrupt_fallback }}
+      # (issue #1634) the root-index drift the `index-drift` step reported. The
+      # gate itself only WARNs inside its tolerance and exits 0, so this is what
+      # lets `index-repair` wake on a GREEN push whose generated index drifted.
+      index_drift: ${{ steps.index-drift.outputs.drift }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -317,6 +321,25 @@ jobs:
           FB="${{ steps.image-ensure.outputs.corrupt_fallback }} ${{ steps.openspec-check.outputs.corrupt_fallback }}"
           FB=$(printf '%s' "$FB" | sed -e 's/^ *//' -e 's/ *$//')
           if [ -n "$FB" ]; then printf '%s=%s\n' corrupt_fallback "$FB" >> "$GITHUB_OUTPUT"; fi
+
+      # Issue #1634: `make openspec-index-check` only WARNs inside
+      # MAX_OPENSPEC_INDEX_DRIFT and exits 0, so a drifted generated index keeps
+      # this job GREEN — and the event-driven `index-repair` keeper below is gated
+      # on `failure()`, so it never wakes and the drift compounds merge over merge
+      # (measured on master `cb139e7c`: `archived: **520**` vs 522 dirs, rc 0; the
+      # #1625 regeneration was superseded within an hour). This step surfaces the
+      # SAME `index_drift()` count as one allowlisted output key the keeper reads;
+      # the number is a REPORT, never a gate — the tolerance, `--check`'s exit codes
+      # and this job's verdict are untouched, so nothing newly reds. Rule 3d: parse
+      # an allowlist of keys, never the whole stdout.
+      - name: Report the root index drift (issue #1634)
+        id: index-drift
+        run: |
+          set -euo pipefail
+          OUT=$(make openspec-index-drift)
+          printf '%s\n' "$OUT"
+          DRIFT=$(printf '%s\n' "$OUT" | sed -n 's/^drift=//p' | tail -1)
+          printf 'drift=%s\n' "${DRIFT:-0}" >> "$GITHUB_OUTPUT"
 
       # Issue #1239: a PR-head-only index check cannot see a merge race. Two PRs can
       # each carry a correct OPENSPEC.md for their own base, yet the SECOND merge lands
@@ -649,8 +672,10 @@ jobs:
   # red — and a red master validate has no PR-side repairer: auto-merge of EVERY
   # open PR waits behind it (measured 2026-11-12: pushes 28f2cd3 and ce57e9b,
   # both red at the OpenSpec gate; auto-merge blocked repo-wide for hours).
-  # This job runs only after a FAILED validate on a push to master, against the
-  # exact post-merge tree that just went red. `make openspec-index-repair`
+  # This job runs after a FAILED validate on a push to master, OR after a GREEN
+  # one whose `index-drift` step reported drift (issue #1634 — the gate only WARNs
+  # inside its tolerance, so a drifted index used to keep this keeper asleep),
+  # against the exact post-merge tree. `make openspec-index-repair`
   # classifies the drift (rule 6d: the verdict DRIFT=none|index-only comes from
   # scripts/openspec_index_repair.py, the workflow re-decides nothing); only an
   # index-only drift whose rewrite passes the generator's own check may land, as
@@ -660,8 +685,14 @@ jobs:
   index-repair:
     name: index-repair (keeper PR for a stale generated index)
     needs: [guard, validate]
-    if: >-
-      failure() &&
+    # Issue #1634: `failure()` alone was the whole trigger, and that is the gap —
+    # `--check` only WARNs inside MAX_OPENSPEC_INDEX_DRIFT and exits 0, so a
+    # drifted-but-green push kept this keeper asleep and the drift compounded.
+    # It now also wakes when the GREEN validate reported `index_drift != '0'`.
+    # `failure()` stays, so a red validate whose drift step never ran behaves
+    # exactly as before; the push/master shape is unchanged.
+    if: >
+      (failure() || needs.validate.outputs.index_drift != '0') &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest

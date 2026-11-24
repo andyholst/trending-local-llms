@@ -311,6 +311,13 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
     check("qa: a keeper PR lands only on a FAILED push to master (event-driven, rule 6q)",
           "failure()" in gate and "github.event_name == 'push'" in gate
           and "refs/heads/master" in gate, gate)
+    # Issue #1634: `--check` only WARNs inside MAX_OPENSPEC_INDEX_DRIFT and exits 0,
+    # so a drifted-but-green push left this keeper asleep and the drift compounded.
+    # The trigger now also fires on the drift REPORT the validate job publishes.
+    check("qa: the keeper ALSO wakes on a green push whose validate reported drift (issue #1634)",
+          "needs.validate.outputs.index_drift != '0'" in gate, gate)
+    check("qa: validate publishes that drift key for the keeper to read",
+          "index_drift" in str(wf["jobs"]["validate"].get("outputs", {})), "")
     check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
           "pull_request" not in str(job), str(job)[:600])
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",

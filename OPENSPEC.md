@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **526**
+Active changes: **1** · archived: **527**
 
 ## Active changes
 
@@ -364,6 +364,7 @@ Active changes: **1** · archived: **526**
 | `openspec-image-multiarch-919` | archived | #919 — "Publishing the OpenSpec CLI image stays amd64-only, so a fresh arm64 | #957 | [openspec-image-publishing](openspec/changes/archive/openspec-image-multiarch-919/specs/openspec-image-publishing/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-image-multiarch-919/proposal.md) |
 | `openspec-image-publish-gate-issue-989` | archived | #989 | #990 | [ci-pipelines](openspec/changes/archive/openspec-image-publish-gate-issue-989/specs/ci-pipelines/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/openspec-image-publish-gate-issue-989/proposal.md) |
 | `openspec-index-drift-tolerance` | archived | #1415 | #1419 | [openspec-index](openspec/changes/archive/openspec-index-drift-tolerance/specs/openspec-index/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-index-drift-tolerance/proposal.md) |
+| `openspec-index-drift-trigger` | archived | #1634 | #1640 | [openspec-index-drift](openspec/changes/archive/openspec-index-drift-trigger/specs/openspec-index-drift/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/openspec-index-drift-trigger/proposal.md) |
 | `openspec-invalid-change-repair` | archived | #962 — "The OpenSpec keeper names no repairer for an INVALID ACTIVE CHANGE" | #1086 | [openspec-invalid-change-repair](openspec/changes/archive/openspec-invalid-change-repair/specs/openspec-invalid-change-repair/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/openspec-invalid-change-repair/proposal.md) |
 | `openspec-keeper-supersede-1438` | archived | #1438 | #1498 | [openspec-keeper-supersede](openspec/changes/archive/openspec-keeper-supersede-1438/specs/openspec-keeper-supersede/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/openspec-keeper-supersede-1438/proposal.md) |
 | `openspec-merge-tree-1239` | archived | #1239 (measured on origin/master `cebd71c7`) | #1240 | [openspec-index](openspec/changes/archive/openspec-merge-tree-1239/specs/openspec-index/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/openspec-merge-tree-1239/proposal.md) |
