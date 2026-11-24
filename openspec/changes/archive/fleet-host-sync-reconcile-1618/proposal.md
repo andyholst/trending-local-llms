@@ -1,6 +1,7 @@
 # Proposal: fleet-host-sync-reconcile-1618
 
 Issue: #1618
+PR: #1624
 
 ## Why
 
