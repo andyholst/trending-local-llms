@@ -325,6 +325,7 @@ needed to move the board.
   premise can be void by the time the lane reads it (#1448 merged while its implementer was still awaiting
   a ruling). Re-check `gh pr view <n> --json state,headRefOid` and `make dispatch-check ISSUE=<n>` before
   answering a lane's question, and bind every verdict to the sha actually reviewed.
+- **A lane a planner cron starts can be hard-interrupted when that cron session ends — verify liveness, then RESUME.** Measured #1495 (2026-11-24): the implementer ran 599 s, cut its worktree and posted its claim, then its profile log recorded `Interrupt requested (hard): explicit stop requested` with NO commit and NO PR, and no `tll-*` process survived. Launch lanes with `terminal(background=true, persist_on_release=true)`, and before trusting that work continues check `ps -p <pid>` AND the lane's `logs/agent.log` for fresh API calls. On death, run `make dispatch-check ISSUE=<n>` and dispatch the bounded RESUME above — never a second implementation.
 
 ## Worktree default (fleet-wide, owner-mandated)
 

@@ -790,9 +790,36 @@ def test_third_batch_host_ahead_implementer_notes_are_landed() -> int:
     return failed
 
 
+def test_fourth_batch_host_ahead_notes_are_landed() -> int:
+    """Issue #1559: land the planner RESUME + reviewer read-only/Docker notes exactly once.
+
+    These three host-ahead bullets were measured on 2026-11-24 at base `674bb36b`,
+    zero deletions vs the base blob and absent from master. Copying the whole host file
+    would reintroduce the #1455/#1456/#1469 duplicate defect, so each genuinely-new
+    note is pinned with a count assertion.
+    """
+    failed = 0
+    cases = {
+        "agents/tll-planner/skills/tll-planner/SKILL.md": (
+            "A lane a planner cron starts can be hard-interrupted when that cron session ends",
+        ),
+        "agents/tll-reviewer/skills/tll-reviewer/SKILL.md": (
+            "A read-only REVIEW dispatch may forbid a worktree",
+            "Docker DROPS an `-e VAR` whose host variable is UNSET",
+        ),
+    }
+    for rel, needles in cases.items():
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        for needle in needles:
+            failed += check(needle in text, f"{rel} carries {needle!r}")
+            failed += check(text.count(needle) == 1, f"{rel} carries {needle!r} exactly once")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
+        test_fourth_batch_host_ahead_notes_are_landed,
         test_third_batch_host_ahead_implementer_notes_are_landed,
         test_every_lane_carries_the_pr_handover_shapes,
         test_planner_skill_reads_the_comments,
