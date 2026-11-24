@@ -34,9 +34,17 @@ index is merge-time-current by construction) lands the merge. A rebase git CONFL
 aborts and leaves the remote branch byte-identical (issue #964's semantics): the merge then
 proceeds exactly as it did before this change, and the index keeper handles residual drift.
 
+A landed push is only a landed REBASE when the new head's OWN qa-validate run carries jobs
+(issue #1616). The shared rebaser reads that run back from GitHub after the push (through the
+ONE gh field contract, `pr_health.verify_rebased_ci`) and the verdict `rebased` — the one that
+skips the squash — is reported ONLY on that proof. A push whose run has ZERO jobs is the #1115
+ghost: this seam prints `verdict=ci-unverified`, leaves `rebased=false` (the head-moved gate
+#1184 still skips the stale squash) and exits 1, naming the zero-jobs run.
+
 Machine-readable output (the workflow parses an allowlist of keys, rule 3d): `verdict=<name>`
-and `rebased=true|false`. Exit codes: 0 for every report-only verdict and for a landed
-rebase; 2 only when the PR itself could not be read.
+and `rebased=true|false`. Exit codes: 0 for every report-only verdict and for a PROVED rebase;
+1 for a rebase that landed without scheduling real CI; 2 only when the PR itself could not be
+read.
 """
 from __future__ import annotations
 
@@ -137,17 +145,28 @@ def main() -> int:
 
     verdict = classify(pr, behind)
     rebased = False
+    rc = 0
 
     if verdict == "behind-and-clean-bot":
-        ok, msg = rebase_and_push(cwd, head)
-        if ok:
+        pushed, ci_verified, msg = rebase_and_push(cwd, head)
+        if pushed and ci_verified is not False:
             rebased = True
             new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
             print(f"[auto-merge-rebase] rebased {head} onto the fetched master "
                   f"({new_oid[:12]}); the generated artifacts were regenerated on the rebased "
-                  f"tree — {msg}. This run will NOT merge (its event head is now stale); "
-                  "CI on the new head will land it.")
+                  f"tree and the new head's own qa-validate run PROVES real CI — {msg}. This "
+                  "run will NOT merge (its event head is now stale); CI on the new head will "
+                  "land it.")
             verdict = "rebased"
+        elif pushed and ci_verified is False:
+            # (issue #1616) the branch MOVED but nothing scheduled its merge gate: the #1115
+            # ghost. Never claim `rebased=true` on a push alone — the squash must not be skipped
+            # on an unproven head, and the zero-jobs run has to be named where a human sees it.
+            print(f"[auto-merge-rebase] FAIL: the rebase of {head} LANDED but {msg} — this run "
+                  "will NOT claim it. The head-moved gate (#1184) skips the stale squash; CI on "
+                  "the new head decides.")
+            verdict = "ci-unverified"
+            rc = 1
         else:
             print(f"[auto-merge-rebase] kept {head}: {msg} — this merge proceeds exactly as "
                   "validated; residual index drift goes to the index keeper")
@@ -171,7 +190,7 @@ def main() -> int:
 
     print(f"verdict={verdict}")
     print(f"rebased={'true' if rebased else 'false'}")
-    return 0
+    return rc
 
 
 if __name__ == "__main__":

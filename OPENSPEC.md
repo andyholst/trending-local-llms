@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **527**
+Active changes: **1** · archived: **529**
 
 ## Active changes
 
@@ -136,6 +136,7 @@ Active changes: **1** · archived: **527**
 | `auto-merge-head-race-1184` | archived | #1184 | #1315 | [auto-merge-head-guard](openspec/changes/archive/auto-merge-head-race-1184/specs/auto-merge-head-guard/spec.md) | 8/10 · 2 blocked | [proposal.md](openspec/changes/archive/auto-merge-head-race-1184/proposal.md) |
 | `auto-merge-index-at-merge-time` | archived | #1049 | #1085 | [auto-merge](openspec/changes/archive/auto-merge-index-at-merge-time/specs/auto-merge/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/auto-merge-index-at-merge-time/proposal.md) |
 | `auto-merge-rebase-architecture-block` | archived | #1601 | #1603 | [merge-queue-rebase](openspec/changes/archive/auto-merge-rebase-architecture-block/specs/merge-queue-rebase/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/auto-merge-rebase-architecture-block/proposal.md) |
+| `auto-merge-rebase-proves-ci` | archived | #1616 | #1631 | [rebase-push-ci](openspec/changes/archive/auto-merge-rebase-proves-ci/specs/rebase-push-ci/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/auto-merge-rebase-proves-ci/proposal.md) |
 | `aux-sync-hidden-dirs` | archived | #1217 | #1236 | [aux-local-sync](openspec/changes/archive/aux-sync-hidden-dirs/specs/aux-local-sync/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/aux-sync-hidden-dirs/proposal.md) |
 | `ban-pytest-imports-in-tests` | archived | #768 (measured: qa-validate run 42800200326, PR #764 head 0db0462) | #778 | [test-runner](openspec/changes/archive/ban-pytest-imports-in-tests/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/ban-pytest-imports-in-tests/proposal.md) |
 | `bare-param-size-figure-refusal` | archived | #1018 | #1131 | [measurement-attribution](openspec/changes/archive/bare-param-size-figure-refusal/specs/measurement-attribution/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/bare-param-size-figure-refusal/proposal.md) |

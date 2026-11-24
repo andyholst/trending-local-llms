@@ -543,6 +543,82 @@ def test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_n
               oid("refs/remotes/origin/master") == before["master"], "")
 
 
+def test_the_sweep_rebases_but_reports_unverified_when_the_new_head_scheduled_no_jobs():
+    """(issue #1616) §6s: the `pr-health REBASE=1` sweep path holds the SAME contract as the
+    merge gate — a branch that MOVED but whose own qa-validate run carries ZERO jobs is reported
+    `REBASED but CI UNVERIFIED`, never a clean `REBASED:` the PR could rely on."""
+    stub = """#!/bin/sh
+echo "gh $*" >> "$GH_LOG"
+case "$1 $2" in
+  "pr list") cat "$FAKE_PRS" ;;
+  "run list")
+    branch=""
+    prev=""
+    for a in "$@"; do
+      if [ "$prev" = "--branch" ]; then branch="$a"; fi
+      prev="$a"
+    done
+    if [ -n "$branch" ]; then
+      sha=$(git --git-dir="$STUB_ORIGIN" rev-parse "refs/heads/$branch" 2>/dev/null || echo "")
+      printf '[{"databaseId":1,"headBranch":"%s","headSha":"%s","workflowName":"qa-validate.yml","status":"completed","conclusion":"success"}]\\n' "$branch" "$sha"
+    else
+      echo "[]"
+    fi ;;
+  "run view") echo '{"jobs":[]}' ;;
+  *) echo "unexpected: $*" >&2; exit 3 ;;
+esac
+"""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        origin = td / "origin.git"
+        assert _gitfx(td, "init", "--bare", "-q", str(origin)).returncode == 0
+        seed = td / "seed"
+        seed.mkdir()
+        assert _gitfx(seed, "init", "-q", "-b", "master").returncode == 0
+        _commit_fx(seed, "base.txt", "base\n", "base commit")
+        base_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+        _gitfx(seed, "remote", "add", "origin", str(origin))
+        _gitfx(seed, "push", "-q", "origin", "master")
+        _gitfx(seed, "checkout", "-q", "-b", "ci/data-gap-1616-x", base_oid)
+        _commit_fx(seed, "feature.txt", "feature\n", "feat: the PR's own commit")
+        _gitfx(seed, "push", "-q", "origin", "ci/data-gap-1616-x")
+        before = _gitfx(origin, "rev-parse", "refs/heads/ci/data-gap-1616-x").stdout.strip()
+        _gitfx(seed, "checkout", "-q", "master")
+        _commit_fx(seed, "other.txt", "other\n", "master moves ahead")
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        clone = td / "clone"
+        assert _gitfx(td, "clone", "-q", str(origin), str(clone)).returncode == 0
+        # the CI shape: the CONFIGURED origin is github.com and insteadOf maps it back here.
+        gh_url = "https://github.com/o/r.git"
+        _gitfx(clone, "remote", "set-url", "origin", gh_url)
+        _gitfx(clone, "config", f"url.{origin}.insteadOf", gh_url)
+        _gitfx(clone, "config", "--add", f"url.{origin}.insteadOf",
+               "https://oauth2:TESTPAT@github.com/o/r.git")
+        _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+        prs = [pr(7, "ci/data-gap-1616-x", oid=before)]
+        with tempfile.TemporaryDirectory() as s:
+            sd = Path(s)
+            (sd / "gh").write_text(stub, encoding="utf-8")
+            (sd / "gh").chmod(0o755)
+            (sd / "prs.json").write_text(json.dumps(prs), encoding="utf-8")
+            (sd / "posted").write_text("")
+            (sd / "log").write_text("")
+            env = {**os.environ, "PATH": f"{sd}:{os.environ['PATH']}",
+                   "FAKE_PRS": str(sd / "prs.json"), "FAKE_POSTED": str(sd / "posted"),
+                   "STUB_ORIGIN": str(origin), "GH_LOG": str(sd / "log")}
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "--repo", "o/r", "--rebase",
+                 "--dir", str(clone)], capture_output=True, text=True, env=env)
+        out = proc.stdout + proc.stderr
+        check("the sweep reports the rebase as UNVERIFIED, not as a clean REBASE",
+              "REBASED but CI UNVERIFIED" in out, out[:400])
+        check("the zero-jobs run is named", "ZERO jobs" in out, out[:400])
+        check("the branch still MOVED — the push landed; only the proof failed",
+              _gitfx(origin, "rev-parse", "refs/heads/ci/data-gap-1616-x").stdout.strip() != before,
+              before)
+
+
 def test_the_rebaser_regenerates_the_index_on_the_rebased_tree():
     """Issue #1049: a sweep rebase regenerates `OPENSPEC.md` on the rebased tree
     BEFORE the lease push, and the regenerated file is the tree's OWN generator's
@@ -857,6 +933,8 @@ def main() -> int:
     test_ownership_is_decided_by_author_not_branch_prefix()
     test_agent_login_is_bot_owned_when_is_bot_is_false()
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
+    # (issue #1616) §6s: the sweep path holds the same push-proves-CI contract as the merge gate.
+    test_the_sweep_rebases_but_reports_unverified_when_the_new_head_scheduled_no_jobs()
     test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()
     test_a_bound_draft_pr_is_named_with_its_issue()
