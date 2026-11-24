@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **510**
+Active changes: **1** · archived: **511**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `filer-error-class-grouping-1557` | active | #1557 | — | [pipeline-failure-error-class-grouping](openspec/changes/filer-error-class-grouping-1557/specs/pipeline-failure-error-class-grouping/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/filer-error-class-grouping-1557/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -69,6 +68,7 @@ Active changes: **2** · archived: **510**
 | `2026-11-23-fleet-host-reconcile` | archived | #1464 | #1481 | [fleet-host-sync](openspec/changes/archive/2026-11-23-fleet-host-reconcile/specs/fleet-host-sync/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-fleet-host-reconcile/proposal.md) |
 | `2026-11-23-fleet-host-sync-config-version` | archived | #1389 | — | [fleet-host-sync-check](openspec/changes/archive/2026-11-23-fleet-host-sync-config-version/specs/fleet-host-sync-check/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-fleet-host-sync-config-version/proposal.md) |
 | `2026-11-23-owed-row-derived-needle` | archived | #1367 | — | [owed-row-derivation](openspec/changes/archive/2026-11-23-owed-row-derived-needle/specs/owed-row-derivation/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-23-owed-row-derived-needle/proposal.md) |
+| `2026-11-24-filer-error-class-grouping-1557` | archived | #1557 | — | [pipeline-failure-error-class-grouping](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/specs/pipeline-failure-error-class-grouping/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/proposal.md) |
 | `2026-11-24-fleet-host-reconcile-backup-path-spelling` | archived | #1552 | #1588 | [fleet-host-sync](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/specs/fleet-host-sync/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/proposal.md) |
 | `2026-11-24-fleet-mirror-union-zero-to-n-1478` | archived | #1478 | — | [fleet-mirror-union](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/specs/fleet-mirror-union/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/proposal.md) |
 | `2026-11-24-openspec-active-twin-diagnosis` | archived | #1477 | — | [openspec-change-diagnosis](openspec/changes/archive/2026-11-24-openspec-active-twin-diagnosis/specs/openspec-change-diagnosis/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-openspec-active-twin-diagnosis/proposal.md) |
