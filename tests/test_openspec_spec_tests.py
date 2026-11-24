@@ -233,6 +233,48 @@ def test_archived_change_is_ignored():
     check("archived: the archived change is not reported", "old-and-gone" not in out, out)
 
 
+def test_an_active_twin_of_an_archived_change_is_diagnosed():
+    """The #1477 shape: an ACTIVE dir whose name is ALREADY archived names BOTH paths + the remedy.
+
+    Both archive spellings the seam writes are exercised: the bare
+    `archive/<name>` and the dated `archive/<UTC-date>-<name>`.
+    """
+
+    # Given a change present as an ACTIVE dir AND in the archive, under EACH spelling
+    mod = _module()
+    name = "fleet-mirror-union-no-duplicates"
+    for arc_name in (name, f"2026-11-23-{name}"):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            base = root / "openspec" / "changes"
+            spec = ("# twin\n#### Scenario: locked\n- **GIVEN** x\n- **WHEN** y\n- **THEN** z\n\n"
+                    "- **Test:** tests/ok.py::test_ok\n")
+            _fixture(base, name, spec)
+            _fixture(base, arc_name, spec, archived=True)
+
+            # When  the gate runs over that tree
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+                rc = mod.check_all(base=base, root=root)
+            out = buf.getvalue()
+
+            # And  the gate is RED naming BOTH paths and the exact remedy
+            tag = f"twin[{arc_name}]"
+            check(f"{tag}: gate exits non-zero", rc > 0, str(rc) + " " + out)
+            check(f"{tag}: both paths are named",
+                  f"openspec/changes/{name}" in out
+                  and f"openspec/changes/archive/{arc_name}" in out, out)
+            check(f"{tag}: the exact remedy is named",
+                  f"git rm -r openspec/changes/{name}" in out
+                  and "make openspec-index" in out, out)
+
+            # And  the seam itself separates the two copies
+            check(f"{tag}: change_for returns the ACTIVE dir",
+                  mod.change_for(name, base) == base / name, str(base))
+            check(f"{tag}: archived_twin returns the ARCHIVED dir",
+                  mod.archived_twin(name, base) == base / "archive" / arc_name, "")
+
+
 def test_real_repo_references_resolve_and_the_gate_is_wired():
     """This repository's own active changes resolve, and the gate is wired (rule 6d)."""
 
@@ -271,6 +313,7 @@ def main() -> int:
     test_a_prose_test_line_refuses_the_gate()
     test_a_spec_with_no_test_lines_refuses_the_gate()
     test_archived_change_is_ignored()
+    test_an_active_twin_of_an_archived_change_is_diagnosed()
     test_real_repo_references_resolve_and_the_gate_is_wired()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
