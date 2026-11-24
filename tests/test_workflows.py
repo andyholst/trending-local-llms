@@ -3281,6 +3281,7 @@ def main() -> int:
     test_security_scan_pipeline_is_guarded_dispatch_only_and_runs_the_five_targets()
     test_security_scan_is_dispatch_only_with_named_coverage()
     test_the_failure_filer_watches_the_security_scan_pipeline()
+    test_the_failure_filer_watches_the_bot_health_pipeline()
     test_implement_prompt_requires_openspec_and_findings()
     test_the_implement_leg_never_leaves_an_owed_rulebook_row_bare()
     test_issue_bot_files_findings_only_when_green()
@@ -3738,6 +3739,16 @@ def test_the_failure_filer_watches_the_security_scan_pipeline():
           10 not in picked, picked)
     check("removing security-scan from MAIN_PIPELINES makes the filer miss a red scan run (RED on the pre-#1185 script)",
           1 not in without and 4 not in without, without)
+
+
+def test_the_failure_filer_watches_the_bot_health_pipeline():
+    """Rule 6r / issue #1186: a red bot-health dispatch must be tracked, not silent."""
+    import pipeline_failure_issue as pfi
+
+    check("bot-health.yml is a MAIN pipeline (the filer walks it)",
+          "bot-health.yml" in pfi.MAIN_PIPELINES, pfi.MAIN_PIPELINES)
+    check("bot-health.yml is declared dispatch-only in the filer",
+          "bot-health.yml" in pfi.DISPATCH_ONLY_PIPELINES, pfi.DISPATCH_ONLY_PIPELINES)
 
 
 if __name__ == "__main__":

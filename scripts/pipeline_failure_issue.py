@@ -102,6 +102,9 @@ MAIN_PIPELINES = (
     "architecture-bot.yml",
     "queued-alarm.yml",
     "security-scan.yml",
+    # issue #1186: bot-health's own dispatched runs are its only delivery, so a red one
+    # must be filed rather than leaving the red-bot alarm's own silence unread.
+    "bot-health.yml",
 )
 
 #: The pipelines whose only trigger is `workflow_dispatch` (issue #1185). For a cron/push pipeline
@@ -109,7 +112,7 @@ MAIN_PIPELINES = (
 #: partition). A dispatch-ONLY pipeline has no other delivery, so a concluded-bad dispatched run
 #: is an accident — it must reach the ledger and become an issue, or rule 6m's scan coverage would
 #: silently expire. Dedup stays run-id keyed, so a failing pipeline cannot spam the queue.
-DISPATCH_ONLY_PIPELINES = ("security-scan.yml",)
+DISPATCH_ONLY_PIPELINES = ("security-scan.yml", "bot-health.yml")
 
 #: A failure counts when it is CONCLUDED bad (a still-running or queued run belongs to
 #: queued-alarm's own alarm, not to this filer).
