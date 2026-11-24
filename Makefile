@@ -1917,7 +1917,7 @@ _bot-health:
 	python3 scripts/bot_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(LIMIT),--limit $(LIMIT),)
 
 .PHONY: bot-health
-bot-health: ## Fail when a cron pipeline's own scheduled runs are all red (issue #488)
+bot-health: ## Fail when a cron or dispatch-only pipeline's own runs are all red (issues #488/#1186)
 	@$(MAKE) --no-print-directory _bot-health
 
 # The owed-row ledger (issue #523): open issues carry `owed-row` markers naming the AGENTS.md

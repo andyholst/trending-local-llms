@@ -84,16 +84,17 @@ def pipeline_list() -> list[str]:
 
 def test_the_pipeline_list_is_derived_and_not_vacuous():
     names = pipeline_list()
-    # (owner directive 2026-11-15, issue #1029) ONLY refresh-bot carries a cron; every other
-    # pipeline is dispatch-only, so bot-health derives exactly ONE scheduled pipeline here.
+    # (owner directive 2026-11-15, issue #1029) ONLY refresh-bot carries a cron, so a CRON-only
+    # read made every dispatch-only bot invisible — including this alarm's own red runs (#1186).
+    refresh = "refresh-bot.yml"
     check("pipelines: the list is non-vacuous", len(names) >= 1, names)
-    check("pipelines: refresh-bot is the ONLY cron pipeline of this repo",
-          names == ["refresh-bot.yml"], names)
-    check("pipelines: a dispatch-only workflow is not in the list",
-          "queued-alarm.yml" not in names and "pr-health.yml" not in names
-          and "bot-health.yml" not in names, names)
-    check("pipelines: a NON-cron workflow is not in the list",
-          "publish-agent-image.yml" not in names, names)
+    check("pipelines: the ONLY cron pipeline is still watched", refresh in names, names)
+    check("pipelines: a dispatch-only pipeline is watched by ROLE (#1186)",
+          "bot-health.yml" in names and "queued-alarm.yml" in names, names)
+    check("pipelines: a PR-exercised pipeline is not watched",
+          "qa-validate.yml" not in names and "pr-closure.yml" not in names, names)
+    check("pipelines: a dispatch-only PUBLISHER is watched too (#1186)",
+          "publish-agent-image.yml" in names, names)
 
 
 def test_a_pipeline_red_on_every_run_fails_the_sweep():
@@ -104,7 +105,7 @@ def test_a_pipeline_red_on_every_run_fails_the_sweep():
         check("red: the sweep exits non-zero", p.returncode == 1, (p.returncode, p.stderr[-300:]))
         check("red: it NAMES a run URL a human can open",
               "https://example/run/0" in (p.stdout + p.stderr), p.stdout[-300:])
-        check("red: it names how many pipelines are red", "cron pipeline(s) are red" in p.stderr,
+        check("red: it names how many pipelines are red", "watched pipeline(s) are red" in p.stderr,
               p.stderr[-300:])
 
 
@@ -137,7 +138,7 @@ def test_a_young_pipeline_is_not_a_failure():
         env = stub_gh(td, answers)
         p = run("--root", str(ROOT), "--repo", "o/r", "--limit", "3", env=env)
         check("young: a pipeline with fewer runs than the window is not red",
-              p.returncode == 0 and "only 1 scheduled run(s) so far" in p.stdout,
+              p.returncode == 0 and "only 1 " in p.stdout and "run(s) so far" in p.stdout,
               (p.returncode, p.stdout[:300]))
 
 
@@ -173,8 +174,83 @@ def test_the_workflow_carries_a_guard_a_cron_and_the_target():
           '"bot-health.yml", "guard"' in suites, "")
 
 
+def test_dispatch_only_pipelines_are_watched_by_role():
+    """Issue #1186: the pipeline set is chosen by ROLE, not by the presence of a cron line."""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        wf = td / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        (wf / "cron-bot.yml").write_text(
+            "on:\n  schedule:\n    - cron: \"7 * * * 3\"\n  workflow_dispatch:\njobs:\n  x: {}\n")
+        (wf / "dispatch-bot.yml").write_text(
+            "on:\n  workflow_dispatch:\n    inputs:\n      limit:\n        default: \"3\"\njobs:\n  x: {}\n")
+        (wf / "pr-bot.yml").write_text("on:\n  pull_request:\njobs:\n  x: {}\n")
+        p = subprocess.run([sys.executable, str(SCRIPT), "--root", str(td), "--list"],
+                           capture_output=True, text=True)
+        names = [line for line in p.stdout.splitlines() if line.strip()]
+        check("role: a cron pipeline is still watched", "cron-bot.yml" in names, names)
+        check("role: a dispatch-only pipeline is watched (#1186)", "dispatch-bot.yml" in names, names)
+        check("role: a PR-exercised pipeline is NOT watched", "pr-bot.yml" not in names, names)
+
+
+def test_a_dispatch_only_pipeline_red_on_every_dispatch_run_fails_the_sweep():
+    """Issue #1186: the alarm reads a dispatch-only pipeline's `workflow_dispatch` runs."""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        wf = td / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        (wf / "dispatch-bot.yml").write_text("on:\n  workflow_dispatch:\njobs:\n  x: {}\n")
+        bin_ = td / "bin"
+        bin_.mkdir()
+        (bin_ / "gh").write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, sys\n"
+            "a = sys.argv[1:]\n"
+            "if a[:2] == ['repo', 'view']:\n    print('o/r'); sys.exit(0)\n"
+            "if '--event' not in a or a[a.index('--event') + 1] != 'workflow_dispatch':\n"
+            "    print('[]'); sys.exit(0)\n"
+            "print(json.dumps([{'conclusion': 'failure', 'databaseId': i,\n"
+            "                   'url': f'https://example/dispatch/{i}'} for i in range(3)]))\n")
+        (bin_ / "gh").chmod(0o755)
+        env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}"}
+        p = run("--root", str(td), "--repo", "o/r", "--limit", "3", env=env)
+        check("dispatch: all-red dispatch runs fail the sweep (#1186)", p.returncode == 1,
+              (p.returncode, p.stdout[-300:], p.stderr[-300:]))
+        check("dispatch: it names the dispatch run URL",
+              "https://example/dispatch/0" in (p.stdout + p.stderr), p.stdout[-300:])
+
+
+def test_the_failure_filer_watches_the_bot_health_pipeline():
+    """Rule 6r / issue #1186: a red bot-health dispatch must reach the ledger and an issue."""
+    import datetime as dt
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import pipeline_failure_issue as pfi
+
+    check("filer: bot-health.yml is a MAIN pipeline (#1186)",
+          "bot-health.yml" in pfi.MAIN_PIPELINES, pfi.MAIN_PIPELINES)
+    check("filer: bot-health.yml is declared dispatch-only (#1186)",
+          "bot-health.yml" in pfi.DISPATCH_ONLY_PIPELINES, pfi.DISPATCH_ONLY_PIPELINES)
+
+    now = dt.datetime(2026, 11, 24, 2, 0, 0, tzinfo=dt.timezone.utc)
+    rows = [{"databaseId": 555, "workflowName": "bot-health.yml", "name": "bot health",
+             "headBranch": "master", "headSha": "f" * 40, "event": "workflow_dispatch",
+             "createdAt": "2026-11-24T01:00:00Z", "conclusion": "failure", "status": "completed",
+             "url": "https://example/bot-health/555"}]
+    with tempfile.TemporaryDirectory() as d:
+        env = stub_gh(Path(d), {"bot-health.yml": rows})
+        saved = dict(os.environ)
+        os.environ.clear()
+        os.environ.update(env)
+        try:
+            picked = {r["databaseId"] for r in pfi.main_pipeline_failures("o/r", 24, now)}
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+    check("filer: a red dispatched bot-health run is SELECTED (#1186)", 555 in picked, picked)
+
+
 def main() -> int:
-    print("bot health: a red cron pipeline is loud (issue #488)")
+    print("bot health: a red cron or dispatch-only pipeline is loud (issues #488/#1186)")
     test_the_pipeline_list_is_derived_and_not_vacuous()
     test_a_pipeline_red_on_every_run_fails_the_sweep()
     test_one_green_run_is_enough_to_stay_quiet()
@@ -182,6 +258,9 @@ def main() -> int:
     test_an_unanswerable_gh_is_loud_not_clean()
     test_a_limit_of_zero_is_refused()
     test_the_workflow_carries_a_guard_a_cron_and_the_target()
+    test_dispatch_only_pipelines_are_watched_by_role()
+    test_a_dispatch_only_pipeline_red_on_every_dispatch_run_fails_the_sweep()
+    test_the_failure_filer_watches_the_bot_health_pipeline()
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 0 if _FAIL == 0 else 1
 

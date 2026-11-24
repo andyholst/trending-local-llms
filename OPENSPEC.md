@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **484**
+Active changes: **1** · archived: **485**
 
 ## Active changes
 
@@ -136,6 +136,7 @@ Active changes: **1** · archived: **484**
 | `bot-agent-output-scrubbed` | archived | #351 | — | [bot-agent-run-safety](openspec/changes/archive/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/archive/bot-agent-output-scrubbed/proposal.md) |
 | `bot-commits-as-the-agent` | archived | #323 | — | [commit-authorship](openspec/changes/archive/bot-commits-as-the-agent/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/bot-commits-as-the-agent/proposal.md) |
 | `bot-guards-allow-the-bot` | archived | #238 | — | [bot-guards-allow-the-bot](openspec/changes/archive/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/bot-guards-allow-the-bot/proposal.md) |
+| `bot-health-dispatch-only-reader-1186` | archived | #1186 | #1490 | [pipeline-health](openspec/changes/archive/bot-health-dispatch-only-reader-1186/specs/pipeline-health/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/bot-health-dispatch-only-reader-1186/proposal.md) |
 | `bot-marker-registry` | archived | #197 | — | [bot-markers](openspec/changes/archive/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/bot-marker-registry/proposal.md) |
 | `bot-pr-rebaser-818` | archived | #818 — "Owner directive: an ACTIVE sweep must REBASE drifted bot PRs onto the | #963 | [pr-sweep-rebase](openspec/changes/archive/bot-pr-rebaser-818/specs/pr-sweep-rebase/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/bot-pr-rebaser-818/proposal.md) |
 | `bot-verification-protocol` | archived | #279 | — | [bot-verification-protocol](openspec/changes/archive/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/bot-verification-protocol/proposal.md) |

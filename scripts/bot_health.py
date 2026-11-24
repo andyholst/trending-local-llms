@@ -9,18 +9,22 @@ removed its own alarm. Every bot here is a cron expected to be green: a red one 
 in the product from a quiet one, and the longer it stays red the more of its guard rails silently
 stop existing.
 
-This is the pipeline-level alarm: it lists each CRON pipeline of this repository (derived from the
-workflows themselves, never hand-maintained) and fails when a pipeline's last N scheduled runs all
-concluded in failure, naming the newest run URL.
+This is the pipeline-level alarm: it lists each pipeline whose own runs nobody else reads — a CRON
+pipeline (issue #488) AND a DISPATCH-ONLY pipeline (issue #1186) — derived from the workflows
+themselves, never hand-maintained, and fails when a pipeline's last N deliveries all concluded in
+failure, naming the newest run URL. Cron pipelines are read by `schedule`; a dispatch-only pipeline
+has no schedule, so its `workflow_dispatch` runs are its only delivery and the evidence this alarm
+reads. After issue #1029 only refresh-bot keeps a cron, so a cron-only read made this alarm's own
+repeated failures invisible.
 
 Read-only: it never comments, never dispatches, never writes a file.
 
 Usage:
     python3 scripts/bot_health.py [--root .] [--repo OWNER/NAME] [--limit 3] [--list]
 
-Exit: 0 = every cron pipeline has a green scheduled run in its window; 1 = at least one has N
-consecutive failures (the URL is printed); 2 = the pipeline list is empty or `gh` could not answer
-(refusing to report a clean bill of health it did not measure).
+Exit: 0 = every watched pipeline has a green run in its window; 1 = at least one has N consecutive
+failures (the URL is printed); 2 = the pipeline list is empty or `gh` could not answer (refusing to
+report a clean bill of health it did not measure).
 """
 from __future__ import annotations
 
@@ -42,6 +46,39 @@ BAD = frozenset({"failure", "timed_out", "cancelled", "startup_failure"})
 #: pipelines from the alarm (measured on this very file: it listed four of eight).
 _CRON = re.compile(r"^\s*-\s*cron:\s*['\"]?[^'\"\n]+['\"]?\s*(?:#.*)?$", re.M)
 
+#: A workflow whose ONLY trigger is `workflow_dispatch` (issue #1186). Its dispatched runs are
+#: its only delivery — after #1029 it has no cron, so a cron-only reader cannot see it fail.
+_DISPATCH = re.compile(r"^\s*workflow_dispatch:\s*(?:#.*)?$", re.M)
+_ON_KEY = re.compile(r"^on:\s*(?:#.*)?$")
+_EVENT_KEY = re.compile(r"^\s{2}([A-Za-z_][\w-]*):")
+
+
+def workflow_triggers(text: str) -> set[str]:
+    """Event names under a workflow's top-level `on:` block (issue #1186).
+
+    A line-oriented read keeps this read-only alarm free of a PyYAML dependency: event keys are
+    two spaces in, the block ends at the next column-zero key, and nested `cron:`/`inputs:` lines
+    and comments are ignored. A workflow with any event besides `workflow_dispatch` is exercised
+    by that event (issue #231) and is not dispatch-only.
+    """
+    out: set[str] = set()
+    in_on = False
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if not in_on:
+            if _ON_KEY.match(line):
+                in_on = True
+            continue
+        if indent == 0:
+            break
+        if indent == 2:
+            m = _EVENT_KEY.match(line)
+            if m:
+                out.add(m.group(1))
+    return out
+
 
 def cron_pipelines(root: Path) -> list[str]:
     """Every workflow in `root` that runs on a cron, as its file name.
@@ -58,6 +95,23 @@ def cron_pipelines(root: Path) -> list[str]:
     return out
 
 
+def watched_pipelines(root: Path) -> list[str]:
+    """Every pipeline whose own failures nobody else reads (issue #1186).
+
+    The cron set (issue #488) is kept, and a DISPATCH-ONLY pipeline joins it: a pipeline whose only
+    trigger is `workflow_dispatch` is exercised by no PR (issue #231) and, after #1029, has no
+    schedule — so a cron-only reader cannot see its own red runs. A pipeline with a push/PR trigger
+    is left out: a change exercises it directly, and a collaborator's manual dispatch of it is that
+    person's own act (the #1029 partition).
+    """
+    out = set(cron_pipelines(root))
+    for path in sorted((root / WORKFLOWS).glob("*.yml")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if _DISPATCH.search(text) and workflow_triggers(text) == {"workflow_dispatch"}:
+            out.add(path.name)
+    return sorted(out)
+
+
 def gh(args: list[str]) -> str:
     proc = subprocess.run(["gh", *args], capture_output=True, text=True)
     if proc.returncode != 0:
@@ -66,9 +120,13 @@ def gh(args: list[str]) -> str:
     return proc.stdout
 
 
-def scheduled_runs(repo: str, workflow: str, limit: int) -> list[dict]:
-    """The newest `limit` SCHEDULE deliveries of `workflow` (a manual run proves nothing)."""
-    out = gh(["run", "list", "--repo", repo, "--workflow", workflow, "--event", "schedule",
+def pipeline_runs(repo: str, workflow: str, limit: int, event: str) -> list[dict]:
+    """The newest `limit` deliveries of `workflow` for `event` — schedule OR workflow_dispatch.
+
+    A manual dispatch of a cron/push pipeline proves nothing; a dispatched run of a DISPATCH-ONLY
+    pipeline is its only delivery and is the evidence this alarm reads (issue #1186).
+    """
+    out = gh(["run", "list", "--repo", repo, "--workflow", workflow, "--event", event,
               "--limit", str(limit), "--json", "conclusion,databaseId,url,createdAt"])
     try:
         return json.loads(out or "[]")
@@ -76,16 +134,22 @@ def scheduled_runs(repo: str, workflow: str, limit: int) -> list[dict]:
         raise SystemExit(f"[bot-health] gh returned non-JSON for {workflow}: {out[:200]}")
 
 
-def verdict(runs: list[dict], limit: int) -> tuple[bool, str]:
-    """(is_failing, why) for one pipeline, from its newest scheduled runs.
+def scheduled_runs(repo: str, workflow: str, limit: int) -> list[dict]:
+    """The cron pipeline's scheduled deliveries (the pre-#1186 name, kept additive)."""
+    return pipeline_runs(repo, workflow, limit, "schedule")
+
+
+def verdict(runs: list[dict], limit: int, event: str = "schedule") -> tuple[bool, str]:
+    """(is_failing, why) for one pipeline, from its newest runs for its own trigger.
 
     A window SHORTER than `limit` is not a failure: a pipeline that was added yesterday has not had
     three chances yet, and calling that red would make the alarm cry wolf on every new bot.
     """
+    kind = "scheduled" if event == "schedule" else "dispatched"
     if not runs:
-        return False, "no scheduled run yet"
+        return False, f"no {kind} run yet"
     if len(runs) < limit:
-        return False, f"only {len(runs)} scheduled run(s) so far"
+        return False, f"only {len(runs)} {kind} run(s) so far"
     bad = [r for r in runs[:limit] if str(r.get("conclusion") or "").lower() in BAD]
     if len(bad) < limit:
         return False, f"{len(bad)}/{limit} of the newest runs failed"
@@ -104,9 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve()
-    pipelines = cron_pipelines(root)
+    pipelines = watched_pipelines(root)
     if not pipelines:
-        print(f"[bot-health] FAIL: no cron pipeline found under {root / WORKFLOWS} — the alarm "
+        print(f"[bot-health] FAIL: no watched pipeline found under {root / WORKFLOWS} — the alarm "
               f"would measure nothing", file=sys.stderr)
         return 2
     if args.list:
@@ -121,22 +185,24 @@ def main(argv: list[str] | None = None) -> int:
         print("[bot-health] FAIL: no repository to read runs from", file=sys.stderr)
         return 2
 
+    cron = set(cron_pipelines(root))
     failing: list[str] = []
     for workflow in pipelines:
-        runs = scheduled_runs(repo, workflow, args.limit)
-        bad, why = verdict(runs, args.limit)
-        print(f"[bot-health] {'FAIL' if bad else 'ok  '} {workflow}: {why}")
+        event = "schedule" if workflow in cron else "workflow_dispatch"
+        runs = pipeline_runs(repo, workflow, args.limit, event)
+        bad, why = verdict(runs, args.limit, event)
+        print(f"[bot-health] {'FAIL' if bad else 'ok  '} {workflow} ({event}): {why}")
         if bad:
             failing.append(f"{workflow} — {why}")
 
     if failing:
-        print(f"\n[bot-health] {len(failing)} cron pipeline(s) are red on every scheduled run:",
+        print(f"\n[bot-health] {len(failing)} watched pipeline(s) are red on every run:",
               file=sys.stderr)
         for line in failing:
             print(f"[bot-health]   - {line}", file=sys.stderr)
         return 1
-    print(f"[bot-health] OK: {len(pipelines)} cron pipeline(s) each have a green scheduled run "
-          f"in the last {args.limit}")
+    print(f"[bot-health] OK: {len(pipelines)} watched pipeline(s) each have a green run in the "
+          f"last {args.limit} deliveries")
     return 0
 
 
