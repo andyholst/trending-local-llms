@@ -271,7 +271,9 @@ def test_the_gate_is_wired_to_the_lint_target_and_the_suite():
     lint = m.group(1) if m else ""
     check("make lint: runs the agent-skills gate", "check-agent-skills" in lint, lint)
     check("make: the public gate target exists",
-          "check-agent-skills:\n\tpython3 scripts/check_agent_skills.py check" in mk)
+          "check-agent-skills: python-env-image" in mk
+          and "\t$(PYTHON_RUN) python3 scripts/check_agent_skills.py check" in mk,
+          "check-agent-skills must list python-env-image and route the pure command through $(PYTHON_RUN)")
     check("make: the report target exists", "agent-skills-report:" in mk)
     check("suite: this module runs in `make test`", _wired(), "")
     # `make lint` really executes it: the target is called, not just mentioned.

@@ -474,9 +474,9 @@ openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, referen
 # vacuous "none names a PR" again. Host-side (writes only the tree), called by
 # issue-bot after `gh pr create`. REFUSES (exit 2) when no active change names
 # the given issue, so a recording that matched nothing is loud, never silent.
-openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:` is `#<ISSUE>`, then regenerate the index
+openspec-record-pr: python-env-image ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:` is `#<ISSUE>`, then regenerate the index
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
-	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
+	@$(PYTHON_RUN) python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
 openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check openspec-binding-check openspec-invalid-change-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), every ACTIVE change binds the Issue its PR closes or declares `Binding-exempt:` (issue #952), every ACTIVE change is structurally complete — proposal + spec + tasks (issue #962), the index current
 	docker run $(OS_OPTS) openspec validate --changes
@@ -523,8 +523,8 @@ architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make 
 # with a cron) and opens
 # a PR only when the block changed; `architecture-check` above fails while it is
 # stale, so the dispatched bot repairs drift instead of the drift living for weeks.
-architecture-refresh: ## Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479)
-	python3 scripts/architecture_bot.py --write
+architecture-refresh: python-env-image ## Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479)
+	$(PYTHON_RUN) python3 scripts/architecture_bot.py --write
 
 # The event-driven keeper for a red master ARCHITECTURE block gate (issue #861, rule 6q) —
 # the sibling of `openspec-index-repair` (#304) for the OTHER half of the generated pair.
@@ -920,12 +920,12 @@ _check-agent-skills:
 	python3 scripts/check_agent_skills.py check
 
 .PHONY: check-agent-skills
-check-agent-skills: ## Fail when a bot leg preloads no skill, names a missing one, inlines the unattended contract, or the AGENTS.md rule is gone (issue #549)
-	python3 scripts/check_agent_skills.py check
+check-agent-skills: python-env-image ## Fail when a bot leg preloads no skill, names a missing one, inlines the unattended contract, or the AGENTS.md rule is gone (issue #549)
+	$(PYTHON_RUN) python3 scripts/check_agent_skills.py check
 
 .PHONY: agent-skills-report
-agent-skills-report: ## Print every agent leg with its prompt size and preloaded skills, and every skill's frontmatter (issue #549)
-	python3 scripts/check_agent_skills.py report
+agent-skills-report: python-env-image ## Print every agent leg with its prompt size and preloaded skills, and every skill's frontmatter (issue #549)
+	$(PYTHON_RUN) python3 scripts/check_agent_skills.py report
 
 
 # The trending-model queries (issue #264). The searches were a fixed keyword list
@@ -1301,12 +1301,12 @@ merge-fetch:
 	$(DOCKER_RUN) sh -c "make _merge-fetch"
 
 .PHONY: cron-install-check
-cron-install-check: ## Verify the fleet cron installation has a no-agent watchdog and a monitor-gated agent using the repo-owned C/R/M detector (issue #1270)
-	python3 scripts/cron_install_check.py
+cron-install-check: python-env-image ## Verify the fleet cron installation has a no-agent watchdog and a monitor-gated agent using the repo-owned C/R/M detector (issue #1270)
+	$(PYTHON_RUN) python3 scripts/cron_install_check.py
 
 .PHONY: vetted-performance
-vetted-performance: ## Read-only top measured t/s per VRAM band with vetted evidence (issue #1252)
-	@python3 scripts/vetted_performance.py $(ARGS)
+vetted-performance: python-env-image ## Read-only top measured t/s per VRAM band with vetted evidence (issue #1252)
+	@$(PYTHON_RUN) python3 scripts/vetted_performance.py $(ARGS)
 .PHONY: agent-hermes-smoke
 agent-hermes-smoke: ## Offline smoke of the new agent image Hermes call path: pin, installer, chain request shape (issue #1273)
 	python3 scripts/agent_hermes_smoke.py
@@ -1532,8 +1532,8 @@ secret-scan-self-test:
 .PHONY: check-secret-output secret-output-report
 check-secret-output: python-env-image ## CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal
 	$(PYTHON_RUN) python3 scripts/check_secret_output.py check
-secret-output-report: ## Show which files name a secret-shaped variable, and whether any prints it
-	python3 scripts/check_secret_output.py report
+secret-output-report: python-env-image ## Show which files name a secret-shaped variable, and whether any prints it
+	$(PYTHON_RUN) python3 scripts/check_secret_output.py report
 
 # ---- agent-log redaction (issue #351) ----------------------------------------
 # A bot job's agent stream must never be printed raw: it is captured to a file and
@@ -1544,9 +1544,9 @@ secret-output-report: ## Show which files name a secret-shaped variable, and whe
 # host filesystem, so a runner and a local run agree (like `make lint`).
 # `make check-secret-output` refuses a workflow that captures a stream without it.
 .PHONY: scrub-log
-scrub-log: ## Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40])
+scrub-log: python-env-image ## Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40])
 	@test -n "$(FILE)" || { echo "scrub-log: FILE=<the captured log> is required"; exit 2; }
-	@python3 scripts/scrub_log.py --in "$(FILE)" $(if $(LOG_OUT),--out "$(LOG_OUT)",) --tail $(or $(TAIL),40)
+	@$(PYTHON_RUN) python3 scripts/scrub_log.py --in "$(FILE)" $(if $(LOG_OUT),--out "$(LOG_OUT)",) --tail $(or $(TAIL),40)
 
 # ---- commit-authorship guard (issue #317) -----------------------------------
 # The only identities on this repo are Andy Holst and Asimov Agent. Nothing read a
