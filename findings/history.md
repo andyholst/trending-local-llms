@@ -113,3 +113,9 @@
 - **Why:** rules 6b/6d/6h require the rulebook guard row to name the behaviour it locks; a guard that lands without its row has no reviewable home, so a later edit could drop the `path=` naming again with nothing naming the loss.
 - **Done when:** the EXISTING §8 row at `AGENTS.md:2291` is extended (not duplicated) to name `test_check_advance_and_adopt_name_the_checkout_they_read` and the additive `path=` key — landed from the ledger by an attended run with human sign-off.
 - **Owed-row:** <!-- owed-row: section=8 needle=test_check_advance_and_adopt_name_the_checkout_they_read -->
+
+## Each host-ahead batch is landed by a hand-cut PR; the sync gate never proposes one
+
+- **Evidence:** the gate went red on host-ahead notes at base `674bb36b` (planner +1, reviewer +2, zero deletions, absent from master). Prior batches each needed their own tracked worktree PR and count-guard test: #1418/#1445/#1469, #1487, and now #1559. `make fleet-host-sync-check` emits only `FAIL <lane>/<rel> diverges` — no landing candidate, no diff summary, no issue link.
+- **Why:** a byte-only gate can name the divergence but cannot turn it into work, so each M: wake re-reports an "owed" note and the gate stays red until a human-shaped PR lands; with a deep issue queue this can persist for many wake-ups and keeps the sync signal permanently noisy.
+- **Done when:** the sync check (or a companion seam) emits a structured forward-work report — added-line count, deletion count, whether the additions are on master, and a suggested landing issue — so a lane can file and land one bounded PR per batch without re-diffing blobs by hand.
