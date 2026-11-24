@@ -229,7 +229,7 @@ def test_budget_burn_retries_with_reasoning_off():
 def test_report_holds_only_the_failing_check():
     rc, calls, report, out = run(red=99, rounds=1)
     check("report: names the checks that passed",
-          "checks passed: lint validate-search validate-mapped openspec-check architecture-check" in report,
+          "checks passed: lint validate-search validate-mapped openspec-check architecture-check findings-check-for-pr" in report,
           report[:200])
     check("report: no output from passing checks (their fixture noise)", "FAIL: m1" not in report, report[:300])
     rc, calls, report, out = run(red=0, rounds=1, vs_red=1)
