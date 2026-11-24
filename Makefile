@@ -380,8 +380,9 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 # (scripts/check_no_bare_host_python.py, part of `make lint`) fails when any public target
 # outside this list reaches a bare host `python3`/`pip`/`uv` — or a bare pip-tools console script
 # (`pip-compile`, `pip-sync`, `pip-tools`; #1593, which the shorter `pip` spelling could not see)
-# — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one bare
-# `$(MAKE) _x` hop. The authoritative copy is EXCEPTIONS in that script; the mirror below carries
+# — through a recipe line, a `$(call …)` macro body, a `$(shell …)` parse-time exec, or one make
+# hop into a private `_x` recipe in BOTH spellings (`$(MAKE) … _x` and the plain `make _x`; #1596).
+# The authoritative copy is EXCEPTIONS in that script; the mirror below carries
 # the SAME names, and tests/test_os_agnostic_make.py fails when the two drift. Categories: image
 # build/selection (the docker seam itself), gh/GitHub-state bound, host git identity/worktree, the
 # cheapest pre-image-ensure guards, and host orchestration/local probes.
@@ -867,7 +868,7 @@ _check-no-bare-host-python:
 	python3 scripts/check_no_bare_host_python.py
 
 .PHONY: check-no-bare-host-python
-check-no-bare-host-python: ## Fail when a non-exception public make target reaches a bare host python3/pip/uv or a bare pip-tools console script (issue #712 Slice 5, #1496; #1593)
+check-no-bare-host-python: ## Fail when a non-exception public make target reaches a bare host python3/pip/uv or a bare pip-tools console script through a recipe, a called macro, a $(shell) exec or either make-hop spelling (issue #712 Slice 5, #1496; #1593; #1596)
 	@$(MAKE) --no-print-directory _check-no-bare-host-python
 
 .PHONY: lint lint-fix

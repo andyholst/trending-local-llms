@@ -5,7 +5,8 @@ Three properties, each locking a measured gap:
 
  1. **The tree is green.** No public target outside the documented host-only exceptions reaches a
     bare host `python3`/`pip`/`uv` — through a recipe line, a `$(call …)` macro body (the redaction
-    filter lives in one), a `$(shell …)` parse-time exec, or one bare `$(MAKE) _x` hop.
+    filter lives in one), a `$(shell …)` parse-time exec, or one make hop into a private recipe
+    in BOTH spellings (`$(MAKE) … _x` and plain `make _x`; #1596).
  2. **The exception list is mechanical, not hand-waved.** The names mirrored in the Makefile's
     `HOST-EXCEPTIONS-BEGIN/END` block are EXACTLY `check_no_bare_host_python.EXCEPTIONS`, and every
     one of them names a target that really exists — a typo'd or removed exception is loud.
@@ -17,6 +18,12 @@ Three properties, each locking a measured gap:
     `pip-tools …` in a NON-exception PUBLIC target is reported naming target + line, while the REAL
     private recipes that carry them (`_requirements`, `_generate-requirements`) stay GREEN because
     their only entry is a `$(DOCKER_RUN) make _x` hop — both polarities in one pair.
+ 5. **BOTH hop spellings are followed (#1596).** The reachability half of the same guard: a private
+    recipe reached through a PUBLIC target's PLAIN `make _x` hop is walked exactly like one reached
+    through `$(MAKE) … _x`. Pre-#1596 the matcher saw only the recursive spelling, so a bare host
+    interpreter planted in such a private recipe exited 0 INVISIBLE — the failure mode #1496 set out
+    to close, reintroduced by copying the file's own dominant idiom. The harnessed forms stay GREEN
+    for the right reason: those hops run inside a container.
 
 Nothing here mocks product code: the suite imports the real `scripts/check_no_bare_host_python.py`
 and reads the real `Makefile` (AGENTS.md rule 6m).
@@ -240,6 +247,161 @@ def test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnesse
               "the public wrapper no longer routes the private recipe through $(DOCKER_RUN)")
 
 
+def test_the_guard_follows_both_hop_spellings_into_private_recipes() -> None:
+    """Property 3c (#1596): a plain `make _x` hop is walked, and its harnessed twin stays green.
+
+    RED half: the exact live shape the reviewer measured on merged master — a bare
+    `python3 scripts/query_vocab.py --print nvidia` planted in `_setup`, with the PUBLIC
+    `search-smoke` target exposing it through ONE plain `make _setup` hop. Pre-#1596 `HOP_RE`
+    matched only `$(MAKE) … _x`, so the whole plain-hop class (`_refresh`'s seven hops,
+    `_setup`'s registers) was invisible and this exited 0.
+    GREEN half: the same private recipe reached through `$(DOCKER_RUN) make _setup` is clean,
+    because that hop already runs inside the container — the suppression the guard has always had,
+    applied to BOTH spellings.
+    """
+    module = scanner()
+
+    # The matcher itself: both spellings resolve to the private target name.
+    for spelling, line in (
+        ("plain", "\t@echo \"== _setup ==\"; make _setup || exit 1\n"),
+        ("plain+flags", "\tmake --no-print-directory -j4 _search-nvidia\n"),
+        ("recursive", "\t$(MAKE) --no-print-directory _setup\n"),
+    ):
+        hops = []
+        for match in module.HOP_RE.finditer(line):
+            groups = match.groups()
+            if len(groups) > 1 and groups[-1]:
+                hops.append(groups[-1])
+        check(f"hop: the {spelling} spelling matches the private target", hops != [], line)
+
+    # RED: the planted bare interpreter behind a PLAIN hop from a public target is DETECTED,
+    # naming the public target and the private recipe's line.
+    planted_plain = (
+        ".PHONY: search-smoke\n"
+        "search-smoke:\n"
+        "\t@echo \"== _setup ==\"; make _setup || exit 1\n"
+        ".PHONY: _setup\n"
+        "_setup:\n"
+        "\tpython3 scripts/query_vocab.py --print nvidia\n"
+    )
+    findings, _count = module.violations(planted_plain)
+    check("red(#1596): a bare host python reached through a PLAIN `make _setup` hop is reported",
+          any(f.target == "search-smoke" and f.token == "python3" for f in findings),
+          [str(f) for f in findings])
+    check("red(#1596): the finding names the private recipe's physical line",
+          sorted({f.line for f in findings}) == [6],
+          [(f.target, f.line, f.token) for f in findings])
+
+    # The SAME tree with the recursive spelling is detected identically — one behaviour, two spellings.
+    planted_recursive = planted_plain.replace("make _setup || exit 1", "$(MAKE) --no-print-directory _setup")
+    recursive_findings, _ = module.violations(planted_recursive)
+    check("red(#1596): the SAME private recipe reached through `$(MAKE) … _setup` is reported",
+          any(f.target == "search-smoke" and f.token == "python3" for f in recursive_findings),
+          [str(f) for f in recursive_findings])
+
+    # GREEN: the harnessed twin of each spelling is suppressed for the right reason (container).
+    for spelling, hop in (
+        ("plain", "\t$(DOCKER_RUN) make _setup\n"),
+        ("recursive", "\t$(DOCKER_RUN) sh -c \"make _setup\"\n"),
+    ):
+        harnessed = (
+            ".PHONY: search-smoke\n"
+            "search-smoke:\n"
+            f"{hop}"
+            ".PHONY: _setup\n"
+            "_setup:\n"
+            "\tpython3 scripts/query_vocab.py --print nvidia\n"
+        )
+        targets, macros = module.parse_makefile(harnessed)
+        check(f"green(#1596): the harnessed {spelling} hop walks to no finding",
+              not module.walk("search-smoke", targets, macros),
+              [str(f) for f in module.walk("search-smoke", targets, macros)])
+
+    # END-TO-END on the REAL tree, in the issue's exact shape: plant the bare command in the real
+    # `_setup` recipe and expose it from the PUBLIC `search-smoke` through ONE plain `make _setup`
+    # hop. Measured by the reviewer on merged master `c7fa437e`: the pre-change guard exits 0
+    # INVISIBLE here; the fixed guard must exit 1. The copy is written to a temp Makefile so the
+    # checkout is untouched (`--makefile`), which is the same seam `main()` uses.
+    import tempfile
+    planted_tree = MAKEFILE_TEXT.replace(
+        ".PHONY: search-smoke\nsearch-smoke:\n\t$(DOCKER_RUN) make _search-smoke\n",
+        ".PHONY: search-smoke\nsearch-smoke:\n\tmake _setup || exit 1\n", 1)
+    marker = ".PHONY: _setup\n_setup:\n"
+    head = planted_tree.index(marker) + len(marker)
+    lines = planted_tree[head:].split("\n")
+    skip = 0
+    while skip < len(lines) and (not lines[skip].strip() or lines[skip].strip().startswith("@#")):
+        skip += 1
+    cut = head + sum(len(x) + 1 for x in lines[:skip])
+    planted_tree = (planted_tree[:cut]
+                    + "\tpython3 scripts/query_vocab.py --print nvidia\n"
+                    + planted_tree[cut:])
+    check("red(#1596): the planted tree really carries a plain public hop into `_setup`",
+          "make _setup || exit 1" in planted_tree and "_setup:" in planted_tree, "")
+    with tempfile.TemporaryDirectory() as tmp:
+        planted_make = Path(tmp) / "Makefile"
+        planted_make.write_text(planted_tree, encoding="utf-8")
+        run = subprocess.run([sys.executable, str(ROOT / "scripts" / "check_no_bare_host_python.py"),
+                              "--makefile", str(planted_make)],
+                             capture_output=True, text=True)
+    check("red(#1596): the CLI exits 1 on the real tree with a plain-hop-planted bare host python",
+          run.returncode == 1, (run.returncode, run.stdout[-300:], run.stderr[-200:]))
+    check("red(#1596): the CLI names the public target and the private line",
+          "search-smoke" in run.stdout and "query_vocab" in run.stdout, run.stdout[-300:])
+
+    # The SAME planted tree with the harnessed spelling stays green — suppression still holds.
+    with tempfile.TemporaryDirectory() as tmp:
+        harness_make = Path(tmp) / "Makefile"
+        harness_make.write_text(
+            planted_tree.replace("\tmake _setup || exit 1\n", "\t$(DOCKER_RUN) make _setup\n", 1),
+            encoding="utf-8")
+        run = subprocess.run([sys.executable, str(ROOT / "scripts" / "check_no_bare_host_python.py"),
+                              "--makefile", str(harness_make)],
+                             capture_output=True, text=True)
+    check("green(#1596): the harnessed twin of the same planted tree exits 0",
+          run.returncode == 0, (run.returncode, run.stdout[-300:]))
+
+    # And the REAL tree: every one of the file's plain hops is now followed, while the 50 hops a
+    # public target makes through a harness stay suppressed. Measured here so a future narrowing
+    # of HOP_RE cannot quietly restore the hole. The walk starts at PUBLIC targets; a hop made by
+    # a private recipe (`_refresh`'s own chain, `_setup`'s registers) is reachable only through a
+    # PUBLIC wrapper (`refresh`/`setup`, both harnessed), so those lines are asserted through the
+    # matcher rather than as direct findings.
+    real_targets, _real_macros = module.parse_makefile(MAKEFILE_TEXT)
+    plain_hops = []
+    for target in sorted(real_targets):
+        for lineno, raw in module.logical_lines(real_targets[target]):
+            stripped = raw.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if any(token in raw for token in module.HARNESS_TOKENS):
+                continue
+            for match in module.HOP_RE.finditer(raw.lstrip("@")):
+                groups = match.groups()
+                hop = groups[-1] if groups else None
+                if not hop or raw.lstrip("@")[match.start():].startswith("$(MAKE"):
+                    continue
+                plain_hops.append((target, hop))
+    check("real-tree(#1596): the Makefile's non-harnessed plain hops are present and walked",
+          len(plain_hops) > 0, plain_hops)
+    check("real-tree(#1596): the repo's own dominant idiom drives the private refresh chain",
+          ("_refresh", "_setup") in plain_hops, sorted(plain_hops))
+    # `_setup`'s two `$(MAKE) … _hermes-skills-*` registers are the SAME hop class with the
+    # recursive spelling; the recursive matcher covers them (the guard walks `_setup` whenever a
+    # public target reaches it), so this pins that both spellings resolve to the same name.
+    for register in ("_hermes-skills-register", "_hermes-skills-check"):
+        line = f"\t$(MAKE) --no-print-directory {register}\n"
+        found = []
+        for match in module.HOP_RE.finditer(line):
+            groups = match.groups()
+            if len(groups) > 1 and groups[-1]:
+                found.append(groups[-1])
+        check(f"real-tree(#1596): `{register}` is a reachable private target through the recursive hop",
+              found == [register], line)
+        check(f"real-tree(#1596): `{register}` really exists as a Makefile target",
+              register in real_targets, sorted(t for t in real_targets if t.startswith("_hermes")))
+
+
 def test_the_guard_is_wired_into_lint_and_reachable() -> None:
     """Property 1c: `make lint` actually runs the guard, and the public target exists."""
     lint_block = MAKEFILE_TEXT.split("\nlint:", 1)
@@ -262,6 +424,7 @@ def main() -> int:
     test_the_two_cross_cutting_seams_run_through_the_container_seam()
     test_the_detector_is_red_on_the_pre_change_seam_shapes()
     test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed()
+    test_the_guard_follows_both_hop_spellings_into_private_recipes()
     test_the_guard_is_wired_into_lint_and_reachable()
     print(f"\nPASSED {PASSED} | FAILED {FAILED}")
     return 1 if FAILED else 0
