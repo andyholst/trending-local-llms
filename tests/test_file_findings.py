@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -504,6 +505,122 @@ def test_wired_into_make_test_and_the_bot():
           "make file-findings" in bot and "make findings-check" in bot, "")
 
 
+# --------------------------------------------------------------------------------------
+# Issue #1454: the gate is SHAPE-AWARE, and wired where CI decides
+# --------------------------------------------------------------------------------------
+
+_EXEMPT_SHAPES = (
+    "ci/trending-refresh-20261114-1138",
+    "ci/free-model-refresh-20261120-1",
+    "ci/keeper-index-20261122t145402z",
+    "ci/openspec-index-repair-20261123T091623Z",
+    "ci/architecture-block-repair-20261123T091623Z",
+    "ci/openspec-invalid-change-repair-20261123T091623Z",
+    "ci/pipeline-failure-ledger-20261123T205600Z",
+    "docs/contract-prose-sync-1394",
+    "rule/reviewer-skill-notes-1432",
+)
+
+
+def _check_cli(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, str(SCRIPT), "--check", *args],
+                          cwd=ROOT, capture_output=True, text=True)
+
+
+def test_an_implementation_shaped_head_without_findings_goes_red():
+    """The RED-first scenario: rule 6g's analysis is MANDATORY on an implementation PR.
+
+    Given an implementation-shaped head with no findings.md, when the shape-aware check
+    runs, then it exits non-zero naming the file — the old wiring never ran here at all.
+    """
+
+    with tempfile.TemporaryDirectory() as td:
+        missing = Path(td) / "findings.md"
+        proc = _check_cli("--path", str(missing), "--branch", "ci/data-gap-12-x")
+
+    check("red: exit non-zero", proc.returncode != 0, str(proc.returncode))
+    check("red: names findings.md", "findings.md" in proc.stderr, proc.stderr)
+    check("red: it does not print a SKIP line", "SKIP" not in proc.stdout, proc.stdout)
+
+
+def test_exempt_shapes_are_skipped():
+    """A bare wiring would red EVERY keeper/refresh/docs PR; the declared exemption
+    keeps each of them green and names the prefix it matched."""
+
+    with tempfile.TemporaryDirectory() as td:
+        missing = Path(td) / "findings.md"
+        for branch in _EXEMPT_SHAPES:
+            proc = _check_cli("--path", str(missing), "--branch", branch)
+            check(f"exempt: {branch} exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
+            check(f"exempt: {branch} names its prefix",
+                  "SKIP" in proc.stdout and "exempt shape" in proc.stdout, proc.stdout)
+
+
+def test_a_push_event_is_a_green_noop():
+    """A push to master / a dispatch carries no `pull_request`: nothing to require."""
+
+    with tempfile.TemporaryDirectory() as td:
+        missing = Path(td) / "findings.md"
+        event = Path(td) / "push.json"
+        event.write_text(json.dumps({"ref": "refs/heads/master", "commits": []}), encoding="utf-8")
+        proc = _check_cli("--path", str(missing), "--event", str(event))
+
+    check("push: exit 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("push: it says SKIP, never FAIL", "SKIP" in proc.stdout and "FAIL" not in proc.stderr,
+          proc.stdout + proc.stderr)
+
+
+def test_a_closing_claim_alone_makes_it_implementation():
+    """A shapeless branch whose body claims an issue IS an implementation."""
+
+    with tempfile.TemporaryDirectory() as td:
+        missing = Path(td) / "findings.md"
+        body = Path(td) / "body.md"
+        body.write_text("Implements the seam.\n\nCloses #12\n", encoding="utf-8")
+        proc = _check_cli("--path", str(missing), "--branch", "shapeless-branch",
+                          "--body-file", str(body))
+
+    check("claim: exit non-zero", proc.returncode != 0, proc.stdout + proc.stderr)
+    check("claim: names findings.md", "findings.md" in proc.stderr, proc.stderr)
+
+
+def test_a_quoted_claim_is_not_a_claim():
+    """`visible_text` strips code FIRST, so a quoted example is prose, not a claim."""
+
+    with tempfile.TemporaryDirectory() as td:
+        missing = Path(td) / "findings.md"
+        body = Path(td) / "body.md"
+        body.write_text("The rule is `Closes #12`, quoted from the docs.\n", encoding="utf-8")
+        proc = _check_cli("--path", str(missing), "--branch", "shapeless-branch",
+                          "--body-file", str(body))
+
+    check("quoted: exit 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("quoted: it reports SKIP", "SKIP" in proc.stdout, proc.stdout)
+
+
+def test_the_shape_gate_is_wired_to_ci_and_the_fix_loop():
+    """Rule 6d/6m: the target exists, CI runs it, the fix loop lists it, the description
+    documents it — otherwise the gate is green because nothing executes it."""
+
+    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+    qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    loop = (ROOT / "scripts" / "fix_loop.sh").read_text(encoding="utf-8")
+    arch = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+    check("wiring: the Makefile defines findings-check-for-pr",
+          "\nfindings-check-for-pr:" in mk, "")
+    block = re.search(r"^findings-check-for-pr:.*\n(?:\t.*\n)+", mk, re.M)
+    check("wiring: the target is HOST-SIDE (it reads the runner's $GITHUB_EVENT_PATH)",
+          block is not None and "$(PYTHON_RUN)" not in block.group(0),
+          "the container does not mount the event payload (measured: PR #1480 run 45288434759)")
+    check("wiring: qa-validate's validate job calls it", "make findings-check-for-pr" in qa, "")
+    check("wiring: the fix loop carries it", "findings-check-for-pr" in loop, "")
+    check("wiring: ARCHITECTURE.md documents the target", "findings-check-for-pr" in arch, "")
+    check("wiring: the plain findings-check is unchanged",
+          "\nfindings-check:" in mk and "python3 scripts/file_findings.py --check" in mk, "")
+    check("wiring: this suite is in the `_test` chain", wired(__file__), "")
+
+
 def main() -> int:
     print("findings -> issues (scripts/file_findings.py)")
     test_a_multiline_field_keeps_its_continuation_lines()
@@ -518,6 +635,12 @@ def main() -> int:
     test_an_owed_row_finding_files_the_registered_marker()
     test_an_owed_row_field_that_declares_nothing_fails_loudly()
     test_wired_into_make_test_and_the_bot()
+    test_an_implementation_shaped_head_without_findings_goes_red()
+    test_exempt_shapes_are_skipped()
+    test_a_push_event_is_a_green_noop()
+    test_a_closing_claim_alone_makes_it_implementation()
+    test_a_quoted_claim_is_not_a_claim()
+    test_the_shape_gate_is_wired_to_ci_and_the_fix_loop()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

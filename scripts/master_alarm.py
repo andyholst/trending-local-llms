@@ -108,6 +108,11 @@ GATES: dict[str, tuple[str, str]] = {
     "validate": ("alarm", "master-alarm"),
     "validate-search": ("alarm", "master-alarm"),
     "validate-mapped": ("alarm", "master-alarm"),
+    # Issue #1454: the shape-aware findings gate runs in qa-validate's validate
+    # job. It reads the PR event payload and self-skips exempt branches; it
+    # regenerates nothing, so a red push-to-master goes to the alarm — there is
+    # no keeper that writes an analysis file. Registered additively (rule 3b).
+    "findings-check-for-pr": ("alarm", "master-alarm"),
     "openspec-archive-check": ("alarm", "master-alarm"),
     # The reintroduction gate (issue #802): a red on master here means a diagnosed pipeline
     # failure was closed without its fix PR + guard test; master-alarm makes it loud.

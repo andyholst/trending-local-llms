@@ -53,6 +53,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bot_markers  # noqa: E402  # the ONE owed-row marker definition (rule 6j)
 import owed_row_derive  # noqa: E402  # the ONE Done-when derivation (rule 6d, issue #765)
+import pr_closure  # noqa: E402  # the ONE branch/body shape parser (rule 6d, issue #1454)
 
 FINDINGS = ROOT / "findings.md"
 LABEL = "tech-debt"
@@ -317,6 +318,23 @@ def file_findings(findings: list[dict], pr: str | None, issue: str | None) -> in
     return filed
 
 
+def _shape_inputs(args: argparse.Namespace) -> tuple[str | None, str]:
+    """(branch, body) for the shape decision — the event payload wins, as in pr_closure.
+
+    A `pull_request` event carries BOTH the head ref and the body, so it is authoritative;
+    an explicit `--branch`/`--body-file` is the local shape (the fix loop has no PR yet).
+    A push or dispatch payload has no `pull_request`: `read_event` answers ("", None), so
+    the gate has nothing to require and stays a green no-op (issue #1454).
+    """
+    if args.event:
+        body, head = pr_closure.read_event(args.event)
+        return (head or args.branch), body
+    body = ""
+    if args.body_file:
+        body = Path(args.body_file).read_text(encoding="utf-8")
+    return args.branch, body
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="File one issue per implementation finding")
     ap.add_argument("--file", action="store_true", help="file the findings in findings.md")
@@ -324,9 +342,26 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--path", default=str(FINDINGS), help="the findings file (default findings.md)")
     ap.add_argument("--pr", default=None, help="PR number the findings came from")
     ap.add_argument("--issue", default=None, help="issue number the run implemented")
+    # (issue #1454) the SHAPE inputs: with none of them this is byte-identical to the
+    # plain `findings-check`, so the bot paths are untouched; with any of them the check
+    # first asks `pr_closure.implementation_shaped` whether this PR owes an analysis.
+    ap.add_argument("--event", help="webhook payload ($GITHUB_EVENT_PATH): read the PR shape from it")
+    ap.add_argument("--branch", help="the head branch, when there is no event payload")
+    ap.add_argument("--body-file", help="the PR body on disk, when there is no event payload")
     a = ap.parse_args(argv)
 
     path = Path(a.path)
+    if a.check and (a.event or a.body_file or a.branch):
+        branch, body = _shape_inputs(a)
+        if not pr_closure.implementation_shaped(branch, body):
+            prefix = pr_closure.non_implementation_prefix(branch)
+            if prefix:
+                print(f"[findings] SKIP {branch}: exempt shape ({prefix}) — "
+                      f"no findings.md required")
+            else:
+                print(f"[findings] SKIP {branch or '(no branch)'}: no implementation claim "
+                      f"in this PR — nothing here owes an analysis")
+            return 0
     if not path.is_file():
         print(
             f"[findings] FAIL {path.name} is missing — every implementation run must analyse "

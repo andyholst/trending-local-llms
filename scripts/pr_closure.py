@@ -71,6 +71,63 @@ TRAILING_ISSUE = re.compile(r"-(\d+)$")
 # here, next to the parser that reads it, in ONE place (rule 6d).
 KEEPER_BRANCH = re.compile(r"^ci/keeper(?:-[a-z0-9]+)*$")
 
+# The declared NON-implementation branch shapes (issue #1454). A PR of one of these
+# shapes carries no `findings.md` requirement: keepers, refreshes and the docs/rule
+# shapes do not implement an issue, so rule 6g's mandatory analysis does not bind them.
+# The exemption WINS over any claim in the body — a keeper that writes `Closes #N` is
+# still a keeper. This is a DECLARED list in the ONE parser module (rule 6d), so the
+# gate and its wiring test cannot drift; adding a shape is a reviewed edit, never a
+# silent prefix convention (the #1089/#1295 lesson: decide by a declared predicate,
+# not by a name guess).
+NON_IMPLEMENTATION_BRANCHES = (
+    "ci/trending-refresh-",
+    "ci/free-model-refresh-",
+    "ci/architecture-refresh-",
+    "ci/keeper",
+    "ci/openspec-index-repair-",
+    "ci/architecture-block-repair-",
+    "ci/openspec-invalid-change-repair-",
+    "ci/pipeline-failure-ledger-",
+    "docs/",
+    "rule/",
+    "ci/tll-docs-",
+)
+
+
+def non_implementation_prefix(branch: str | None) -> str | None:
+    """The declared exempt prefix this branch matches, or None when it matches none."""
+    if not branch:
+        return None
+    for prefix in NON_IMPLEMENTATION_BRANCHES:
+        if branch.startswith(prefix):
+            return prefix
+    return None
+
+
+def implementation_shaped(branch: str | None, body: str = "") -> bool:
+    """Is this PR an IMPLEMENTATION, decided ONLY by this module's own signals (#1454)?
+
+    `make findings-check` was invisible to `qa-validate`, so rule 6g's mandatory
+    analysis could be absent on a green direct worktree PR. Wiring it in bare would
+    red every keeper/refresh/docs PR that carries no `findings.md` (the §6q
+    repo-wide-red hazard), so the gate asks THIS question first.
+
+    True iff the branch encodes an issue (`implemented_issue`), or the body CLAIMS
+    one — a closing binding, or an `implement #<n>` verb on its first line, both
+    through `implemented_issue_from_message` (which strips code quotes via
+    `visible_text` FIRST, so a body that merely quotes `` `Closes #12` `` stays
+    shapeless — the same view GitHub binds). False when there is no branch, and
+    False when the branch matches a declared `NON_IMPLEMENTATION_BRANCHES` prefix —
+    the exemption wins over any claim.
+    """
+    if not branch:
+        return False
+    if non_implementation_prefix(branch):
+        return False
+    if implemented_issue(branch) is not None:
+        return True
+    return implemented_issue_from_message(body or "") is not None
+
 
 def visible_text(body: str) -> str:
     """The body as GitHub's reference parser reads it: CODE IS NOT A CLAIM.

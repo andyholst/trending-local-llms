@@ -16,7 +16,6 @@ qa-report.txt
 comment.md
 issue.md
 pr-body.md
-findings.md
 triage.md
 start.md
 issue-body.md

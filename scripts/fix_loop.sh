@@ -69,11 +69,14 @@ BASE_CONFLICT_PENDING=0
 # Fast -> slow; stop at the FIRST red check (its output is what Hermes needs).
 # The full unit suite (make test, ~minutes) only runs once everything else is
 # green — it used to run before every Hermes round.
-CHECKS=(lint validate-search validate-mapped openspec-check architecture-check)
+CHECKS=(lint validate-search validate-mapped openspec-check architecture-check findings-check-for-pr)
 # An IMPLEMENTATION run must also have recorded what it found (AGENTS.md,
 # "analysis ships issues, not code"): issue-bot sets REQUIRE_FINDINGS=1, so a
 # missing findings.md is a red check Hermes has to fix. The data-PR repair path
 # repairs a data PR nobody implemented by hand, so it does not demand the file.
+# `findings-check-for-pr` (issue #1454) is the shape-aware form of the same demand:
+# it self-skips an exempt branch (keeper/refresh/docs) through the ONE parser, so it can
+# run unconditionally here without reddening a non-implementation repair.
 [ "${REQUIRE_FINDINGS:-0}" = "1" ] && CHECKS+=(findings-check)
 CHECKS+=(validate)
 BUDGET_SIG='reasoning consumed the entire budget|No visible answer was produced'

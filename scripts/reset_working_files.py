@@ -2,11 +2,13 @@
 """Unstage the bot's working files, from ONE list (issue #543).
 
 A bot run writes its inputs and logs at the repository root (`issue.md`, `pr-body.md`,
-`findings.md`, `implement.log`, …). They are gitignored, but both bots unstage them explicitly
+`implement.log`, …). They are gitignored, but both bots unstage them explicitly
 before `git add -A`, because a name written before the `.gitignore` entry lands — or created in
-another checkout — can be staged anyway, and a commit carrying a reviewer's `findings.md`
-publishes scratch inside the repository (issue #390 measured the sibling case: a 0-byte
-`qa-report.txt.notes` reached PR #387).
+another checkout — can be staged anyway, and a commit carrying scratch publishes it
+inside the repository (issue #390 measured the sibling case: a 0-byte
+`qa-report.txt.notes` reached PR #387). Since issue #1454 `findings.md` is deliberately
+NOT on the list and NOT gitignored: it is a reviewed artifact of an implementation
+head, required by the shape-aware `make findings-check-for-pr` gate.
 
 That unstage used to be one long `git reset -q -- …` line, copied verbatim into two steps of
 `issue-bot.yml` and a third time into `fix-bot.yml`, with `.gitignore` as the fourth copy. This

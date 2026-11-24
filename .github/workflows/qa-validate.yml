@@ -182,6 +182,18 @@ jobs:
       - name: The PR closes the issue its branch implements (rule 6e)
         run: make pr-closure
 
+      # (issue #1454) Rule 6g makes the analysis artifact MANDATORY for every
+      # implementation run, but `make findings-check` ran only on the bot pipelines,
+      # so a direct worktree PR could be green while its analysis was absent. This is
+      # the same gate made SHAPE-AWARE through scripts/pr_closure.implementation_shaped
+      # (the ONE parser, rule 6d): it reads the webhook payload by PATH and requires
+      # findings.md ONLY when the branch or body claims an implementation. A keeper,
+      # refresh, docs or architecture PR carries none and stays green (a bare wiring
+      # would red every one of them — the §6q repo-wide-red hazard); a push to master
+      # or a dispatch has no `pull_request` and is a green no-op.
+      - name: An implementation-shaped PR carries its analysis (rule 6g, issue #1454)
+        run: make findings-check-for-pr
+
       # The base image carries the pinned plugins (Dockerfile). Pull the PUBLISHED
       # base only when it was built from THIS revision's Dockerfile — the
       # published tag names the Dockerfile hash. Otherwise build from source, so a
