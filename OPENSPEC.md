@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **486**
+Active changes: **1** · archived: **487**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `filer-error-block-order` | active | #1466 | — | [filer-error-block](openspec/changes/filer-error-block-order/specs/filer-error-block/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/filer-error-block-order/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -215,6 +214,7 @@ Active changes: **2** · archived: **486**
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |
 | `fetch-timeout-1279` | archived | #1279 — stop live-smoke hanging on unreachable lightbrd links. | #1280 | [fetch-validator](openspec/changes/archive/fetch-timeout-1279/specs/fetch-validator/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/fetch-timeout-1279/proposal.md) |
 | `filer-error-block-names-the-failing-step` | archived | #1098 | #1139 | [alarms](openspec/changes/archive/filer-error-block-names-the-failing-step/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/filer-error-block-names-the-failing-step/proposal.md) |
+| `filer-error-block-order` | archived | #1466 | #1491 | [filer-error-block](openspec/changes/archive/filer-error-block-order/specs/filer-error-block/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/filer-error-block-order/proposal.md) |
 | `filer-log-fetch-escape-retry` | archived | #923 (measured: all 12 issues #822–#833 filed UNDIAGNOSED on 2026-11-12 — every log fetch answered `the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway`) | #926 (PR #924 was closed unmerged: the closure check derives the implemented issue from the branch's trailing number) | [alarms](openspec/changes/archive/filer-log-fetch-escape-retry/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/filer-log-fetch-escape-retry/proposal.md) |
 | `filer-rediagnosis-log-expiry-986` | archived | #986 | #1011 | [alarms](openspec/changes/archive/filer-rediagnosis-log-expiry-986/specs/alarms/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/filer-rediagnosis-log-expiry-986/proposal.md) |
 | `filer-rediagnosis-seam-969` | archived | #969 | #985 | [alarms](openspec/changes/archive/filer-rediagnosis-seam-969/specs/alarms/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/filer-rediagnosis-seam-969/proposal.md) |
