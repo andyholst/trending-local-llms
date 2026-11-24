@@ -114,7 +114,10 @@ JOBS_MEASURED = {"jobs": [
 
 def _canned() -> dict:
     return {
-        "runs-qa-validate_yml.json": PF.RUNS_QA,
+        # The filer's candidate scan pages the REST `actions/runs` feed (issue #1467), so the
+        # fixture is the REAL snake_case row shape the feed serves — the product's ONE projection
+        # runs for real instead of being bypassed by a pre-projected fixture.
+        "window-qa-validate_yml-none-p1.json": PF.RUNS_QA_REST,
         "jobs-100.json": JOBS_MEASURED,
         "jobs-104.json": PF.JOBS_104,
         "log.txt": MEASURED_LOG,

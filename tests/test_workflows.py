@@ -3701,12 +3701,28 @@ def test_the_failure_filer_watches_the_security_scan_pipeline():
         bin_ = td / "bin"
         bin_.mkdir()
         (bin_ / "gh").write_text(
-            "#!/usr/bin/env bash\n"
-            "# Stub `gh`: answers `run list --workflow <wf>` from a canned file (rule 6m).\n"
-            'wf=""; prev=""\n'
-            'for a in "$@"; do [ "$prev" = "--workflow" ] && wf="$a"; prev="$a"; done\n'
-            'f="$PIPESTUB_RUNS/${wf//./_}.json"\n'
-            "if [ -f \"$f\" ]; then cat \"$f\"; else echo '[]'; fi\n")
+            "#!/usr/bin/env python3\n"
+            "# Stub `gh`: answers `run list --workflow <wf>` from a canned file, and the\n"
+            "# paginated REST `actions/runs` window feed (issue #1467) in the REAL snake_case\n"
+            "# shape the feed serves — an EXTERNAL stand-in only (rule 6m).\n"
+            "import json, os, sys\n"
+            "from pathlib import Path\n"
+            "args = sys.argv[1:]\n"
+            "d = Path(os.environ['PIPESTUB_RUNS'])\n"
+            "if args[:1] == ['api'] and 'actions/runs?' in args[1]:\n"
+            "    q = args[1].split('?', 1)[1]\n"
+            "    wf = next((p.split('=', 1)[1] for p in q.split('&') if p.startswith('workflow_id=')), '')\n"
+            "    f = d / f\"{wf.replace('.', '_')}.json\"\n"
+            "    rows = json.loads(f.read_text()) if f.exists() else []\n"
+            "    rest = (('id', 'databaseId'), ('workflow_name', 'workflowName'), ('name', 'name'),\n"
+            "            ('head_branch', 'headBranch'), ('head_sha', 'headSha'), ('event', 'event'),\n"
+            "            ('created_at', 'createdAt'), ('conclusion', 'conclusion'),\n"
+            "            ('status', 'status'), ('html_url', 'url'))\n"
+            "    print(json.dumps({'workflow_runs': [{s: r.get(c) for s, c in rest} for r in rows]}))\n"
+            "    sys.exit(0)\n"
+            "wf = args[args.index('--workflow') + 1] if '--workflow' in args else ''\n"
+            "f = d / f\"{wf.replace('.', '_')}.json\"\n"
+            "print(json.dumps(json.loads(f.read_text()) if f.exists() else []))\n")
         (bin_ / "gh").chmod(0o755)
         for wf, rows in FIXTURE.items():
             (td / f"{wf.replace('.', '_')}.json").write_text(json.dumps(rows))

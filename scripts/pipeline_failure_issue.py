@@ -38,6 +38,15 @@ pending set) so a run whose log aged out of Actions retention drains the queue i
 retry noise for ever. This script never fixes anything and never merges anything
 (rule 6g: analysis files, a separate reviewed change fixes).
 
+The candidate set is the UNION of two scans (issue #1467): `window_runs()` pages the REST
+`actions/runs` feed until a page's oldest run leaves the window (the old `--limit 30` cap let a
+filed failure age out of sight and froze its ledger row away forever), and
+`reconcile_marker_runs()` fetches every marker-carrying run DIRECTLY by id, so a filed run is
+reconciled into the ledger even when newer runs pushed it past any list cap. Both scans classify
+loudly and share ONE tracked-event predicate; the marker-matched backfill records the marker
+issue's number/url instead of null. A capped window walk reports `truncated`, never a silent
+partial view.
+
 A MERGED FIX PR must RAISE its row (issue #1099): a separate stamp pass reads every unraised
 row's issue close link — GitHub's OWN closing-keyword record (`closedByPullRequestsReferences`),
 never a text guess — and when the issue is CLOSED by a MERGED PR whose diff carries a `tests/`
@@ -203,37 +212,113 @@ def append_ledger(path: Path, ledger: dict, entry: dict) -> None:
 # finding the failures
 # ---------------------------------------------------------------------------
 
-def main_pipeline_failures(repo: str, window_hours: int, now: dt.datetime) -> list[dict]:
+#: The REST `actions/runs` row -> the camelCase shape `gh run list --json` already gives every
+#: caller. ONE mapping (rule 6d): the paginated window walk and the fixed-cap `run list` readers
+#: must not grow a second spelling of a run. `url` is REST's `html_url` — gh's own field name for
+#: the same link (`gh run list --json url`).
+_RUN_ROW_FIELDS = (
+    ("databaseId", "id"),
+    ("workflowName", "workflow_name"),
+    ("name", "name"),
+    ("headBranch", "head_branch"),
+    ("headSha", "head_sha"),
+    ("event", "event"),
+    ("createdAt", "created_at"),
+    ("conclusion", "conclusion"),
+    ("status", "status"),
+    ("url", "html_url"),
+)
+
+#: The window walk's page cap (issue #1467): a busy repo can hold more in-window runs than one
+#: page, so the scan pages; it never silently truncates — a capped walk reports `truncated`.
+WINDOW_RUNS_PER_PAGE = 100
+WINDOW_RUNS_MAX_PAGES = 20
+
+
+def _project_run(row: dict) -> dict:
+    """One REST run row -> the camelCase run shape the callers read."""
+    return {camel: row.get(snake) for camel, snake in _RUN_ROW_FIELDS}
+
+
+def window_runs(repo: str, workflow: str, cutoff: dt.datetime,
+                event: str | None = None, per_page: int = WINDOW_RUNS_PER_PAGE,
+                max_pages: int = WINDOW_RUNS_MAX_PAGES) -> tuple[list[dict], bool]:
+    """Every run of `workflow` newer than `cutoff`, newest-first, paging the whole window.
+
+    Issue #1467: both scans used `--limit 30`, so a failure that aged past the newest 30 runs of
+    its workflow was invisible — no ledger row and not even a line in `--dry` output, which froze
+    issues like #1450 out of the ledger forever. This walks the REST `actions/runs` pages
+    (`gh run list` has no offset) and stops when a page's OLDEST run is already out of the window.
+
+    -> (runs, truncated). `truncated` is True when `max_pages` was reached on a FULL page: the
+    window is not fully covered and the caller says so loudly instead of reporting a partial view
+    as a clean scan. A page that cannot be read raises, exactly like the old `run list` read.
+    """
+    runs: list[dict] = []
+    truncated = False
+    for page in range(1, max_pages + 1):
+        query = f"workflow_id={workflow}&per_page={per_page}&page={page}"
+        if event:
+            query += f"&event={event}"
+        payload = _gh_json(["api", f"repos/{repo}/actions/runs?{query}"])
+        rows = payload.get("workflow_runs") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list):
+            raise RuntimeError(f"actions/runs for {workflow} returned {type(rows).__name__}, "
+                               "not a list")
+        if not rows:
+            break
+        projected = [_project_run(r) for r in rows if isinstance(r, dict)]
+        oldest: dt.datetime | None = None
+        for run in projected:
+            created = _ts(run.get("createdAt"))
+            if created is not None and (oldest is None or created < oldest):
+                oldest = created
+        runs.extend(projected)
+        if oldest is not None and oldest < cutoff:
+            break
+        if len(rows) < per_page:
+            break
+        if page == max_pages:
+            truncated = True
+    return runs, truncated
+
+
+def _is_tracked_failure(run: dict, workflow: str | None) -> bool:
+    """The events this filer tracks (issue #802) — ONE predicate, shared by the window scan and
+    the marker reconcile, so the two candidate paths can never disagree about what counts."""
+    return (
+        (run.get("event") == "push" and run.get("headBranch") == "master")
+        or run.get("event") == "schedule"
+        # A dispatch-ONLY pipeline (issue #1185): its dispatched runs are its only
+        # delivery, so a concluded-bad one is an accident to file, not an act to skip.
+        or (run.get("event") == "workflow_dispatch" and workflow in DISPATCH_ONLY_PIPELINES)
+    )
+
+
+def main_pipeline_failures(repo: str, window_hours: int, now: dt.datetime,
+                           stats: dict | None = None) -> list[dict]:
     """Concluded-bad runs of the main pipelines inside the window.
 
     A push to master (qa-validate runs on the merge) and a scheduled delivery (the bots' crons)
     are the states this tracks; a still-queued or running run belongs to the queued alarm, and a
     collaborator's manual dispatch is that person's own act.
+
+    `stats` (optional) collects `window_truncated`: the workflows whose window walk hit the page
+    cap, so the sweep announces a partially-covered window instead of reading it as complete.
     """
     cutoff = now - dt.timedelta(hours=window_hours)
     found: list[dict] = []
     for wf in MAIN_PIPELINES:
-        runs = _gh_json([
-            "run", "list", "--repo", repo, "--workflow", wf, "--limit", "30",
-            "--json", "databaseId,workflowName,name,headBranch,headSha,event,createdAt,"
-                      "conclusion,status,url",
-        ])
-        if not isinstance(runs, list):
-            raise RuntimeError(f"run list for {wf} returned {type(runs).__name__}, not a list")
+        runs, truncated = window_runs(repo, wf, cutoff)
+        if truncated and stats is not None:
+            stats.setdefault("window_truncated", []).append(wf)
         for r in runs:
             if r.get("conclusion") not in BAD_CONCLUSIONS:
                 continue
             created = _ts(r.get("createdAt"))
             if created is None or created < cutoff:
                 continue
-            tracked = (
-                (r.get("event") == "push" and r.get("headBranch") == "master")
-                or r.get("event") == "schedule"
-                # A dispatch-ONLY pipeline (issue #1185): its dispatched runs are its only
-                # delivery, so a concluded-bad one is an accident to file, not an act to skip.
-                or (r.get("event") == "workflow_dispatch" and wf in DISPATCH_ONLY_PIPELINES)
-            )
-            if tracked:
+            if _is_tracked_failure(r, wf):
                 found.append(r)
     return found
 
@@ -375,14 +460,9 @@ def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime,
     out: list[dict] = []
     skipped = 0
     for wf in MAIN_PIPELINES:
-        runs = _gh_json([
-            "run", "list", "--repo", repo, "--workflow", wf, "--event", "pull_request",
-            "--limit", "30", "--json",
-            "databaseId,workflowName,name,headBranch,headSha,event,createdAt,"
-            "conclusion,status,url",
-        ])
-        if not isinstance(runs, list):
-            raise RuntimeError(f"run list for {wf} returned {type(runs).__name__}, not a list")
+        runs, truncated = window_runs(repo, wf, cutoff, event="pull_request")
+        if truncated and stats is not None:
+            stats.setdefault("window_truncated", []).append(wf)
         candidates = pr_block_candidates(runs, cutoff, branches)
         candidates, wf_skipped = bound_pr_block_runs(candidates)
         skipped += wf_skipped
@@ -446,16 +526,21 @@ def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
 
 
 def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path: Path,
-                        dry: bool, now: dt.datetime, known: set, already: set) -> list[str]:
+                        dry: bool, now: dt.datetime, known: set, already: set,
+                        markers: dict | None = None,
+                        stats: dict | None = None) -> list[str]:
     """File ONE issue per PR-blocking failure shape, and append its ledger row (issue #1164).
 
-    The shape is the dedup key: a blockage already recorded (its earliest run in `known`, or a
-    run an open issue already carries a marker for, in `already`) is skipped, so a long-running
-    pin files once and is then tracked by `make pipeline-failure-guard-check` instead of being
-    re-filed every sweep.
+    The shape is the dedup key: a blockage already recorded (its earliest run in `known`) is
+    skipped, so a long-running pin files once and is then tracked by
+    `make pipeline-failure-guard-check` instead of being re-filed every sweep. A run an open issue
+    already carries a marker for (`already`) is not re-filed either — but when the marker names
+    its issue, the ledger row is BACKFILLED with that issue's number/url and the group's own
+    #1164 keys (issue #1467), so a row whose append never landed can still acquire one.
     """
     lines: list[str] = []
-    stats: dict = {}
+    markers = markers or {}
+    stats = {} if stats is None else stats
     try:
         open_branches = open_pr_branches(repo)
         items = pr_triggered_failures(repo, window_hours, now, stats, open_branches)
@@ -468,8 +553,32 @@ def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path:
     for group in group_pr_blockages(items, open_branches):
         first = group["members"][0]
         rid = int(first["run"]["databaseId"])
-        if rid in known or rid in already:
+        if rid in known:
             lines.append(f"skip pr-blockage shape {group['shape']}: run {rid} already recorded")
+            continue
+        if rid in already:
+            info = markers.get(rid) or {}
+            if dry:
+                lines.append(f"WOULD BACKFILL pr-blockage row for run {rid} from marker issue "
+                             f"#{info.get('number')} (shape {group['shape']})")
+                continue
+            append_ledger(ledger_path, ledger, {
+                "run_id": rid, "workflow": first["run"].get("workflowName"),
+                "job": first["job"].get("name"), "head_sha": first["run"].get("headSha"),
+                "run_url": first["run"].get("url"),
+                "created_utc": first["run"].get("createdAt"), "filed_utc": now.isoformat(),
+                "targets": first["targets"], "issue_number": info.get("number"),
+                "issue_url": info.get("url"), "fix_pr": None, "guard": None,
+                "undiagnosed": first["log_error"],
+                "failing_steps": first["steps"], "error_region": first["region"],
+                "error_excerpt": redact("\n".join(first["block"]))[0] if first["block"] else None,
+                "trigger": "pull_request", "failure_shape": group["shape"],
+                "blocked_prs": group["branches"], "pr_count": len(group["branches"]),
+                "note": "marker-matched pr-blockage row (backfilled)",
+            })
+            known.add(rid)
+            lines.append(f"BACKFILLED pr-blockage row for run {rid} from marker issue "
+                         f"#{info.get('number')} (shape {group['shape']})")
             continue
         if dry:
             lines.append(f"WOULD FILE pr-blockage shape {group['shape']} on "
@@ -783,27 +892,97 @@ def failed_make_targets(block: list[str]) -> list[str]:
 # dedup: the ledger AND open issues carrying the marker
 # ---------------------------------------------------------------------------
 
-def open_failure_issue_runs(repo: str) -> set:
-    """run ids already filed by this filer (issues carrying pipeline-run-failure, OPEN OR CLOSED).
+def failure_issue_markers(repo: str) -> dict:
+    """{run_id: {"number": n, "state": OPEN|CLOSED, "url": ...}} for issues carrying the marker.
 
-    `--state all` is the point: a fix that merged quickly closes its issue, and a scan of OPEN
-    issues only would let the NEXT weekly sweep re-file the same run. One run files once, ever.
+    ONE marker scan (rule 6d): the filer's dedup/backfill and `pipeline_failure_guard_check`'s
+    `marker_issue_states` both read this seam, so the two readers cannot drift. `--state all` is
+    the point: a fix that merged quickly closes its issue, and a scan of OPEN issues only would
+    let the NEXT weekly sweep re-file the same run. One run files once, ever.
     """
     issues = _gh_json([
         "issue", "list", "--repo", repo, "--state", "all", "--label", LABEL, "--limit", "500",
-        "--json", "number,title,body",
+        "--json", "number,title,body,state,url",
     ])
     if not isinstance(issues, list):
         raise RuntimeError("issue list returned a non-list")
-    runs: set = set()
+    markers: dict = {}
     for issue in issues:
         for hit in bot_markers.parse_markers(issue.get("body") or ""):
             if hit["name"] == bot_markers.marker_name("queued-alarm", "failure") and hit.get("run"):
                 try:
-                    runs.add(int(hit["run"]))
+                    rid = int(hit["run"])
                 except ValueError:
-                    pass
-    return runs
+                    continue
+                markers[rid] = {"number": issue.get("number"), "state": issue.get("state"),
+                                "url": issue.get("url")}
+    return markers
+
+
+def reconcile_marker_runs(repo: str, cutoff: dt.datetime, known: set, markers: dict,
+                          now: dt.datetime) -> tuple[list[dict], list[str]]:
+    """Fetch every marker-carrying run DIRECTLY, so a filed failure joins the candidate set even
+    when newer runs pushed it out of the run-list cap (issue #1467).
+
+    The primary repair: the marker already names the run, so the run needs no rank in a paged
+    list — one `run view` per unfiled marker run. Each fetch is classified LOUDLY, never silently:
+    a success, a run older than the window, an untracked event or an unreadable answer prints a
+    named skip line and contributes NO row. A tracked in-window failure is returned so the sweep's
+    existing backfill appends its ledger row (now carrying the marker issue's number/url).
+    """
+    lines: list[str] = []
+    reconciled: list[dict] = []
+    for rid in sorted(markers):
+        if rid in known:
+            continue
+        info = markers[rid]
+        try:
+            run = _gh_json([
+                "run", "view", str(rid), "--repo", repo, "--json",
+                "databaseId,workflowName,name,headBranch,headSha,event,createdAt,"
+                "conclusion,status,url",
+            ])
+        except RuntimeError as exc:
+            lines.append(f"run {rid}: marker-matched run unreadable: {exc}")
+            continue
+        if not isinstance(run, dict):
+            lines.append(f"run {rid}: marker-matched run unreadable (non-object answer)")
+            continue
+        conclusion = run.get("conclusion")
+        if conclusion not in BAD_CONCLUSIONS:
+            lines.append(f"skip run {rid}: conclusion {conclusion}, not a failure")
+            continue
+        created = _ts(run.get("createdAt"))
+        if created is None:
+            lines.append(f"skip run {rid}: no createdAt — cannot place it in the window")
+            continue
+        if created < cutoff:
+            age_h = (now - created).total_seconds() / 3600
+            lines.append(f"skip run {rid}: created {run.get('createdAt')} is {age_h:.0f}h old, "
+                         f"older than the window cutoff")
+            continue
+        workflow = run.get("workflowName")
+        if not _is_tracked_failure(run, workflow):
+            lines.append(f"skip run {rid}: event {run.get('event')} is not tracked by the filer")
+            continue
+        reconciled.append(run)
+        lines.append(f"marker run {rid}: reconciled from issue #{info.get('number')} "
+                     f"(past the run-list window)")
+    return reconciled, lines
+
+
+def _dedupe_runs(*lists: list[dict]) -> list[dict]:
+    """One run once, by `databaseId`: the window walk and the marker reconcile can both return a
+    filed run (the marker names it AND it is still inside the window), and the loop must not see
+    it twice."""
+    merged: dict = {}
+    for runs in lists:
+        for run in runs:
+            try:
+                merged[int(run["databaseId"])] = run
+            except (KeyError, TypeError, ValueError):
+                continue
+    return [merged[key] for key in sorted(merged)]
 
 
 # ---------------------------------------------------------------------------
@@ -1672,12 +1851,20 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
         lines.append(f"targets normalised on {normalised} row(s): the `Makefile:<line>: ` form "
                      "became the bare target (issue #1054)")
     known = ledger_run_ids(ledger)
+    stats: dict = {}
     try:
-        runs = main_pipeline_failures(repo, window_hours, now)
-        already = open_failure_issue_runs(repo) if runs else set()
+        runs = main_pipeline_failures(repo, window_hours, now, stats)
+        # The marker scan is UNCONDITIONAL (issue #1467): a filed run's repair must not depend on
+        # the capped run list being non-empty, and `already` is shared with the PR-blockage pass.
+        markers = failure_issue_markers(repo)
     except RuntimeError as exc:
         print(f"pipeline-failure-issue: READ FAILED: {exc}", file=sys.stderr)
         return 2, [f"read-failed: {exc}"]
+    already = set(markers)
+    cutoff = now - dt.timedelta(hours=window_hours)
+    reconciled, reconcile_lines = reconcile_marker_runs(repo, cutoff, known, markers, now)
+    lines.extend(reconcile_lines)
+    runs = _dedupe_runs(runs, reconciled)
 
     filed = 0
     for run in sorted(runs, key=lambda r: r["databaseId"]):
@@ -1685,13 +1872,18 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
         if rid in known:
             continue
         if rid in already:
+            # The marker scan names the issue that already carries this run, so the backfilled row
+            # records THAT issue's number/url instead of null (issue #1467: a null here is what
+            # made `stamp_merged_fix_prs` print "the row cites no issue" and dead-ended the fix).
+            info = markers.get(rid) or {}
             lines.append(f"skip run {rid}: an open issue already carries its marker")
             if not dry:
                 append_ledger(ledger_path, ledger, {
                     "run_id": rid, "workflow": run.get("workflowName"),
                     "job": None, "head_sha": run.get("headSha"), "run_url": run.get("url"),
                     "created_utc": run.get("createdAt"), "filed_utc": now.isoformat(),
-                    "targets": [], "issue_number": None, "issue_url": None,
+                    "targets": [], "issue_number": info.get("number"),
+                    "issue_url": info.get("url"),
                     "fix_pr": None, "guard": None,
                     "note": "filed before the ledger existed (marker-matched)",
                 })
@@ -1755,13 +1947,12 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     # master/schedule window above, yet a stale pin blocks EVERY open PR at the same step — a
     # larger outage than one red sweep. It files once per failure SHAPE shared by two or more
     # open PRs, then the guard tracks the row until a fix lands.
-    if not already:
-        try:
-            already = open_failure_issue_runs(repo)
-        except RuntimeError as exc:
-            lines.append(f"pr-blockage: marker scan unreadable: {exc}")
     lines.extend(record_pr_blockages(repo, window_hours, ledger, ledger_path, dry, now,
-                                     known, already))
+                                     known, already, markers, stats))
+    for wf in stats.get("window_truncated", []):
+        lines.append(f"window not fully covered for {wf}: the page cap "
+                     f"({WINDOW_RUNS_MAX_PAGES} pages x {WINDOW_RUNS_PER_PAGE}) was reached — "
+                     f"older in-window failures may be missing (issue #1467)")
     lines.append(f"pipeline-failure-issue: window={window_hours}h failures={len(runs)} "
                  f"filed={filed} ledger={ledger_path.name}")
     return 0, lines

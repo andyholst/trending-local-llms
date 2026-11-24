@@ -70,6 +70,23 @@ RUNS_QA = [
      "url": "https://github.com/octo/repo/actions/runs/104"},
 ]
 
+#: The REAL REST `actions/runs` row shape (snake_case, `html_url`) — the paginated window walk's
+#: feed (issue #1467). Fixtures are written in this shape so the product's ONE camelCase
+#: projection runs for real instead of being bypassed by a pre-projected fixture.
+_REST_RUN_FIELDS = (
+    ("databaseId", "id"), ("workflowName", "workflow_name"), ("name", "name"),
+    ("headBranch", "head_branch"), ("headSha", "head_sha"), ("event", "event"),
+    ("createdAt", "created_at"), ("conclusion", "conclusion"), ("status", "status"),
+    ("url", "html_url"),
+)
+
+
+def _rest(run: dict) -> dict:
+    return {snake: run.get(camel) for camel, snake in _REST_RUN_FIELDS}
+
+
+RUNS_QA_REST = [_rest(r) for r in RUNS_QA]
+
 JOBS_100 = {"jobs": [
     {"databaseId": 900, "name": "validate", "conclusion": "failure"},
     {"databaseId": 901, "name": "live-smoke", "conclusion": "success"}]}
@@ -138,8 +155,16 @@ case "$1" in
         [ -n "$ev" ] && f="$d/runs-${wf//./_}-${ev}.json"
         if [ -f "$f" ]; then cat "$f"; else echo "[]"; fi ;;
       view)
-        f="$d/jobs-$3.json"
-        if [ -f "$f" ]; then cat "$f"; else echo '{"jobs": []}'; fi ;;
+        # Two shapes share `gh run view`: the failed_jobs seam asks `--json jobs`, the marker
+        # reconcile (issue #1467) asks for the RUN OBJECT's fields. Distinguish by the request.
+        case " $* " in
+          *"--json jobs"*)
+            f="$d/jobs-$3.json"
+            if [ -f "$f" ]; then cat "$f"; else echo '{"jobs": []}'; fi ;;
+          *)
+            f="$d/runview-$3.json"
+            if [ -f "$f" ]; then cat "$f"; else echo '{}' ; fi ;;
+        esac ;;
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   issue)
@@ -190,6 +215,26 @@ case "$1" in
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   api)
+    # `gh api repos/.../actions/runs?workflow_id=…&per_page=…&page=…[&event=…]` — the paginated
+    # window walk (issue #1467). The fixture is the REAL REST shape (snake_case, `html_url`), so
+    # the product's ONE projection is exercised rather than bypassed.
+    if [[ "$2" == *"actions/runs?"* ]]; then
+      if [ -e "$d/actions-runs-fail" ]; then echo "stub gh: actions/runs refused (502)" >&2; exit 1; fi
+      url="$2"; wf=""; ev=""; page=""
+      q="${url#*\?}"
+      IFS='&' read -ra parts <<< "$q"
+      for p in "${parts[@]}"; do
+        case "$p" in
+          workflow_id=*) wf="${p#workflow_id=}" ;;
+          event=*) ev="${p#event=}" ;;
+          page=*) page="${p#page=}" ;;
+        esac
+      done
+      [ -z "$page" ] && page=1
+      f="$d/window-${wf//./_}-${ev:-none}-p${page}.json"
+      if [ -f "$f" ]; then cat "$f"; else echo "[]"; fi
+      exit 0
+    fi
     # `gh api repos/.../issues/<n>/comments ...` — the thread the re-diagnosis dedup reads.
     # Serve a canned comment list (each line one JSON object) or an empty thread.
     if [[ " $* " == *"/comments"* ]]; then
@@ -258,7 +303,7 @@ def run_filer(env: dict, ledger: Path, *extra: str) -> subprocess.CompletedProce
 
 
 BASE_CANNED = {
-    "runs-qa-validate_yml.json": RUNS_QA,
+    "window-qa-validate_yml-none-p1.json": RUNS_QA_REST,
     "jobs-100.json": JOBS_100,
     "jobs-104.json": JOBS_104,
     "log.txt": LOG_TEXT,
@@ -349,9 +394,16 @@ def test_ledger_and_marker_dedup_file_one_run_once_ever() -> None:
         canned = dict(BASE_CANNED)
         canned["issues.json"] = [{
             "number": 777, "title": "already filed",
-            "state": "CLOSED",
+            "state": "CLOSED", "url": "https://github.com/octo/repo/issues/777",
             "body": "<!-- pipeline-run-failure: 2026-11-11T20:59:00Z run=100 -->",
         }]
+        # The marker reconcile reads the run OBJECT directly (issue #1467), so the fixture carries
+        # the run-view answer beside the jobs answer.
+        canned["runview-100.json"] = {
+            "databaseId": 100, "workflowName": "qa-validate.yml", "name": "fix",
+            "headBranch": "master", "headSha": "a" * 40, "event": "push",
+            "createdAt": "2026-11-11T20:00:00Z", "conclusion": "failure",
+            "status": "completed", "url": "https://github.com/octo/repo/actions/runs/100"}
         env = make_scene(tmp, canned)
         ledger = tmp / "ledger.json"
         proc = run_filer(env, ledger)
@@ -388,11 +440,11 @@ def test_undiagnosed_filing_is_loud_never_a_skip() -> None:
 def test_an_escape_refused_log_is_diagnosed_on_the_flag_retry() -> None:
     print("\nescape retry: gh's refusal is answered by gh's own suggested flag, not by UNDIAGNOSED (issue #923)")
     canned = {
-        "runs-qa-validate_yml.json": [
-            {"databaseId": 110, "workflowName": "qa-validate.yml", "name": "escape-run",
-             "headBranch": "master", "headSha": "f" * 40, "event": "push",
-             "createdAt": "2026-11-12T19:00:00Z", "conclusion": "failure", "status": "completed",
-             "url": "https://github.com/octo/repo/actions/runs/110"}],
+        "window-qa-validate_yml-none-p1.json": [_rest({
+            "databaseId": 110, "workflowName": "qa-validate.yml", "name": "escape-run",
+            "headBranch": "master", "headSha": "f" * 40, "event": "push",
+            "createdAt": "2026-11-12T19:00:00Z", "conclusion": "failure", "status": "completed",
+            "url": "https://github.com/octo/repo/actions/runs/110"})],
         "jobs-110.json": {"jobs": [{"databaseId": 910, "name": "implement", "conclusion": "failure"}]},
         # A marker file (empty content) arms the refusal branch; the colored log is the answer
         # ONLY to the flag-carrying call — the exact live shape gh produced for 12 real failures.
@@ -451,7 +503,7 @@ def test_read_failures_exit_2_never_a_fake_clean() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         canned = dict(BASE_CANNED)
-        canned["runlist-fail"] = ""
+        canned["actions-runs-fail"] = ""
         env = make_scene(tmp, canned)
         proc = run_filer(env, tmp / "ledger.json")
         check("run list refused -> exit 2 naming READ FAILED",
@@ -1520,6 +1572,8 @@ PR_RUNS = [
      "url": "https://github.com/octo/repo/actions/runs/703"},
 ]
 
+PR_RUNS_REST = [_rest(r) for r in PR_RUNS]
+
 PR_JOBS_IMAGE = {"jobs": [
     {"databaseId": 910, "name": "validate", "conclusion": "failure",
      "steps": [{"name": "Prepare runner images", "conclusion": "failure"}]}]}
@@ -1531,7 +1585,7 @@ PR_JOBS_OTHER = {"jobs": [
 def test_pr_blockage_pass_records_a_shared_failure_shape_once() -> None:
     print("\nPR-blockage (#1164): a shape shared by two OPEN PRs files ONE issue + ledger row")
     canned = dict(BASE_CANNED)
-    canned["runs-qa-validate_yml-pull_request.json"] = PR_RUNS
+    canned["window-qa-validate_yml-pull_request-p1.json"] = PR_RUNS_REST
     canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"},
                                {"headRefName": "ci/c"}]
     canned["jobs-700.json"] = PR_JOBS_IMAGE
@@ -1589,7 +1643,7 @@ def test_pr_blockage_pass_records_a_shared_failure_shape_once() -> None:
 def test_pr_blockage_dry_run_previews_without_writing() -> None:
     print("\nPR-blockage (#1164): --dry previews the filing and writes nothing")
     canned = dict(BASE_CANNED)
-    canned["runs-qa-validate_yml-pull_request.json"] = PR_RUNS
+    canned["window-qa-validate_yml-pull_request-p1.json"] = PR_RUNS_REST
     canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"}]
     canned["jobs-700.json"] = PR_JOBS_IMAGE
     canned["jobs-701.json"] = PR_JOBS_IMAGE
@@ -1653,6 +1707,9 @@ GREEN_RUNS_AHEAD = [
 ]
 
 
+GREEN_RUNS_AHEAD_REST = [_rest(r) for r in GREEN_RUNS_AHEAD]
+
+
 def test_the_read_cap_is_spent_after_the_red_open_pr_filter() -> None:
     print("\nPR-blockage (#1405): newer green runs cannot crowd a red OPEN-PR run out of the read set")
     cap = getattr(F, "PR_BLOCK_MAX_LOG_READS", None)
@@ -1660,7 +1717,7 @@ def test_the_read_cap_is_spent_after_the_red_open_pr_filter() -> None:
           str(cap))
     canned = dict(BASE_CANNED)
     # Newest-first: the green crowd, then the two red runs on two different OPEN branches.
-    canned["runs-qa-validate_yml-pull_request.json"] = GREEN_RUNS_AHEAD + PR_RUNS
+    canned["window-qa-validate_yml-pull_request-p1.json"] = GREEN_RUNS_AHEAD_REST + PR_RUNS_REST
     canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"},
                                {"headRefName": "ci/c"}]
     canned["jobs-700.json"] = PR_JOBS_IMAGE
@@ -1697,6 +1754,195 @@ def test_the_open_pr_branch_set_is_read_once_and_passed_down() -> None:
           "items = pr_triggered_failures(repo, window_hours, now, stats, open_branches)" in src, "")
     check("the collection pass reads the branches itself only when handed none",
           "open_pr_branches(repo) if open_branches is None" in src, "")
+
+
+def test_a_marker_run_past_the_old_cap_is_still_reconciled_into_the_ledger() -> None:
+    print("\n#1467 AC1: a marker run pushed past the old `--limit 30` cap is reconciled into the ledger")
+    # Thirty NEWER runs fill the whole old candidate window; the marker run 800 is absent from the
+    # run list entirely (it ranked 39th of 100 when #1450 was measured).
+    newer = [
+        {"databaseId": 900 + i, "workflowName": "qa-validate.yml", "name": "ok",
+         "headBranch": "master", "headSha": "1" * 40, "event": "push",
+         "createdAt": f"2026-11-11T{21 + i // 60:02d}:{(59 - i % 60):02d}:00Z",
+         "conclusion": "success", "status": "completed",
+         "url": f"https://github.com/octo/repo/actions/runs/{900 + i}"}
+        for i in range(30)
+    ]
+    canned = dict(BASE_CANNED)
+    canned["window-qa-validate_yml-none-p1.json"] = [_rest(r) for r in newer]
+    canned["issues.json"] = [{
+        "number": 1450, "title": "filed before its ledger append landed",
+        "state": "OPEN", "url": "https://github.com/octo/repo/issues/1450",
+        "body": "<!-- pipeline-run-failure: 2026-11-11T20:59:00Z run=800 -->",
+    }]
+    canned["runview-800.json"] = {
+        "databaseId": 800, "workflowName": "qa-validate.yml", "name": "validate",
+        "headBranch": "master", "headSha": "2" * 40, "event": "push",
+        "createdAt": "2026-11-11T20:00:00Z", "conclusion": "failure",
+        "status": "completed", "url": "https://github.com/octo/repo/actions/runs/800"}
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip()) \
+            if (tmp / "canned" / "create-count").exists() else 0
+        check("the marker run is NOT re-filed as a new issue", created == 0,
+              f"create-count={created}\n{proc.stdout}")
+        check("the sweep NAMES the reconciled run", "800" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = next((e for e in data["failures"] if e["run_id"] == 800), None)
+        check("a ledger row for the marker run exists", row is not None,
+              str([e["run_id"] for e in data["failures"]]))
+        if row:
+            check("the row carries the MARKER ISSUE's number, not null",
+                  row.get("issue_number") == 1450, str(row))
+            check("the row carries the marker issue's url",
+                  row.get("issue_url") == "https://github.com/octo/repo/issues/1450", str(row))
+            check("the row keeps the marker-matched note",
+                  "marker-matched" in (row.get("note") or ""), str(row))
+
+
+def test_a_marker_run_that_is_not_an_in_window_failure_writes_no_row() -> None:
+    print("\n#1467 AC2: a marker run that is not an in-window tracked failure writes NO row")
+    cases = {
+        810: {"conclusion": "success", "createdAt": "2026-11-11T20:00:00Z", "event": "push"},
+        811: {"conclusion": "failure", "createdAt": "2026-11-01T10:00:00Z", "event": "push"},
+        812: {"conclusion": "failure", "createdAt": "2026-11-11T20:00:00Z",
+              "event": "pull_request"},
+    }
+    for rid, shape in cases.items():
+        canned = dict(BASE_CANNED)
+        canned["window-qa-validate_yml-none-p1.json"] = []
+        canned["issues.json"] = [{
+            "number": 1451, "title": "marker run outside the filer's scope",
+            "state": "OPEN", "url": "https://github.com/octo/repo/issues/1451",
+            "body": f"<!-- pipeline-run-failure: 2026-11-11T20:59:00Z run={rid} -->",
+        }]
+        canned[f"runview-{rid}.json"] = {
+            "databaseId": rid, "workflowName": "qa-validate.yml", "name": "validate",
+            "headBranch": "master", "headSha": "3" * 40, "event": shape["event"],
+            "createdAt": shape["createdAt"], "conclusion": shape["conclusion"],
+            "status": "completed", "url": f"https://github.com/octo/repo/actions/runs/{rid}"}
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            env = make_scene(tmp, canned)
+            ledger = tmp / "ledger.json"
+            proc = run_filer(env, ledger)
+            check(f"run {rid}: exit 0", proc.returncode == 0, proc.stderr)
+            check(f"run {rid}: a named skip line, never silence", f"skip run {rid}" in proc.stdout,
+                  proc.stdout)
+            check(f"run {rid}: NO ledger row was invented", not ledger.exists(),
+                  ledger.read_text() if ledger.exists() else "")
+
+
+def test_the_main_pipeline_scan_walks_the_window_past_the_thirty_cap() -> None:
+    print("\n#1467 AC3: the main-pipeline scan pages past the thirty cap")
+    page1 = [
+        {"databaseId": 900 + i, "workflowName": "qa-validate.yml", "name": "ok",
+         "headBranch": "master", "headSha": "1" * 40, "event": "push",
+         "createdAt": f"2026-11-11T{21 + i // 60:02d}:{(59 - i % 60):02d}:00Z",
+         "conclusion": "success", "status": "completed",
+         "url": f"https://github.com/octo/repo/actions/runs/{900 + i}"}
+        for i in range(100)
+    ]
+    bad = {"databaseId": 810, "workflowName": "qa-validate.yml", "name": "validate",
+           "headBranch": "master", "headSha": "4" * 40, "event": "push",
+           "createdAt": "2026-11-11T19:00:00Z", "conclusion": "failure", "status": "completed",
+           "url": "https://github.com/octo/repo/actions/runs/810"}
+    canned = dict(BASE_CANNED)
+    canned["window-qa-validate_yml-none-p1.json"] = [_rest(r) for r in page1]
+    canned["window-qa-validate_yml-none-p2.json"] = [_rest(bad)]
+    canned["jobs-810.json"] = JOBS_100
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        bodies = {p.name: p.read_text() for p in (tmp / "canned").glob("body-*.txt")}
+        check("the page-2 in-window failure IS filed", any("run=810" in b for b in bodies.values()),
+              f"bodies={list(bodies)}\n{proc.stdout}")
+        rows = json.loads(ledger.read_text())["failures"]
+        check("its ledger row landed", [e["run_id"] for e in rows] == [810], str(rows))
+
+
+def test_the_pr_blockage_scan_uses_the_same_window_walk() -> None:
+    print("\n#1467 AC4: the PR-blockage scan shares the paginated window walk")
+    src = FILER.read_text(encoding="utf-8")
+    check("the main-pipeline scan goes through window_runs",
+          "window_runs(repo, wf, cutoff)" in src, "")
+    check("the PR-blockage scan goes through the SAME helper",
+          'window_runs(repo, wf, cutoff, event="pull_request")' in src, "")
+    check("no fixed `--limit 30` literal remains in either scan", '"--limit", "30"' not in src, "")
+    crowd = [
+        {"databaseId": 950 + i, "workflowName": "qa-validate.yml", "name": "validate",
+         "headBranch": f"ci/green{i}", "headSha": "1" * 40, "event": "pull_request",
+         "createdAt": f"2026-11-11T{21 + i // 60:02d}:{(59 - i % 60):02d}:00Z",
+         "conclusion": "success", "status": "completed",
+         "url": f"https://github.com/octo/repo/actions/runs/{950 + i}"}
+        for i in range(100)
+    ]
+    canned = dict(BASE_CANNED)
+    canned["window-qa-validate_yml-none-p1.json"] = []
+    canned["window-qa-validate_yml-pull_request-p1.json"] = [_rest(r) for r in crowd]
+    canned["window-qa-validate_yml-pull_request-p2.json"] = PR_RUNS_REST
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"},
+                               {"headRefName": "ci/c"}]
+    canned["jobs-700.json"] = PR_JOBS_IMAGE
+    canned["jobs-701.json"] = PR_JOBS_IMAGE
+    canned["jobs-702.json"] = PR_JOBS_IMAGE
+    canned["jobs-703.json"] = PR_JOBS_OTHER
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        bodies = {p.name: p.read_text() for p in (tmp / "canned").glob("body-*.txt")}
+        check("the older shared PR-blockage shape IS grouped despite the 100-run crowd",
+              any("run=700" in b for b in bodies.values()),
+              f"bodies={list(bodies)}\n{proc.stdout}")
+        rows = [e for e in json.loads(ledger.read_text())["failures"]
+                if e.get("trigger") == "pull_request"]
+        check("exactly one PR-blockage row landed", len(rows) == 1, str(rows))
+        if rows:
+            check("the row names the two blocked OPEN PRs",
+                  rows[0].get("blocked_prs") == ["ci/a", "ci/b"], str(rows[0].get("blocked_prs")))
+
+
+def test_the_marker_scan_has_one_implementation() -> None:
+    print("\n#1467 AC5: the guard delegates to the filer's ONE marker scan")
+    guard_src = (ROOT / "scripts" / "pipeline_failure_guard_check.py").read_text(encoding="utf-8")
+    filer_src = FILER.read_text(encoding="utf-8")
+    check("the guard imports the filer's seam", "failure_issue_markers" in guard_src, "")
+    check("the guard carries no second `gh issue list` scan",
+          'gh", "issue", "list"' not in guard_src, "")
+    check("the filer owns the marker scan", "def failure_issue_markers" in filer_src, "")
+    check("the bare set scan is gone (one implementation)", "def open_failure_issue_runs" not in filer_src,
+          "")
+    # Behavioural half: drive the REAL delegated scan through the stub gh.
+    import pipeline_failure_guard_check as G
+    issue = {"number": 1450, "title": "filed", "state": "OPEN",
+             "url": "https://github.com/octo/repo/issues/1450",
+             "body": "<!-- pipeline-run-failure: 2026-11-11T20:59:00Z run=800 -->"}
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, {"issues.json": [issue]})
+        saved = {k: os.environ.get(k) for k in ("PATH", "PIPESTUB_DIR")}
+        os.environ["PATH"] = env["PATH"]
+        os.environ["PIPESTUB_DIR"] = env["PIPESTUB_DIR"]
+        try:
+            states = G.marker_issue_states(REPO)
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+        check("the delegated scan projects the filer's map to the gate's shape",
+              states == {"800": {"number": 1450, "state": "OPEN"}}, str(states))
 
 
 def main() -> int:
@@ -1748,6 +1994,11 @@ def main() -> int:
     test_pr_blockage_log_read_budget_is_bounded_and_announced()
     test_the_read_cap_is_spent_after_the_red_open_pr_filter()
     test_the_open_pr_branch_set_is_read_once_and_passed_down()
+    test_a_marker_run_past_the_old_cap_is_still_reconciled_into_the_ledger()
+    test_a_marker_run_that_is_not_an_in_window_failure_writes_no_row()
+    test_the_main_pipeline_scan_walks_the_window_past_the_thirty_cap()
+    test_the_pr_blockage_scan_uses_the_same_window_walk()
+    test_the_marker_scan_has_one_implementation()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
