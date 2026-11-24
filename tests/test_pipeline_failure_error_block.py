@@ -194,8 +194,19 @@ def test_chatter_dropped_for_room_is_announced_in_the_block() -> None:
     missing = [w for w in wanted if not any(w in line for line in block)]
     check("EVERY error-shaped line of the failing region survives the cap", not missing,
           str(missing))
-    order = [MEASURED_LOG.splitlines().index(line) for line in block[:-1]]
-    check("quoted lines keep their log order", order == sorted(order), str(order))
+    region_lines = {raw.rstrip() for _i, raw in failing["lines"]}
+    seq = [("marker" if line.startswith("[filer]")
+            else ("region" if line in region_lines else "other"))
+           for line in block[:-1]]
+    order = {"region": 0, "marker": 1, "other": 2}
+    check("the failing region's lines come FIRST, then the filler marker, then other-step lines",
+          seq == sorted(seq, key=lambda s: order[s]), str(seq))
+    quoted = [line for line in block[:-1] if not line.startswith("[filer]")]
+    region_idx = [MEASURED_LOG.splitlines().index(line) for line in quoted if line in region_lines]
+    other_idx = [MEASURED_LOG.splitlines().index(line) for line in quoted if line not in region_lines]
+    check("quoted lines keep their log order WITHIN each group",
+          region_idx == sorted(region_idx) and other_idx == sorted(other_idx),
+          str((region_idx, other_idx)))
 
 
 def test_a_log_without_group_markers_still_yields_a_diagnosis() -> None:
