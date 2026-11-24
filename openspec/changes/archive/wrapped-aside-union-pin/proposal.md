@@ -1,6 +1,7 @@
 # Proposal: wrapped-aside-union-pin
 
 Issue: #1605
+PR: #1607
 
 ## Why
 
