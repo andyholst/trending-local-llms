@@ -1,6 +1,7 @@
 # Proposal: stale-claim-check-summary-1657
 
 Issue: #1657
+PR: #1660
 
 ## Why
 
