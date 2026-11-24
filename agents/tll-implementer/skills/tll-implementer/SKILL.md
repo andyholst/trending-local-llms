@@ -43,6 +43,7 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 
 - **OpenSpec on every PR, always.** Every issue I implement as a PR ships its OpenSpec change files: `openspec/changes/<slug>/proposal.md` + a Given/When/Then capability spec + `tasks.md` with EVERY box ticked for what the PR does, listed in `OPENSPEC.md`, green on `make openspec-check` BEFORE the PR opens. A code-only PR with a red/absent OpenSpec gate is a defect, not a fix-up.
 - The CI pipeline must gate on acceptance criteria: fail on missing change dir, non-Given/When/Then spec, unticked task box, stale index, or a `- **Test:**` naming a test absent from the tree, AND confirm every acceptance criterion is met before merge. No auto-merge through a red gate.
+- **A change dir authored BY HAND (not via `make openspec-new`) lacks `.openspec.yaml`; add it (`schema: spec-driven` + `created: <YYYY-MM-DD>`) so the dir matches every sibling.** Measured on #1442/PR #1628: `make openspec-new` normally writes it, and `openspec/changes/archive/*/` shows it in every archived dir, so a manual dir is the odd one out.
 
 ## Testing convention (owner-mandated, issue #690)
 
