@@ -142,14 +142,52 @@ def unexpected_growth(base_text: str, head_text: str) -> list[tuple[str, str, in
     A unit absent at base is a legitimate new note (0 -> 1). A unit already present at base
     that appears MORE times at head was duplicated or interleaved by a later union, whatever
     order it landed in. Returns `(kind, unit, base_count, head_count)` tuples, sorted.
+
+    Issue #1478 adds the `0 -> N, N >= 2` case: a clause that did NOT exist at the pinned
+    base and that a later union introduces TWICE is merge debris too, not two new notes.
+    It is scoped to a whole LINE or to a clause INSIDE one line, because a clause shared by
+    two DIFFERENT bullets is legitimate prose (measured: `Measured on #1445:` closes two
+    unrelated implementer bullets), while a clause repeated inside ONE bullet is the
+    duplication this guard exists for (measured: the reviewer mirror's `Quote the module's
+    exit code NEXT TO…` shipped twice in a single bullet).
     """
     base_counts = mirror_units(base_text)
     head_counts = mirror_units(head_text)
     return sorted(
         (kind, unit, base_counts[(kind, unit)], head_counts[(kind, unit)])
         for (kind, unit), head_n in head_counts.items()
-        if head_n > base_counts.get((kind, unit), 0) and base_counts.get((kind, unit), 0) > 0
+        if head_n > base_counts.get((kind, unit), 0)
+        and (
+            base_counts.get((kind, unit), 0) > 0
+            or (head_n >= 2 and _is_duplicate_new_unit(kind, unit, head_text))
+        )
     )
+
+
+def _clauses_of(raw: str) -> list[str]:
+    """The same clause split `mirror_units` uses, so the scoping key cannot drift from it."""
+    return [
+        fragment.strip().strip(_CLAUSE_EDGE)
+        for fragment in _CLAUSE_BREAK.split(_PARENTHETICAL.sub(" ", raw))
+    ]
+
+
+def _is_duplicate_new_unit(kind: str, unit: str, head_text: str) -> bool:
+    """True when a brand-new repeated unit is debris rather than two distinct notes.
+
+    Only `line` units and clauses that occur at least twice INSIDE A SINGLE LINE qualify.
+    The owner line is part of the key, so `Measured on #1445:` counted once in each of two
+    bullets stays two legitimate notes (the measured false positive).
+    """
+    if kind == "line":
+        return True
+    owners = Counter(
+        raw.strip()
+        for raw in head_text.splitlines()
+        for clause in _clauses_of(raw)
+        if clause == unit
+    )
+    return any(n >= 2 for n in owners.values())
 
 
 def base_blob(rel: str) -> str | None:
@@ -707,6 +745,22 @@ def test_the_union_growth_detector_fires_on_a_planted_duplicate() -> int:
     failed += check(bool(unexpected_growth(base, duplicated)), "an exact repeated bullet is detected")
     interleaved = base + "- **Twin note.** Never post a second status report on the same wait, again.\n"
     failed += check(bool(unexpected_growth(base, interleaved)), "an interleaved repeated clause is detected")
+    # Issue #1478: a brand-new clause a later union introduces TWICE is debris, not two notes.
+    fresh_dup = base + (
+        "- **Fresh note.** A sentence no pinned-base tree carries, repeated twice in one bullet, "
+        "repeated twice in one bullet.\n"
+    )
+    grown = [t for t in unexpected_growth(base, fresh_dup) if t[2] == 0]
+    failed += check(bool(grown), "a 0 -> 2 duplicate of a brand-new clause is detected")
+    # ... but the same clause closing two DIFFERENT bullets is legitimate prose.
+    shared = base + (
+        "- **One bullet.** It ends on the phrase Measured on #1445 here.\n"
+        "- **Another bullet.** It also ends on the phrase Measured on #1445 here.\n"
+    )
+    failed += check(
+        not [t for t in unexpected_growth(base, shared) if t[2] == 0],
+        "a clause shared by two different bullets is not flagged",
+    )
     return failed
 
 
