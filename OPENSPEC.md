@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **518**
+Active changes: **1** · archived: **520**
 
 ## Active changes
 
@@ -490,6 +490,7 @@ Active changes: **1** · archived: **518**
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stale-cadence-docstring-1291` | archived | #1291 | #1308 | [pipeline-failure-filer](openspec/changes/archive/stale-cadence-docstring-1291/specs/pipeline-failure-filer/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-cadence-docstring-1291/proposal.md) |
 | `stale-claim-sweep-seam` | archived | #1610 | #1617 | [fleet-claims](openspec/changes/archive/stale-claim-sweep-seam/specs/fleet-claims/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/stale-claim-sweep-seam/proposal.md) |
+| `stale-claim-thresholds-1626` | archived | #1626 | #1630 | [fleet-claims](openspec/changes/archive/stale-claim-thresholds-1626/specs/fleet-claims/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/stale-claim-thresholds-1626/proposal.md) |
 | `stale-last-seen-gap` | archived | #1183 | #1216 | [data-gap-analysis](openspec/changes/archive/stale-last-seen-gap/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-last-seen-gap/proposal.md) |
 | `stale-smoke-budget-prose` | archived | #1228 | #1230 | [search-contract](openspec/changes/archive/stale-smoke-budget-prose/specs/search-contract/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/stale-smoke-budget-prose/proposal.md) |
 | `stamp-fix-pr-in-ledger` | archived | #1099 | #1130 | [alarms](openspec/changes/archive/stamp-fix-pr-in-ledger/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/stamp-fix-pr-in-ledger/proposal.md) |
