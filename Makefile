@@ -405,7 +405,7 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #   `local-endpoint-probe` `local-endpoint-probe-check` `master-alarm` `model-type-report`
 #   `openspec-archive-check` `openspec-image` `openspec-manifest-check` `owed-rows-check`
 #   `pipeline-failure-attribute` `pipeline-failure-guard-check` `pipeline-failure-issue`
-#   `pr-closure` `pr-health` `pr-message-check` `publish-agent-image` `python-env-image`
+#   `pr-closure` `pr-draft-check` `pr-health` `pr-message-check` `publish-agent-image` `python-env-image`
 #   `qa-report` `queued-alarm` `rebuild-decision` `refresh-require-tip` `refresh-run-block`
 #   `refresh-sync` `reset-working-files` `review-issue-body-hash` `review-issue-check-markers`
 #   `review-issue-finish` `review-issue-guard` `review-issue-mark` `review-issue-pick`

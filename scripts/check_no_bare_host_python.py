@@ -105,6 +105,7 @@ EXCEPTIONS: dict[str, str] = {
     "pr-closure": "reads the webhook payload at $GITHUB_EVENT_PATH",
     "verify-closure": "reads GitHub state after a merge (gh)",
     "pr-health": "reads open-PR state (gh)",
+    "pr-draft-check": "reads open-PR draft state (gh)",
     "auto-merge-rebase": "rebases and pushes a branch (gh + git)",
     "auto-merge-head-check": "re-reads the PR head (gh)",
     "keeper-pr": "lands a keeper branch + PR (gh + git)",
