@@ -710,9 +710,36 @@ def test_the_union_growth_detector_fires_on_a_planted_duplicate() -> int:
     return failed
 
 
+def test_third_batch_host_ahead_implementer_notes_are_landed() -> int:
+    """Issue #1487: land ONLY the three new implementer notes, exactly once each.
+
+    The host file also carried duplicated/interleaved fragments of bullets already on
+    master (planner/reviewer) and two orphan clauses. Copying it wholesale would reintroduce
+    the #1455/#1456/#1469 duplicate defect, so each genuinely-new note is pinned here with
+    a count assertion, and the orphan fragments must be absent.
+    """
+    failed = 0
+    path = ROOT / "agents" / "tll-implementer" / "skills" / "tll-implementer" / "SKILL.md"
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    needles = (
+        "whose acceptance is an `AGENTS.md` edit CANNOT land in a headless lane",
+        "reads `$GITHUB_EVENT_PATH` dies `FileNotFoundError`",
+        "A CONCURRENT writer can commit from the SAME worktree you are editing",
+    )
+    for needle in needles:
+        failed += check(needle in text, f"implementer skill carries {needle!r}")
+        failed += check(text.count(needle) == 1, f"implementer skill carries {needle!r} exactly once")
+    # The host copy carried this clause a SECOND time as an orphan fragment; master already
+    # owns it once (line ~218), so the landing must not grow its copy count to two.
+    orphan = "BEFORE waiting on CI; doing this only after seeing the red costs a full validate cycle"
+    failed += check(text.count(orphan) == 1, "the orphan clause was NOT copied a second time")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
+        test_third_batch_host_ahead_implementer_notes_are_landed,
         test_every_lane_carries_the_pr_handover_shapes,
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
