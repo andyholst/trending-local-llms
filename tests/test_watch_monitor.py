@@ -152,6 +152,10 @@ def test_r_marker_carries_workflow_name() -> None:
 def test_offline_check_mode() -> None:
     print("\nOffline check: no network, no state file")
     check("H is a legal marker prefix", "H:" in W.MARKER_PREFIXES, "")
+    check("S is a legal detector-marker prefix", "S:" in W.MARKER_PREFIXES, "")
+    check("the module docstring lists the S marker",
+          "S:<issue>:<claim-id>:stale|released" in (ROOT / "scripts" / "watch_monitor.py").read_text(
+              encoding="utf-8"), "")
     check("--check passes", W.main(["--check"]) == 0, "")
 
 

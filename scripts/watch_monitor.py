@@ -8,6 +8,7 @@ changed markers, with no timestamps and no random ordering:
     R:<run id>:<status>:<conclusion>[:<workflow>][:<pr>]  a CI run changed state
     M:<master sha>                       master moved (a merge or a push)
     H:<bucket>                           opt-in work heartbeat (--heartbeat-seconds N)
+    S:<issue>:<claim-id>:stale|released  a claim became stale / was released (#1620)
 
 An `R:` marker names its PR when the run has one (issue #1284), so a woken lane can read
 that PR's own thread before acting instead of guessing which thread a run id belongs to. A
@@ -56,7 +57,7 @@ import time
 from pathlib import Path
 
 DEFAULT_REPO = "andyholst/trending-local-llms"
-MARKER_PREFIXES = ("C:", "R:", "M:", "H:")
+MARKER_PREFIXES = ("C:", "R:", "M:", "H:", "S:")
 
 # The per-tick cap on branch→PR resolutions (issue #1364). A tick that follows a burst of
 # merges can carry many PR runs whose `pull_requests` GitHub has already cleared; resolving
@@ -295,14 +296,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.check:
-        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:", "H:")):
+        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:", "H:", "S:")):
             print("CHECK FAILED: marker prefixes changed", file=sys.stderr)
             return 2
         if args.claim_settle_seconds < CLAIM_SETTLE_FLOOR_SECONDS:
             print(f"CHECK FAILED: the claim settle window {args.claim_settle_seconds}s is below "
                   f"the {CLAIM_SETTLE_FLOOR_SECONDS}s floor", file=sys.stderr)
             return 2
-        print(f"[watch-monitor] OK: C/R/M/H markers, caller-owned state, no timestamps; "
+        print(f"[watch-monitor] OK: C/R/M/H/S markers, caller-owned state, no timestamps; "
               f"claim settle window {args.claim_settle_seconds}s "
               f"(floor {CLAIM_SETTLE_FLOOR_SECONDS}s)")
         return 0
