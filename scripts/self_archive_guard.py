@@ -38,6 +38,11 @@ guarded (a run may remove a scaffold it just made; it may not delete history).
 Exit codes: 0 clean, 1 dismantled (restored when asked), 2 unreadable inputs —
 no baseline file, a snapshot that cannot read the tree, a bad git reference. A
 guard that silently cannot run is the defect this script exists to prevent.
+
+Every check ALSO prints one `[self-archive] verdict=ok|restored|dismantled|
+unreadable` line on stdout (issue #1582): `make` rewrites any non-zero recipe
+exit into its own `2`, so scripts/fix_loop.sh classifies from this marker
+rather than from the exit code.
 """
 from __future__ import annotations
 
@@ -127,8 +132,20 @@ def _restore(name: str, fresh_archive: bool) -> tuple[bool, str]:
     return False, "unrecoverable: neither a fresh archive copy nor files tracked at the reference"
 
 
+def _verdict(value: str) -> None:
+    """Print the ONE machine-readable outcome line (issue #1582).
+
+    `scripts/fix_loop.sh` reads this instead of the `make` exit code: GNU make
+    rewrites ANY non-zero recipe exit into its own `2`, so the guard's `1`
+    (dismantled, restored when asked) and `2` (unreadable inputs) are
+    indistinguishable through `make`. The prose above stays for a human.
+    """
+    print(f"[self-archive] verdict={value}")
+
+
 def cmd_check() -> int:
     if not _BASELINE:
+        _verdict("unreadable")
         print("guard: SELF_ARCHIVE_BASELINE is not set — run `make self-archive-snapshot` first",
               file=sys.stderr)
         return 2
@@ -137,15 +154,20 @@ def cmd_check() -> int:
     except (OSError, ValueError) as exc:
         print(f"guard: cannot read the baseline {_BASELINE}: {exc} — "
               "run `make self-archive-snapshot` first", file=sys.stderr)
+        # stdout carries the verdict a caller can read through `make`, whose own
+        # exit code would otherwise collapse this into the same `2` as a dismantle.
+        _verdict("unreadable")
         return 2
     baseline_active = set(baseline.get("active") or [])
     baseline_archive = set(baseline.get("archive") or [])
     if not baseline_active and not (CHANGES.is_dir() or ARCHIVE.is_dir()):
         # No OpenSpec changes existed at the snapshot: nothing can be dismantled.
         print("no self-archive (baseline carried no active changes)")
+        _verdict("ok")
         return 0
 
     findings: list[str] = []
+    restored_all = True
     for name in sorted(baseline_active):
         if (CHANGES / name).is_dir():
             continue
@@ -157,21 +179,25 @@ def cmd_check() -> int:
                 findings.append(f"{kind}: openspec/changes/{name} was dismantled mid-run — "
                                 f"the guard restored it ({how})")
                 continue
+            restored_all = False
             findings.append(f"{kind}: openspec/changes/{name} was dismantled mid-run — "
                             f"NOT RESTORED ({how})")
         else:
+            restored_all = False
             where = f"now at {ARCHIVE / name}" if (ARCHIVE / name).is_dir() else "no copy on disk"
             findings.append(f"{kind}: openspec/changes/{name} was active at the baseline, "
                             f"is gone from the tree ({where})")
 
     if not findings:
         print(f"no self-archive ({len(baseline_active)} baseline-active changes intact)")
+        _verdict("ok")
         return 0
     for line in findings:
         print(line)
     print("AGENTS.md 3b/6f: a branch archives its OpenSpec change when its PR MERGES "
           "(openspec-record-pr), never mid-repair — a dismantled change blinds the "
           "#779 archive gate (issue #812).")
+    _verdict("restored" if restored_all else "dismantled")
     return 1
 
 
