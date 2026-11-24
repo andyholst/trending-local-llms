@@ -36,8 +36,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import bot_markers
-from pipeline_failure_issue import PR_BLOCK_GRACE_HOURS, row_is_diagnosed
+from pipeline_failure_issue import PR_BLOCK_GRACE_HOURS, failure_issue_markers, row_is_diagnosed
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -114,32 +113,21 @@ def guard_test_exists(guard: str) -> bool:
 def marker_issue_states(repo: str) -> dict:
     """{run_id: {"number": n, "state": OPEN|CLOSED}} for issues carrying pipeline-run-failure.
 
+    ONE marker scan (rule 6d): this delegates to `pipeline_failure_issue.failure_issue_markers`
+    (the filer's own seam, which also feeds the ledger backfill), projecting to this gate's
+    str-keyed shape. A second copy of the `gh issue list` call would drift silently.
+
     The ledger lives in the repo and a marker lives on the issue: if a marker issue is CLOSED and
     NO ledger entry records that run, the ledger itself is stale (its append was never landed) and
     the failure could be re-forgotten. That is a red, not a shrug. A scan that cannot run is
     indeterminate (reported, never silently green-and-empty).
     """
     try:
-        proc = subprocess.run(
-            ["gh", "issue", "list", "--repo", repo, "--state", "all", "--label", "tech-debt",
-             "--limit", "500", "--json", "number,state,body"],
-            capture_output=True, text=True, timeout=60)
-        if proc.returncode != 0:
-            return {}
-        issues = json.loads(proc.stdout)
+        markers = failure_issue_markers(repo)
     except Exception:
         return {}
-    if not isinstance(issues, list):
-        return {}
-    out: dict = {}
-    for issue in issues:
-        for marker in bot_markers.parse_markers(issue.get("body") or ""):
-            if marker["bot"] != "queued-alarm" or marker["kind"] != "failure":
-                continue
-            run = marker.get("run")
-            if run:
-                out[run] = {"number": issue.get("number"), "state": issue.get("state")}
-    return out
+    return {str(run): {"number": info.get("number"), "state": info.get("state")}
+            for run, info in markers.items()}
 
 
 def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None,
