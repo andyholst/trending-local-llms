@@ -329,6 +329,7 @@ keep it honest (issue #207):
 | `pipeline-failure-ledger-pr-body` (`REPO=` `BRANCH=`) | Compose the ledger-append PR body (the five pattern sections, `make pipeline-failure-ledger-pr-body` reproduction, `refs #<issue>` per recorded run — NEVER a closing keyword, rule 6e). Run by `queued-alarm.yml`'s alarm job when the sweep appended |
 | `pipeline-failure-guard-check` (`REPO=`) | The no-unguarded-close gate (rule 6r): `scripts/pipeline_failure_guard_check.py` exits 1 when a ledger issue is CLOSED with no fix PR and no guard test, when a guard names a `tests/test_*.py` that is not on disk, or when a CLOSED marker issue is recorded by no ledger entry; in-flight fixes are reported, never red; a ledger row stamped `log_expired` (issue #986) is reported as its OWN shape — a drain, never red, never the closed-without-guard refusal, since a log that aged out can never yield an error class to guard; an attributed row (a `fix_pr` or CLOSED issue) that carries NO `error_excerpt` is reported as its OWN shape (issue #1136) — attributed-without-a-diagnosis, naming its fix PR + guard and pointing at `rediagnose_pending`, never the closed-without-guard refusal — and `summary()` counts `diagnosed_attributed` separately from `attributed_without_diagnosis`; an unreadable ledger exits 2. Run by `qa-validate`'s `validate` job |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started; a third shape (issue #1123) is a head commit whose EVERY run concluded `action_required` — GitHub is holding the branch's own workflows for a collaborator's approval, so no job executed and the PR sits UNSTABLE with empty checks forever. `scripts/pr_health.py` lists the open non-draft PRs, keeps the three reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch; for the approval hold, the human remedy — approve the pending runs, rule 6t never auto-approves). Exit 1 when a PR is silent. Run by `pr-health.yml` |
+| `pr-draft-check` (`REPO=`) | The ready-for-review assertion (owner directive 2026-11-24, issue #1563): `scripts/pr_health.py --draft-only` exits 1 when ANY open DRAFT PR carries a bound issue (GitHub's `closingIssuesReferences` or the issue its branch encodes), NAMING the PR with its issue — a draft is invisible to reviewers and to `auto-merge` (`draft == false`), so it silently stalls the board green. An unfinished draft binds no issue and is not named (report status on the issue instead of opening a PR). Read-only (no comment, rebase or push); the DECISION lives in the pure `draft_findings` seam. Run by `pr-health.yml`'s `sweep` job before the full sweep |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
 | `code-review-file` (`REPO=` `CAP=3` `DRY=1`) | File ONE issue per NEW finding, marker-deduped and capped per run (`scripts/code_review.py file`). Its whole output is issues — it never edits code, never merges. Run by `code-review-bot.yml` |
 | `issue-state` (`ISSUE=` `REPO=`) | The issue a run was working is still open? (issue #520) `scripts/issue_verdict.py --state`: exit 0 = open, 4 = **closed** (a merged PR finished it while the run was in flight — a GREEN outcome, with one comment), 2 = unreadable (never a pass). Used by `issue-bot`'s final failure step before it declares a run red |
@@ -578,6 +579,8 @@ reported" and nothing distinguishes it from a quiet queue.
 
 - **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
 - **`sweep`** (`needs: guard`) — `actions/checkout` (`fetch-depth: 0`), then
+  `make pr-draft-check REPO=…` (issue #1563: fail and NAME a bound DRAFT PR — it must be
+  READY FOR REVIEW, never draft) and then
   `make pr-health REPO=… COMMENT=1 REBASE=1`. The comment uses the DEFAULT token
   (`pull-requests: write`, rule 6b); the rebaser's push carries `GIT_PUSH_PAT`
   (the owner PAT — a job-token push is the measured #1115 ghost-run trigger, rule 6s).
@@ -946,7 +949,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 268 make targets, 110 files in `scripts/`)
+### Bots in the tree (12 pipelines, 270 make targets, 110 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -994,7 +997,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `workflow_dispatch`
 - **jobs:** `guard`, `sweep` (needs `guard`)
-- **calls:** `make pr-health`
+- **calls:** `make pr-draft-check` — Fail when a DRAFT PR carries a bound issue — fleet PRs go up READY FOR REVIEW, never draft (#1563; REPO=<owner/name>); `make pr-health`
 - **announces (marker verbs):** `pr-health-alarm`, `pr-health-rebase-failed`
 
 #### `.github/workflows/publish-agent-image.yml` — publish-agent-image

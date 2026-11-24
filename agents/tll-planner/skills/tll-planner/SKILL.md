@@ -350,6 +350,8 @@ break consumers, split into a non-breaking step or flag the conflict before writ
 
 ## PR hygiene + issue cleanup (owner-mandated)
 
+- **Open every PR READY (never draft) — owner directive 2026-11-24.** Every fleet PR goes up ready for review. A draft is invisible to reviewers and to `auto-merge` (`scripts/auto_merge_rebase.py` verdict `draft` → "untouched"), so it silently stalls the board and hides finished work. When dispatching, tell the lane to open the PR ready; if the work is genuinely unfinished, report status on the issue instead of opening a PR at all. `make pr-draft-check` names a bound draft PR with its issue.
+
 - Every lane that opens a PR must ship: `Closes #<id>` appears in BOTH the PR **title**
   and the PR **body** content (owner clarification — not title-only, not body-only).
   Title carries the change + issue id; body repeats `Closes #<id>`; merged PRs must close
