@@ -55,6 +55,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bot_markers  # noqa: E402  # the ONE owed-row marker definition (rule 6j)
 import owed_row_derive  # noqa: E402  # the ONE Done-when derivation (rule 6d, issue #765)
+import owed_rows_check  # noqa: E402  # the ONE heading parser the ledger reads (issue #1642)
 import pr_closure  # noqa: E402  # the ONE branch/body shape parser (rule 6d, issue #1454)
 
 #: The per-issue analysis seam (issue #1493). The old root `findings.md` was ONE
@@ -202,6 +203,21 @@ def parse(text: str) -> tuple[list[dict], str | None]:
                     "(scripts/bot_markers.owed_row_marker is the ONE writer)"
                 )
             f["owed_rows"] = parsed["rows"]
+            # Issue #1642: a DERIVED row is filtered by `derive_rows`' heading check, but an
+            # EXPLICIT `- **Owed-row:**` field bypasses it — so a hand-written `section=6r`
+            # (a numbered RULE inside §2, not a `## <id>.` heading) reached the ledger as
+            # `NO SUCH SECTION` and turned `make owed-rows-check` exit 2 repo-wide (measured
+            # on #1581). Validate the declared section through the ONE heading parser the
+            # ledger itself reads, never a second copy (rule 6d).
+            known = owed_rows_check.sections(_agents_text())
+            unknown = sorted({r["section"] for r in f["owed_rows"] if r["section"] not in known})
+            if unknown:
+                return [], (
+                    f"finding {title!r} declares owed-row section(s) {', '.join(unknown)} "
+                    f"that are NOT an AGENTS.md `## <id>.` heading "
+                    f"(known: {', '.join(sorted(known))}) — `make owed-rows-check` would "
+                    "answer `NO SUCH SECTION` and exit 2; name the section the row lives in"
+                )
         else:
             # Issue #765: a Done-when that NAMES the owed row ("add the AGENTS.md §8
             # guard row for tests/test_x.py") stamps the registered marker on the

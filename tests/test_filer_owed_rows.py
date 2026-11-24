@@ -218,6 +218,53 @@ def test_file_findings_stamps_nothing_when_the_done_when_names_nothing():
     assert "owed-row:" not in filed, filed[:800]
 
 
+def test_an_explicit_owed_row_section_that_is_not_a_heading_is_refused():
+    """Issue #1642: an EXPLICIT `- **Owed-row:**` field bypassed the heading filter.
+
+    `derive_rows` drops ids that are not AGENTS.md headings, but that guard runs for DERIVED
+    rows only — a hand-written field went straight through `parse_owed_rows` (grammar) and onto
+    the filed issue. Measured on #1581 (`section=6r`, a numbered RULE inside §2): the ledger
+    answered `NO SUCH SECTION` and `make owed-rows-check` exited 2 repo-wide. The filer now
+    refuses such a field BEFORE any `gh issue create`.
+    """
+    def _run(text: str):
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            path = tdp / "findings.md"
+            path.write_text(text, encoding="utf-8")
+            env, log, body = _stub_ff_env(tdp)
+            proc = subprocess.run([sys.executable, str(FF_SCRIPT), "--file", "--path", str(path)],
+                                  cwd=ROOT, capture_output=True, text=True, env=env)
+            calls = log.read_text(encoding="utf-8") if log.exists() else ""
+            filed = body.read_text(encoding="utf-8") if body.exists() else ""
+        return proc, calls, filed
+
+    def _finding_with_row(section: str, needle: str) -> str:
+        return (
+            "# Findings\n\n"
+            "## Explicit section probe\n\n"
+            "- **Signature:** explicit-section-probe\n"
+            "- **Evidence:** scripts/file_findings.py checked only the marker grammar\n"
+            "- **Why:** the ledger answers NO SUCH SECTION and exits 2\n"
+            "- **Done when:** the filer refuses the field and files nothing\n"
+            f"- **Owed-row:** {bot_markers.owed_row_marker(section, needle)}\n"
+        )
+
+    # The measured shape: `6r` is a rule number, not a `## <id>.` heading.
+    proc, calls, filed = _run(_finding_with_row("6r", "make pipeline-failure-issue"))
+    out = proc.stdout + proc.stderr
+    assert proc.returncode != 0, out
+    assert "NOT an AGENTS.md" in out and "6r" in out, out
+    assert "issue create" not in calls, calls
+    assert filed == "", filed[:400]
+
+    # Not vacuous: the SAME field naming a REAL heading still files exactly one issue.
+    proc2, calls2, filed2 = _run(_finding_with_row("8", "tests/test_explicit_section_probe.py"))
+    assert proc2.returncode == 0 and calls2.count("issue create") == 1, proc2.stdout + proc2.stderr
+    assert "<!-- owed-row: section=8 needle=tests/test_explicit_section_probe.py -->" in filed2, \
+        filed2[:800]
+
+
 def test_the_data_gap_filer_stamps_its_own_body():
     """`issue_body()` derives from the body it composes: a contract-gap sentence
     naming a real section and a make target lands a parseable marker, and an
@@ -326,6 +373,7 @@ def main() -> int:
         test_a_derived_needle_already_in_the_section_is_refused,
         test_file_findings_stamps_a_derived_row_on_the_filed_issue,
         test_file_findings_stamps_nothing_when_the_done_when_names_nothing,
+        test_an_explicit_owed_row_section_that_is_not_a_heading_is_refused,
         test_the_data_gap_filer_stamps_its_own_body,
         test_a_filed_derived_marker_reads_in_the_real_ledger,
         test_wired_into_make_test,
