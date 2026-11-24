@@ -106,3 +106,10 @@
 - **Evidence:** `scripts/pr_health.py::findings` has always skipped `isDraft` PRs ("a draft is allowed to be quiet"); `qa-validate.yml`'s `auto-merge` job gates on `github.event.pull_request.draft == false`, and `scripts/auto_merge_rebase.py::classify` answers `draft` → "untouched". The ready/never-draft rule existed only as prose in the lane skills, so a finished change parked as a draft stalled green with no signal naming it.
 - **Why:** the one classifier that sees every open PR could not name a bound draft, so the board hid work that was actually done and no gate failed. A CI-side `github.event.pull_request.draft` assertion would need a `pull_request` trigger on the dispatch-only `pr-health.yml`, re-running the rebaser on every PR update.
 - **Done when:** `pr_health.py` names a bound draft with its issue (`draft_findings`), `make pr-draft-check` reds on it, and both lane skills state "open every PR READY (never draft)" — this change; `qa-validate`'s existing merge-time draft guard is retained.
+
+## The §8 row for `tests/test_worktree_base.py` does not name the new checkout-provenance needle
+
+- **Evidence:** this change adds `test_check_advance_and_adopt_name_the_checkout_they_read` to `tests/test_worktree_base.py`; the module's §8 row (`AGENTS.md:2291`) names the advance/adopt/resume behaviours and the "never reports the base it read" half but not this function, and rule 3c refuses a headless leg the write to that protected agent-instruction file.
+- **Why:** rules 6b/6d/6h require the rulebook guard row to name the behaviour it locks; a guard that lands without its row has no reviewable home, so a later edit could drop the `path=` naming again with nothing naming the loss.
+- **Done when:** the EXISTING §8 row at `AGENTS.md:2291` is extended (not duplicated) to name `test_check_advance_and_adopt_name_the_checkout_they_read` and the additive `path=` key — landed from the ledger by an attended run with human sign-off.
+- **Owed-row:** <!-- owed-row: section=8 needle=test_check_advance_and_adopt_name_the_checkout_they_read -->
