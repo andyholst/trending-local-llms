@@ -6,4 +6,4 @@
 - [x] Confirm `make -n` expands each migrated recipe to a pure container command and the two `self-archive-*` targets stay host-side
 - [x] Run `make lint` and the full `make test` at the exact head
 - [x] Regenerate `OPENSPEC.md` and pass `make openspec-check` with every box ticked
-- [ ] Write `findings.md`, commit on `fix/os-agnostic-make-utility-batch-1494`, push and open the PR closing #1494
+- [x] Write `findings.md`, commit on `fix/os-agnostic-make-utility-batch-1494`, push and open the PR closing #1494
