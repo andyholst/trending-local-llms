@@ -619,6 +619,125 @@ esac
               before)
 
 
+#: (issue #1647) the sweep stub: `pr list` from $FAKE_PRS, the head-commit run list from
+#: $FAKE_COMMIT_RUNS, the pushed branch's OWN qa-validate run from $FAKE_BRANCH_RUNS (its
+#: `__SHA__` token is replaced with the branch's real tip), and `run view`'s jobs from
+#: $FAKE_JOBS. Only gh is stood in for — every git call below is real.
+UNVERIFIED_STUB = """#!/bin/sh
+case "$1 $2" in
+  "pr list") cat "$FAKE_PRS" ;;
+  "run list")
+    branch=""; commit=""; prev=""
+    for a in "$@"; do
+      if [ "$prev" = "--branch" ]; then branch="$a"; fi
+      if [ "$prev" = "--commit" ]; then commit="$a"; fi
+      prev="$a"
+    done
+    if [ -n "$branch" ]; then
+      sha=$(git --git-dir="$STUB_ORIGIN" rev-parse "refs/heads/$branch" 2>/dev/null || echo "")
+      sed "s/__SHA__/$sha/" "$FAKE_BRANCH_RUNS"
+    elif [ -n "$commit" ]; then
+      cat "$FAKE_COMMIT_RUNS"
+    else
+      echo "[]"
+    fi ;;
+  "run view") cat "$FAKE_JOBS" ;;
+  *) echo "unexpected: $*" >&2; exit 3 ;;
+esac
+"""
+
+_BRANCH_RUN = ('[{"databaseId":1,"headBranch":"ci/x","headSha":"__SHA__",'
+               '"workflowName":"qa-validate.yml","status":"completed","conclusion":"success"}]')
+
+
+def _unverified_sweep_tree(td: Path):
+    """A behind-and-clean `ci/` bot branch on a local bare origin, cloned with its CONFIGURED
+    origin spelled as github.com and mapped back here by git's own `insteadOf` (the CI shape:
+    `verify_rebased_ci` reads a GitHub run, the push rides the local transport).
+
+    Returns `(clone, origin, prs, before)` — `before` is the pre-rebase remote tip."""
+    origin = td / "origin.git"
+    assert _gitfx(td, "init", "--bare", "-q", str(origin)).returncode == 0
+    seed = td / "seed"
+    seed.mkdir()
+    assert _gitfx(seed, "init", "-q", "-b", "master").returncode == 0
+    _commit_fx(seed, "base.txt", "base\n", "base commit")
+    base_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+    _gitfx(seed, "remote", "add", "origin", str(origin))
+    _gitfx(seed, "push", "-q", "origin", "master")
+    _gitfx(seed, "checkout", "-q", "-b", "ci/data-gap-1647-x", base_oid)
+    _commit_fx(seed, "feature.txt", "feature\n", "feat: the PR's own commit")
+    _gitfx(seed, "push", "-q", "origin", "ci/data-gap-1647-x")
+    before = _gitfx(origin, "rev-parse", "refs/heads/ci/data-gap-1647-x").stdout.strip()
+    _gitfx(seed, "checkout", "-q", "master")
+    _commit_fx(seed, "other.txt", "other\n", "master moves ahead")
+    _gitfx(seed, "push", "-q", "origin", "master")
+
+    clone = td / "clone"
+    assert _gitfx(td, "clone", "-q", str(origin), str(clone)).returncode == 0
+    gh_url = "https://github.com/o/r.git"
+    _gitfx(clone, "remote", "set-url", "origin", gh_url)
+    _gitfx(clone, "config", f"url.{origin}.insteadOf", gh_url)
+    _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+    return clone, origin, [pr(7, "ci/data-gap-1647-x", oid=before)], before
+
+
+def test_an_unverified_rebase_reds_the_sweep_and_a_verified_one_stays_green():
+    """(issue #1647) the sweep's EXIT CODE reads the rebaser's proof, not only the silent half.
+
+    Measured by tll-reviewer on #1616: `run_rebaser` already reports
+    `REBASED but CI UNVERIFIED:` for a pushed head whose own qa-validate run carries ZERO jobs,
+    but `main` ended `if not silent: return 0` — so `make pr-health REBASE=1` exited GREEN over
+    a branch it had just moved onto a 0-job head, and an operator read that green as "nothing
+    needs a human". This drives the REAL script end-to-end (bare origin + clone + stub `gh`
+    only) and asserts the RED NAMES the PR; the same fixture with a run carrying real jobs is
+    still GREEN, so a verified completed rebase changes nothing."""
+    fn = getattr(PH, "unverified_rebases", None)
+    check("unverified: the decision seam exists and reads only ci_verified is False",
+          callable(fn) and fn([{"ci_verified": False}, {"ci_verified": True}, {}])
+          == [{"ci_verified": False}], "")
+
+    def drive(jobs: str):
+        with tempfile.TemporaryDirectory() as d:
+            clone, origin, prs, before = _unverified_sweep_tree(Path(d))
+            with tempfile.TemporaryDirectory() as s:
+                sd = Path(s)
+                (sd / "gh").write_text(UNVERIFIED_STUB, encoding="utf-8")
+                (sd / "gh").chmod(0o755)
+                (sd / "prs.json").write_text(json.dumps(prs), encoding="utf-8")
+                (sd / "commit_runs.json").write_text(
+                    '[{"databaseId":9,"conclusion":"success"}]', encoding="utf-8")
+                (sd / "branch_runs.json").write_text(_BRANCH_RUN, encoding="utf-8")
+                (sd / "jobs.json").write_text(jobs, encoding="utf-8")
+                env = {**os.environ, "PATH": f"{sd}:{os.environ['PATH']}",
+                       "FAKE_PRS": str(sd / "prs.json"),
+                       "FAKE_COMMIT_RUNS": str(sd / "commit_runs.json"),
+                       "FAKE_BRANCH_RUNS": str(sd / "branch_runs.json"),
+                       "FAKE_JOBS": str(sd / "jobs.json"), "STUB_ORIGIN": str(origin)}
+                proc = subprocess.run(
+                    [sys.executable, str(SCRIPT), "--repo", "o/r", "--rebase",
+                     "--dir", str(clone)], capture_output=True, text=True, env=env)
+            out = proc.stdout + proc.stderr
+            moved = (_gitfx(origin, "rev-parse", "refs/heads/ci/data-gap-1647-x").stdout.strip()
+                     != before)
+            return proc.returncode, out, moved
+
+    rc, out, moved = drive('{"jobs":[]}')
+    check("unverified: the planted zero-jobs run REDS the sweep (exit 1)", rc == 1, out[:400])
+    check("unverified: the red NAMES the affected PR and its head",
+          "#7" in out and "ci/data-gap-1647-x" in out, out[:400])
+    check("unverified: the reason says the rebase is not a completed repair",
+          "UNVERIFIED" in out and "no jobs" in out, out[:400])
+    check("unverified: the branch still MOVED — the push landed; only the proof failed",
+          moved, "")
+    check("unverified: it is NOT the silent half that reds — the head has runs",
+          "0 silent" in out, out[:400])
+
+    rc_ok, out_ok, _ = drive('{"jobs":[{"id":1,"name":"validate"}]}')
+    check("verified: a completed rebase stays GREEN (exit 0)", rc_ok == 0, out_ok[:400])
+    check("verified: no unverified verdict is printed", "UNVERIFIED" not in out_ok, out_ok[:400])
+
+
 def test_the_rebaser_regenerates_the_index_on_the_rebased_tree():
     """Issue #1049: a sweep rebase regenerates `OPENSPEC.md` on the rebased tree
     BEFORE the lease push, and the regenerated file is the tree's OWN generator's
@@ -935,6 +1054,8 @@ def main() -> int:
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
     # (issue #1616) §6s: the sweep path holds the same push-proves-CI contract as the merge gate.
     test_the_sweep_rebases_but_reports_unverified_when_the_new_head_scheduled_no_jobs()
+    # (issue #1647) the rebaser's proof must RED the sweep, not just be printed.
+    test_an_unverified_rebase_reds_the_sweep_and_a_verified_one_stays_green()
     test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()
     test_a_bound_draft_pr_is_named_with_its_issue()
