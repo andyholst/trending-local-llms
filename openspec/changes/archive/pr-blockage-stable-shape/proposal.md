@@ -1,6 +1,7 @@
 # Proposal: pr-blockage-stable-shape
 
 Issue: #1476
+PR: #1555
 
 ## Why
 
