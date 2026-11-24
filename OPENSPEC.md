@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **523**
+Active changes: **1** · archived: **525**
 
 ## Active changes
 
@@ -457,6 +457,7 @@ Active changes: **1** · archived: **523**
 | `review-pick-parse` | archived | #344 | — | [issue-review-queue](openspec/changes/archive/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/review-pick-parse/proposal.md) |
 | `rulebook-dispatch-guard-1586` | archived | #1586 | #1600 | [dispatch-guard](openspec/changes/archive/rulebook-dispatch-guard-1586/specs/dispatch-guard/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-dispatch-guard-1586/proposal.md) |
 | `rulebook-findings-seam-row-1602` | archived | #1602 | #1608 | [rulebook](openspec/changes/archive/rulebook-findings-seam-row-1602/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-findings-seam-row-1602/proposal.md) |
+| `rulebook-fleet-handover-1363` | archived | #1363 | #1609 | [rulebook](openspec/changes/archive/rulebook-fleet-handover-1363/specs/rulebook/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/rulebook-fleet-handover-1363/proposal.md) |
 | `rulebook-names-the-conflict-repair` | archived | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/archive/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-names-the-conflict-repair/proposal.md) |
 | `rulebook-pipelines-read-bullets-only` | archived | #660 | #909 | [rulebook](openspec/changes/archive/rulebook-pipelines-read-bullets-only/specs/rulebook/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/rulebook-pipelines-read-bullets-only/proposal.md) |
 | `rulebook-push-and-verify-1589` | archived | #1589 | #1598 | [rulebook](openspec/changes/archive/rulebook-push-and-verify-1589/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-push-and-verify-1589/proposal.md) |
