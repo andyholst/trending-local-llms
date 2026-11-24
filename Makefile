@@ -593,9 +593,19 @@ verify-closure:
 # A conflicting PR runs NO workflows (issue #442): its checks are ABSENT, not failed, so an
 # empty check list looks like a quiet queue. The DECISION lives in scripts/pr_health.py; this
 # target is how the sweep and a human reach it.
-.PHONY: _pr-health pr-health
+.PHONY: _pr-health pr-health _pr-draft-check pr-draft-check
 _pr-health:
 	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,) $(if $(REBASE),--rebase,)
+
+# #1563 — the ready-for-review assertion: exit 1 when ANY open draft PR carries a bound
+# issue (GitHub's `closingIssuesReferences` or the issue its branch encodes). The DECISION
+# lives in scripts/pr_health.py::draft_findings (rule 6d); this target only forwards REPO.
+# Read-only (no gh comment, no rebase, no push) and offline apart from the one `gh pr list`.
+_pr-draft-check:
+	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) --draft-only
+
+pr-draft-check: ## Fail when a DRAFT PR carries a bound issue — fleet PRs go up READY FOR REVIEW, never draft (#1563; REPO=<owner/name>)
+	@$(MAKE) --no-print-directory _pr-draft-check REPO="$(REPO)"
 
 # REPORT-ONLY since issue #814 for the DISPATCHED repairer (retired); issue #818 added the
 # rebaser half: REBASE=1 rebases behind-and-clean bot-owned (ci/) PR heads onto the fetched

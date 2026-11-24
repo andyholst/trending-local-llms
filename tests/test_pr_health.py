@@ -64,7 +64,7 @@ def check(name, cond, detail: object = ""):
 
 
 def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = False,
-        held=()):
+        held=(), extra=()):
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         (td / "prs.json").write_text(json.dumps(prs))
@@ -81,16 +81,17 @@ def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = Fal
             env[f"FAKE_RUNS_{oid[:7]}"] = str(f)
         (td / "gh").write_text(STUB)
         (td / "gh").chmod(0o755)
-        args = [sys.executable, str(SCRIPT), "--repo", "o/r"] + (["--comment"] if comment else [])
+        args = [sys.executable, str(SCRIPT), "--repo", "o/r"] + (["--comment"] if comment else []) + list(extra)
         proc = subprocess.run(args, capture_output=True, text=True, env=env)
         return proc, (td / "posted").read_text()
 
 
 def pr(number, head, mergeable="MERGEABLE", state="CLEAN", draft=False, oid=None,
-       author=None):
+       author=None, closing=()):
     row = {"number": number, "title": f"PR {number}", "headRefName": head, "isDraft": draft,
            "mergeable": mergeable, "mergeStateStatus": state,
-           "headRefOid": oid or (f"a{number:06d}" + "0" * 33)}
+           "headRefOid": oid or (f"a{number:06d}" + "0" * 33),
+           "closingIssuesReferences": [{"number": n} for n in closing]}
     if author is not None:
         row["author"] = author
     return row
@@ -746,6 +747,95 @@ def test_a_failed_rebase_round_announces_on_the_pr_thread_once():
               proc2.stdout + proc2.stderr)
 
 
+def test_a_bound_draft_pr_is_named_with_its_issue():
+    """Issue #1563: a DRAFT carrying a bound issue must be NAMED with that issue number.
+
+    `findings` has always skipped drafts ("a draft is allowed to be quiet"), which is why
+    nothing named a finished change parked as a draft. The verdict is the NEW pure seam,
+    exercised over the real fixture shape: a GitHub `closingIssuesReferences` binding, and
+    the issue its branch encodes as the fallback.
+    """
+    bound = pr(9, "fix/draft-with-issue", draft=True, closing=[1563])
+    found = PH.draft_findings([bound])
+    check("draft: a bound draft is reported", len(found) == 1, found)
+    check("draft: it names the bound issue number", found[0]["issues"] == [1563], found)
+    check("draft: it names the PR and its head", found[0]["number"] == 9
+          and found[0]["head"] == "fix/draft-with-issue", found)
+    check("draft: it names the rule (READY, never draft)",
+          "READY" in found[0]["reasons"][0] and "draft" in found[0]["reasons"][0].lower(),
+          found[0]["reasons"])
+    # The branch-encoded fallback: no closingIssuesReferences, but the branch ends in -42.
+    by_branch = PH.draft_findings([pr(10, "fix/foo-42", draft=True)])
+    check("draft: a branch-encoded issue binds too",
+          len(by_branch) == 1 and by_branch[0]["issues"] == [42], by_branch)
+    # A ready PR is not a draft verdict, even with a bound issue.
+    check("draft: a READY PR is never a draft verdict",
+          PH.draft_findings([pr(11, "fix/ready-7", closing=[7])]) == [], "")
+    # The full sweep NAMES the draft and its issue on stdout while keeping findings unchanged.
+    proc, _ = run([bound], {})
+    check("draft: the sweep prints the bound issue and the PR",
+          "DRAFT #9" in proc.stdout and "#1563" in proc.stdout, proc.stdout)
+    check("draft: the silent-PR verdict is unchanged (a draft is still not silent)",
+          "0 silent" in proc.stdout, proc.stdout)
+
+
+def test_a_bound_draft_pr_fails_the_draft_only_assertion():
+    """Issue #1563: the CI-side assertion exits 1 on a bound draft, 0 otherwise."""
+    # Given the real CLI with --draft-only, a stub gh answering a bound draft (offline)
+    bound = pr(12, "fix/draft-99", draft=True, closing=[99])
+    proc, _ = run([bound], {}, extra=["--draft-only"])
+    check("draft-only: a bound draft is a RED gate", proc.returncode == 1,
+          proc.stdout + proc.stderr)
+    check("draft-only: it still NAMES the issue", "#99" in proc.stdout, proc.stdout)
+    # An unbound draft (unfinished work) is green — report status, never open a PR.
+    proc, _ = run([pr(13, "fix/unfinished", draft=True)], {}, extra=["--draft-only"])
+    check("draft-only: an unbound draft is NOT a gate", proc.returncode == 0, proc.stdout)
+    # A ready PR with a bound issue is green.
+    proc, _ = run([pr(14, "fix/ready-8", closing=[8])], {}, extra=["--draft-only"])
+    check("draft-only: a ready PR with a bound issue is green", proc.returncode == 0,
+          proc.stdout)
+    # --help documents the ready-for-review rule.
+    helper = subprocess.run([sys.executable, str(SCRIPT), "--help"],
+                            capture_output=True, text=True)
+    check("draft-only: --help names the ready-for-review rule",
+          "--draft-only" in helper.stdout
+          and "ready" in helper.stdout.lower() and "draft" in helper.stdout.lower(),
+          helper.stdout)
+
+
+def test_an_unbound_draft_is_not_a_stall():
+    """A genuine unfinished draft binds no issue: it is not named and stays out of the gate."""
+    check("draft: no bound issue, no verdict",
+          PH.draft_findings([pr(15, "fix/wip", draft=True)]) == [], "")
+    # A keeper/refresh branch encodes no issue even when its head carries a number elsewhere.
+    check("draft: a refresh branch does not encode an issue",
+          PH.bound_issues({"headRefName": "ci/trending-refresh-20261124",
+                           "closingIssuesReferences": []}) == [], "")
+
+
+def test_the_ready_rule_is_wired_to_the_makefile_and_workflow():
+    """The rule reaches the fleet through the existing Makefile + pr-health workflow."""
+    mk = (ROOT / "Makefile").read_text()
+    check("wiring: make pr-draft-check calls the --draft-only seam",
+          "_pr-draft-check:" in mk and "--draft-only" in mk
+          and "pr-draft-check: ##" in mk, "")
+    wf = (ROOT / ".github" / "workflows" / "pr-health.yml").read_text()
+    check("wiring: the pr-health workflow runs make pr-draft-check",
+          "run: make pr-draft-check" in wf, "")
+    check("wiring: no new schedule: trigger was added to pr-health.yml",
+          "\n  schedule:" not in wf, wf[:400])
+
+
+def test_the_lane_skills_say_open_every_pr_ready_never_draft():
+    """The rule is stated in BOTH lane contracts the planner and implementer read."""
+    for lane in ("tll-planner", "tll-implementer"):
+        text = (ROOT / "agents" / lane / "skills" / lane / "SKILL.md").read_text()
+        check(f"skill: {lane} says open every PR READY (never draft)",
+              "Open every PR READY (never draft)" in text, "")
+        check(f"skill: {lane} says unfinished work is reported, not opened as a draft",
+              "report status on the issue instead of opening a PR" in text, "")
+
+
 def main() -> int:
     print("silent PR alarm (issue #442)")
     test_a_conflicting_pr_is_silent_and_named()
@@ -769,6 +859,11 @@ def main() -> int:
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
     test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()
+    test_a_bound_draft_pr_is_named_with_its_issue()
+    test_a_bound_draft_pr_fails_the_draft_only_assertion()
+    test_an_unbound_draft_is_not_a_stall()
+    test_the_ready_rule_is_wired_to_the_makefile_and_workflow()
+    test_the_lane_skills_say_open_every_pr_ready_never_draft()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

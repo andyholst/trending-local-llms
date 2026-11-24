@@ -34,6 +34,15 @@ healthy. Measured on PR #1116 (head `b10716488d`, 2026-11-17): `qa-validate` run
 and `pr-closure` run completed `action_required`, zero jobs, no alarm anywhere. The sweep now
 flags a head whose every run is `action_required` and names the human remedy (approve the
 pending runs) — approving is a collaborator's act (rule 6t), so the sweep announces, never acts.
+
+The FOURTH state a draft fleet PR is not a silence but a STALL (owner directive 2026-11-24,
+issue #1563): a draft is invisible to reviewers and `auto-merge`'s own `if:` (`draft == false`)
+refuses it, so a finished change can sit on the board green-and-unlandable. `findings` has
+always SKIPPED drafts ("a draft is allowed to be quiet"), which is exactly why nothing named
+one. `draft_findings()` is the other half of the classification: a draft that CARRIES a bound
+issue (`closingIssuesReferences`, or the issue its branch encodes) is named with that issue —
+fleet PRs go up READY, never draft; a genuinely unfinished draft binds no issue and stays out
+of the verdict.
 """
 from __future__ import annotations
 
@@ -106,6 +115,62 @@ def is_conflicting(pr: dict) -> bool:
     mergeable = str(pr.get("mergeable") or "").upper()
     state = str(pr.get("mergeStateStatus") or "").upper()
     return mergeable == "CONFLICTING" or state == "DIRTY"
+
+
+#: The issue a PR is BOUND to (owner directive 2026-11-24, issue #1563): GitHub's own
+#: `closingIssuesReferences`, else the issue its branch encodes (`scripts/pr_closure.py`'s ONE
+#: parser). A keeper/refresh/docs branch encodes none and binds nothing, so it is never named.
+try:  # the ONE branch→issue parser (rule 6d), read from pr_closure when importable
+    from pr_closure import implemented_issue as _implemented_issue
+except ImportError:  # run from the repo root
+    from scripts.pr_closure import implemented_issue as _implemented_issue
+
+
+def bound_issues(pr: dict) -> list[int]:
+    """The issues this PR binds, in order — GitHub's own binding FIRST (#1563).
+
+    `closingIssuesReferences` is GitHub's record of the closing keyword, so it outranks a
+    branch-name convention; the branch parser covers the local/fixture shape and a PR whose
+    body binds an issue GitHub has not indexed yet. Deduplicated, sorted.
+    """
+    refs = []
+    for ref in pr.get("closingIssuesReferences") or []:
+        number = (ref or {}).get("number")
+        if isinstance(number, int):
+            refs.append(number)
+    try:
+        encoded = _implemented_issue(str(pr.get("headRefName") or ""))
+    except Exception:  # a malformed branch must never kill the sweep
+        encoded = None
+    if encoded is not None:
+        refs.append(int(encoded))
+    return sorted(set(refs))
+
+
+#: The wording a draft verdict carries. READY is the fleet's rule, so the refusal names it.
+DRAFT_REASON = ("DRAFT with a bound issue — a fleet PR goes up READY FOR REVIEW, never "
+                "draft (owner directive 2026-11-24, issue #1563)")
+
+
+def draft_findings(prs: list[dict]) -> list[dict]:
+    """The DRAFT PRs that carry a bound issue — the ready-for-review verdict (#1563).
+
+    Pure on purpose (rule 6d), the same shape `findings` has: a draft is deliberately NOT a
+    "silent PR" (`findings` skips drafts, and `auto_merge_rebase.classify` still answers
+    `draft`), but a draft that binds an issue is work the board cannot see or land. Each row
+    names the PR, its head, the bound issue(s) and the one remedy.
+    """
+    out = []
+    for pr in prs:
+        if not pr.get("isDraft"):
+            continue
+        issues = bound_issues(pr)
+        if not issues:
+            continue  # an unfinished draft binds no issue — report status, do not open a PR
+        out.append({"number": pr.get("number"), "head": pr.get("headRefName"),
+                    "title": (pr.get("title") or "")[:70],
+                    "issues": issues, "reasons": [DRAFT_REASON]})
+    return out
 
 
 def rebase_plan(prs: list[dict]) -> list[dict]:
@@ -436,6 +501,10 @@ def main() -> int:
                     help="rebase behind-and-clean BOT-owned (ci/ prefix) PR heads onto "
                          "origin/master and push them back to their PR head (issue #818); "
                          "conflicted PRs and human-owned branches are never rewritten")
+    ap.add_argument("--draft-only", action="store_true",
+                    help="exit 1 ONLY when a DRAFT PR carries a bound issue — the "
+                         "ready-for-review verdict (owner directive 2026-11-24, issue #1563); "
+                         "the silent-PR half is skipped")
     ap.add_argument("--dir", default=None,
                     help="checkout to run the git half in (default: current directory)")
     args = ap.parse_args()
@@ -444,7 +513,7 @@ def main() -> int:
     try:
         prs = _gh_json(["pr", "list", "--state", "open", "--limit", "100", *repo_args,
                         "--json", "number,title,headRefName,isDraft,mergeable,mergeStateStatus,"
-                                  "headRefOid,author"]) or []
+                                  "headRefOid,author,closingIssuesReferences"]) or []
         runs_for = {}
         holds_for = {}
         for pr in prs:
@@ -461,6 +530,22 @@ def main() -> int:
     except (RuntimeError, ValueError) as exc:
         print(f"[pr-health] FAIL: {exc}", file=sys.stderr)
         return 2
+
+    # THE DRAFT VERDICT (issue #1563): reported in BOTH modes. It never changes a PR; it only
+    # NAMES a draft that carries a bound issue, with the issue number, because a draft is
+    # invisible to reviewers and to `auto-merge` and silently stalls the board. `findings`
+    # deliberately skips drafts, and `auto_merge_rebase.classify` still answers `draft` — both
+    # untouched, so this is additive and no existing verdict changes meaning.
+    drafts = draft_findings(prs)
+    print(f"[pr-health] {len(drafts)} draft PR(s) with a bound issue (must be READY, never draft)")
+    for d in drafts:
+        issues = ", ".join(f"#{n}" for n in d["issues"])
+        print(f"  DRAFT #{d['number']} {d['head']} bound to {issues}: {DRAFT_REASON}")
+
+    if args.draft_only:
+        # The CI assertion mode: a bound draft is a RED gate, nothing else is. No rebasing,
+        # no silent-PR verdict, no comments — this is the smallest suitable CI-side assertion.
+        return 1 if drafts else 0
 
     silent = findings(prs, runs_for, holds_for)
     open_checked = [p for p in prs if not p.get("isDraft")]

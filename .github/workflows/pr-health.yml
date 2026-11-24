@@ -20,6 +20,11 @@ name: pr-health
 # behind-and-clean BOT-owned (`ci/` prefix) PR heads are rebased onto the fetched base and
 # pushed to their own PR branch, which re-triggers that PR's gates. A conflicted PR and a
 # human-owned branch are never rewritten.
+#
+# Issue #1563 (owner directive 2026-11-24): this same `sweep` job also runs the ready-for-review
+# assertion `make pr-draft-check` BEFORE the full sweep. A DRAFT that carries a bound issue is
+# invisible to reviewers and `auto-merge`, so it stalls the board green — the check exits 1 and
+# NAMES the PR with its issue. Both calls go through the Makefile; no `schedule:` is added.
 on:
   # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
   # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
@@ -93,6 +98,16 @@ jobs:
       # behind-and-clean bot-owned PR heads are rebased onto origin/master and pushed to
       # their own PR head. A conflicted PR and a human-owned branch stay report-only:
       # their repair is the PR's own fix loop (§6r) or a human.
+
+      # Issue #1563 — ready-for-review assertion FIRST: a bound DRAFT stalls the board green
+      # (invisible to reviewers, refused by auto-merge), so fail the sweep and NAME the PR with
+      # its issue. The DECISION lives in scripts/pr_health.py::draft_findings (rule 6d); this
+      # step only calls the Makefile target. Read-only (no comment/rebase/push), default token.
+      - name: Fail when a bound draft PR is not ready for review (issue #1563)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: make pr-draft-check REPO="$REPO"
 
       # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
       # scope here, and a refused comment would leave the sweep green over a silent PR.
