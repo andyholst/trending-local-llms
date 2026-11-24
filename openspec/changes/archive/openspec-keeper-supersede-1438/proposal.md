@@ -1,6 +1,7 @@
 # Proposal: openspec-keeper-supersede-1438
 
 Issue: #1438
+PR: #1498
 
 ## Why
 

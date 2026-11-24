@@ -11,6 +11,7 @@ extended by #1081 — that no keeper job spells its own copy of the landing shel
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -146,9 +147,11 @@ def test_extra_changes_refuse_exit_1_and_land_nothing() -> None:
         check("refusal opens no PR", not Path(env["KEEPER_GH_LOG"]).exists(), "")
 
 
-def keeper_row(name: str, state: str = "MERGEABLE", checks=()) -> dict:
+def keeper_row(name: str, state: str = "MERGEABLE", checks=(), number: int = 1248,
+               head: str = "deadbeef") -> dict:
     """One `gh pr list` row as the real client answers it (the stub bypasses `--jq`)."""
-    return {"headRefName": name, "mergeStateStatus": state,
+    return {"number": number, "headRefName": name, "headRefOid": head,
+            "mergeStateStatus": state,
             "statusCheckRollup": [{"name": n, "conclusion": c} for n, c in checks]}
 
 
@@ -385,15 +388,23 @@ def test_reaches_ci_through_the_makefile_only() -> None:
 
 
 def _set_and_read(work: Path, env: dict, keeper_count: int, master_count: int) -> None:
-    """Put two different `archived:` counts into a fresh OPENSPEC.md, committed to master."""
-    env["KEEPER_GH_API_CONTENT"] = "Active changes: **0** · archived: **{}**\n".format(keeper_count)
+    """Put two different `archived:` counts into a fresh OPENSPEC.md, committed to master.
+
+    The keeper's own count arrives through `KEEPER_GH_API_CONTENT`; the master count is
+    written into the rendered index. The extra archived row keeps the write a REAL diff
+    against `make_scene`'s seed (an identical tree would make `git commit` exit 1).
+    """
+    env["KEEPER_GH_API_CONTENT"] = base64.b64encode(
+        "Active changes: **0** · archived: **{}**\n".format(keeper_count).encode("utf-8")
+    ).decode("ascii")
     (work / "OPENSPEC.md").write_text(
         "# OpenSpec index\n\n"
         "Active changes: **0** · archived: **{}**\n\n"
         "## Archived changes\n\n"
         "| Change | State | Issue | PR | Capability specs | Tasks | Proposal |\n"
         "|---|---|---|---|---|---|---|\n"
-        "| `heartbeat-1282` | archived | #700 | #701 | [fleet-watch](openspec/changes/archive/heartbeat-1282/specs/fleet-watch/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/heartbeat-1282/proposal.md) |\n".format(master_count),
+        "| `heartbeat-1282` | archived | #700 | #701 | [fleet-watch](openspec/changes/archive/heartbeat-1282/specs/fleet-watch/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/heartbeat-1282/proposal.md) |\n"
+        "| `seed-row` | archived | #700 | #701 | [x](x.md) | 1/1 | [p.md](p.md) |\n".format(master_count),
         encoding="utf-8",
     )
     git("add", "-A", cwd=work)
@@ -401,13 +412,21 @@ def _set_and_read(work: Path, env: dict, keeper_count: int, master_count: int) -
     git("push", "-q", "origin", "master", cwd=work)
 
 
+def _github_remote(work: Path, bare: Path) -> None:
+    """Give origin a github.com FETCH url (so `repo_slug` parses) while its PUSH url stays
+    the real local bare remote — the fixture exercises the real push, not a fake URL."""
+    git("remote", "set-url", "origin", "https://github.com/o/r.git", cwd=work)
+    git("remote", "set-url", "--push", "origin", str(bare), cwd=work)
+
+
 def test_a_stale_mergeable_index_repair_keeper_is_superseded_and_closed() -> None:
     print("\n#1438: a BELOW-count mergeable keeper is superseded: commented with both counts, "
           "closed, and a fresh keeper still lands")
     with tempfile.TemporaryDirectory() as td:
         work, env = make_scene(Path(td))
-        git("remote", "set-url", "origin", "https://github.com/o/r.git", cwd=work)
         _set_and_read(work, env, keeper_count=397, master_count=486)
+        _github_remote(work, Path(td) / "remote.git")
+        (work / "GENERATED.md").write_text("regenerated\n")
         env["KEEPER_GH_LIST"] = json.dumps(
             [keeper_row("ci/openspec-index-repair-2026-01-01T000000Z", checks=GREEN)])
         proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
@@ -415,8 +434,8 @@ def test_a_stale_mergeable_index_repair_keeper_is_superseded_and_closed() -> Non
         check("classifies SUPERSEDED", "SUPERSEDED" in proc.stdout, proc.stdout)
         log = Path(env["KEEPER_GH_LOG"]).read_text()
         check("comments the count evidence", "archived: **397**" in log and "archived: **486**" in log, log)
-        check("closes the stale keeper", "CLOSE 1248" in log, log)
-        refs = git("ls-remote", "--heads", "origin", cwd=work)
+        check("closes the stale keeper", "CLOSE pr close 1248" in log, log)
+        refs = git("ls-remote", "--heads", str(Path(td) / "remote.git"), cwd=work)
         check("fresh keeper branch pushed", re.search(r"ci/test-keeper-\d{8}T\d{6}Z", refs) is not None, refs)
 
 
@@ -424,17 +443,20 @@ def test_a_current_mergeable_index_repair_keeper_is_live() -> None:
     print("\n#1438: a keeper AT the master count stays live and suppresses a duplicate")
     with tempfile.TemporaryDirectory() as td:
         work, env = make_scene(Path(td))
-        git("remote", "set-url", "origin", "https://github.com/o/r.git", cwd=work)
         _set_and_read(work, env, keeper_count=486, master_count=486)
+        _github_remote(work, Path(td) / "remote.git")
+        (work / "GENERATED.md").write_text("regenerated\n")
         env["KEEPER_GH_LIST"] = json.dumps(
             [keeper_row("ci/openspec-index-repair-2026-01-01T000000Z", checks=GREEN)])
         proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
         check("exit 0", proc.returncode == 0, proc.stdout + proc.stderr)
         check("classified live, not superseded", "SUPERSEDED" not in proc.stdout, proc.stdout)
         check("suppresses the duplicate", "already open" in proc.stdout, proc.stdout)
-        log = Path(env["KEEPER_GH_LOG"]).read_text()
-        check("no comment, no close on a current keeper", "COMMENT" not in log and "CLOSE" not in log, log)
-        refs = git("ls-remote", "--heads", "origin", cwd=work)
+        log = Path(env["KEEPER_GH_LOG"])
+        check("no comment, no close on a current keeper",
+              not log.exists() or ("COMMENT" not in log.read_text() and "CLOSE" not in log.read_text()),
+              log.read_text() if log.exists() else "<no gh write>")
+        refs = git("ls-remote", "--heads", str(Path(td) / "remote.git"), cwd=work)
         check("no fresh branch pushed", "test-keeper-" not in refs, refs)
 
 
@@ -461,14 +483,31 @@ def test_the_supersede_guard_is_red_on_the_base_revision() -> None:
         spec.loader.exec_module(base_mod)
         base_dedupe = base_mod.keeper_dedupe
         work, env = make_scene(Path(tempfile.mkdtemp()))
-        git("remote", "set-url", "origin", "https://github.com/o/r.git", cwd=work)
         _set_and_read(work, env, keeper_count=397, master_count=486)
+        git("remote", "set-url", "origin", "https://github.com/o/r.git", cwd=work)
+        (work / "GENERATED.md").write_text("regenerated\n")
         env["KEEPER_GH_LIST"] = json.dumps(
             [keeper_row("ci/openspec-index-repair-2026-01-01T000000Z", checks=GREEN)])
-        out = base_dedupe("ci/openspec-index-repair-", work)
+        # The base dedupe shells out to `gh` and inherits os.environ (it takes no env),
+        # so drive it with the SAME stub PATH the real run uses.
+        saved_path = os.environ.get("PATH", "")
+        saved_list = os.environ.get("KEEPER_GH_LIST")
+        os.environ["PATH"] = env["PATH"]
+        os.environ["KEEPER_GH_LIST"] = env["KEEPER_GH_LIST"]
+        try:
+            out = base_dedupe("ci/openspec-index-repair-", work)
+        finally:
+            os.environ["PATH"] = saved_path
+            if saved_list is None:
+                os.environ.pop("KEEPER_GH_LIST", None)
+            else:
+                os.environ["KEEPER_GH_LIST"] = saved_list
         check("the BASE dedupe reports no superseded keepers (3-tuple shape)",
               len(out) == 3, repr(out))
-        check("the base dedupe never closed the stale keeper", "CLOSE" not in Path(env["KEEPER_GH_LOG"]).read_text(), "")
+        log = Path(env["KEEPER_GH_LOG"])
+        check("the base dedupe never closed the stale keeper",
+              not log.exists() or "CLOSE" not in log.read_text(),
+              log.read_text() if log.exists() else "<no gh write>")
     finally:
         import shutil
         shutil.rmtree(root, ignore_errors=True)
@@ -486,7 +525,10 @@ def main() -> int:
               test_multi_file_keeper_lands_only_the_owned_file_that_changed,
               test_a_keeper_command_that_cannot_run_exits_two_loudly,
               test_no_keeper_job_spells_the_landing_sequence_anymore,
-              test_reaches_ci_through_the_makefile_only):
+              test_reaches_ci_through_the_makefile_only,
+              test_a_stale_mergeable_index_repair_keeper_is_superseded_and_closed,
+              test_a_current_mergeable_index_repair_keeper_is_live,
+              test_the_supersede_guard_is_red_on_the_base_revision):
         t()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S):")
