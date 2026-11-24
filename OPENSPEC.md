@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **511**
+Active changes: **1** · archived: **512**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `rulebook-findings-seam-row-1602` | active | #1602 | — | [rulebook](openspec/changes/rulebook-findings-seam-row-1602/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/rulebook-findings-seam-row-1602/proposal.md) |
 
 ## Archived changes
 
@@ -449,6 +448,7 @@ Active changes: **2** · archived: **511**
 | `repair-a-conflicted-pr` | archived | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/archive/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/repair-a-conflicted-pr/proposal.md) |
 | `repair-in-flight-is-visible` | archived | #386 (a repair in flight is invisible in the job log) | — | [bot-agent-run-safety](openspec/changes/archive/repair-in-flight-is-visible/specs/bot-agent-run-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/repair-in-flight-is-visible/proposal.md) |
 | `review-pick-parse` | archived | #344 | — | [issue-review-queue](openspec/changes/archive/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/review-pick-parse/proposal.md) |
+| `rulebook-findings-seam-row-1602` | archived | #1602 | #1608 | [rulebook](openspec/changes/archive/rulebook-findings-seam-row-1602/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-findings-seam-row-1602/proposal.md) |
 | `rulebook-names-the-conflict-repair` | archived | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/archive/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-names-the-conflict-repair/proposal.md) |
 | `rulebook-pipelines-read-bullets-only` | archived | #660 | #909 | [rulebook](openspec/changes/archive/rulebook-pipelines-read-bullets-only/specs/rulebook/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/rulebook-pipelines-read-bullets-only/proposal.md) |
 | `rulebook-push-and-verify-1589` | archived | #1589 | #1598 | [rulebook](openspec/changes/archive/rulebook-push-and-verify-1589/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-push-and-verify-1589/proposal.md) |

@@ -1,6 +1,7 @@
 # Proposal: rulebook-findings-seam-row-1602
 
 Issue: #1602
+PR: #1608
 
 ## Why
 
