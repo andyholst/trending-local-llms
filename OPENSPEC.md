@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **548**
+Active changes: **1** · archived: **549**
 
 ## Active changes
 
@@ -71,6 +71,7 @@ Active changes: **1** · archived: **548**
 | `2026-11-24-filer-class-one-member-per-run-1615` | archived | #1615 | — | [pipeline-failure-error-class-grouping](openspec/changes/archive/2026-11-24-filer-class-one-member-per-run-1615/specs/pipeline-failure-error-class-grouping/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-class-one-member-per-run-1615/proposal.md) |
 | `2026-11-24-filer-error-class-grouping-1557` | archived | #1557 | — | [pipeline-failure-error-class-grouping](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/specs/pipeline-failure-error-class-grouping/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-error-class-grouping-1557/proposal.md) |
 | `2026-11-24-filer-owed-row-section-guard` | archived | #1642 | — | [filer-owed-rows](openspec/changes/archive/2026-11-24-filer-owed-row-section-guard/specs/filer-owed-rows/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-owed-row-section-guard/proposal.md) |
+| `2026-11-24-filer-skip-cancelled-push-runs` | archived | #1669 | #1673 | [pipeline-failure-filer](openspec/changes/archive/2026-11-24-filer-skip-cancelled-push-runs/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-filer-skip-cancelled-push-runs/proposal.md) |
 | `2026-11-24-fix-loop-self-archive-exit-mapping` | archived | #1582 | — | [fix-loop-self-archive-verdict](openspec/changes/archive/2026-11-24-fix-loop-self-archive-exit-mapping/specs/fix-loop-self-archive-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-24-fix-loop-self-archive-exit-mapping/proposal.md) |
 | `2026-11-24-fleet-host-reconcile-backup-path-spelling` | archived | #1552 | #1588 | [fleet-host-sync](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/specs/fleet-host-sync/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-host-reconcile-backup-path-spelling/proposal.md) |
 | `2026-11-24-fleet-mirror-union-zero-to-n-1478` | archived | #1478 | — | [fleet-mirror-union](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/specs/fleet-mirror-union/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-24-fleet-mirror-union-zero-to-n-1478/proposal.md) |
