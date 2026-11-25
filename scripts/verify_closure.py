@@ -29,12 +29,24 @@ ATTEMPTS = env_int("VERIFY_CLOSURE_ATTEMPTS", 3)
 DELAY_S = env_float("VERIFY_CLOSURE_DELAY_S", 2)
 
 
+def credential_variable() -> str:
+    """Which credential VARIABLE this process is using (`GH_TOKEN`, else `GITHUB_TOKEN`).
+
+    A NAME, never a value (rule 3d): a bare `HTTP 401: Bad credentials` cannot tell an
+    expired token from a rotated secret or a missing scope, so the refusal has to say
+    which variable the reader should inspect. Measured on run 45512193546, where
+    diagnosing #1677 meant hand-diffing two runs' step environments.
+    """
+    return "GH_TOKEN" if os.environ.get("GH_TOKEN") else "GITHUB_TOKEN"
+
+
 def _gh(*args: str) -> dict:
     """Run `gh` and parse its JSON. A failure is LOUD — an unreadable state is never a pass."""
     proc = subprocess.run(["gh", *args], capture_output=True, text=True)
     if proc.returncode != 0:
         raise SystemExit(f"[verify-closure] FAIL: gh {' '.join(args)} exited "
-                         f"{proc.returncode}: {proc.stderr.strip()[:300]}")
+                         f"{proc.returncode} (credential variable: {credential_variable()}): "
+                         f"{proc.stderr.strip()[:300]}")
     try:
         return json.loads(proc.stdout or "{}")
     except json.JSONDecodeError:
