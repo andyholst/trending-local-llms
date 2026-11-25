@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **541**
+Active changes: **1** · archived: **542**
 
 ## Active changes
 
@@ -542,6 +542,7 @@ Active changes: **1** · archived: **541**
 | `verdict-grammar-tolerates-formatting` | archived | #245 | — | [issue-triage](openspec/changes/archive/verdict-grammar-tolerates-formatting/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/verdict-grammar-tolerates-formatting/proposal.md) |
 | `verdict-hold-ceiling` | archived | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/archive/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | archived | #346 | — | [ci-output-safety](openspec/changes/archive/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/verdict-output-format/proposal.md) |
+| `verify-closure-credential-variable` | archived | #1695 | #1697 | [closure-proof](openspec/changes/archive/verify-closure-credential-variable/specs/closure-proof/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/verify-closure-credential-variable/proposal.md) |
 | `verify-the-issue-closed` | archived | #288 — `tech-debt: No post-merge step verifies the referenced issue actually closed` | — | [pr-ci](openspec/changes/archive/verify-the-issue-closed/specs/pr-ci/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/verify-the-issue-closed/proposal.md) |
 | `vetted-performance-1252` | archived | #1252 | #1255 | [trending-ranking](openspec/changes/archive/vetted-performance-1252/specs/trending-ranking/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/vetted-performance-1252/proposal.md) |
 | `vram-card-fit` | archived | #337 | — | [card-fit](openspec/changes/archive/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/vram-card-fit/proposal.md) |

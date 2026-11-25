@@ -112,6 +112,78 @@ def test_an_unreadable_state_is_loud_never_a_pass():
     check("closure: the refusal quotes gh", "exited 1" in proc.stderr, proc.stderr)
 
 
+#: A fake credential VALUE that must never reach the log (rule 3d). Deliberately NOT
+#: credential-shaped, so it proves the point without giving the secret scanner work.
+FAKE_TOKEN_VALUE = "fake-credential-value-1695"
+
+
+def run_with_stub_gh(**token: str) -> subprocess.CompletedProcess:
+    """Drive the REAL script against a stub `gh` that exits 1 (the external system).
+
+    Both credential variables are stripped from the inherited environment first, so the
+    assertion tests the spelling THIS run asked for rather than whatever the host/CI set.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        (td / "gh").write_text("#!/bin/sh\necho 'HTTP 401: Bad credentials' >&2\nexit 1\n")
+        (td / "gh").chmod(0o755)
+        env = {k: v for k, v in os.environ.items() if k not in ("GH_TOKEN", "GITHUB_TOKEN")}
+        env["PATH"] = f"{td}:{os.environ['PATH']}"
+        env.update(token)
+        return subprocess.run([sys.executable, str(SCRIPT), "--pr", "1"],
+                              capture_output=True, text=True, env=env)
+
+
+def test_a_gh_failure_names_the_credential_variable_in_use():
+    """Issue #1695: the refusal names WHICH credential variable is live, never its value.
+
+    RED on origin/master (the pre-change message carried no credential name) and GREEN
+    only when both spellings are read off the real process environment.
+    """
+    proc = run_with_stub_gh(GH_TOKEN=FAKE_TOKEN_VALUE)
+    check("closure: a failing gh is still a loud refusal", proc.returncode != 0, proc.stdout)
+    check("closure: GH_TOKEN in use is the variable named", "GH_TOKEN" in proc.stderr,
+          proc.stderr)
+    check("closure: the other variable is NOT named", "GITHUB_TOKEN" not in proc.stderr,
+          proc.stderr)
+    check("closure: no credential VALUE is printed",
+          FAKE_TOKEN_VALUE not in proc.stdout + proc.stderr, proc.stdout + proc.stderr)
+
+    default = run_with_stub_gh()
+    check("closure: with no GH_TOKEN the default GITHUB_TOKEN is named",
+          "GITHUB_TOKEN" in default.stderr, default.stderr)
+    check("closure: GH_TOKEN is not invented while it is unset",
+          "GH_TOKEN" not in default.stderr, default.stderr)
+    check("closure: the default-token refusal prints no value either",
+          FAKE_TOKEN_VALUE not in default.stdout + default.stderr,
+          default.stdout + default.stderr)
+
+
+def test_origin_masters_refusal_carries_no_credential_marker():
+    """The base revision's own refusal is run against the same stub — RED before, GREEN after.
+
+    `git show origin/master:scripts/verify_closure.py` is the pre-#1695 artifact; running
+    IT (not a copy of its message) keeps this a behavioural proof rather than a source grep.
+    `PYTHONPATH` stands in for the script's own directory, which the temp copy does not have.
+    """
+    base = subprocess.run(["git", "-C", str(ROOT), "show",
+                           "origin/master:scripts/verify_closure.py"],
+                          capture_output=True, text=True)
+    if base.returncode == 0:
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            src = td / "verify_closure_base.py"
+            src.write_text(base.stdout)
+            (td / "gh").write_text("#!/bin/sh\necho 'HTTP 401: Bad credentials' >&2\nexit 1\n")
+            (td / "gh").chmod(0o755)
+            env = {**os.environ, "PATH": f"{td}:{os.environ['PATH']}",
+                   "PYTHONPATH": str(ROOT / "scripts"), "GH_TOKEN": FAKE_TOKEN_VALUE}
+            proc = subprocess.run([sys.executable, str(src), "--pr", "1"],
+                                  capture_output=True, text=True, env=env)
+        check("closure: the guard requires origin/master's refusal to name the credential variable",
+              "GH_TOKEN" in proc.stderr, proc.stderr)
+
+
 def test_the_check_is_wired_to_a_target_and_the_merge_job():
     mk = (ROOT / "Makefile").read_text()
     check("closure: a make target runs the script",
@@ -225,6 +297,8 @@ def main() -> int:
     test_a_reference_without_a_state_is_read_from_the_issue()
     test_a_pr_that_closes_nothing_is_not_a_failure()
     test_an_unreadable_state_is_loud_never_a_pass()
+    test_a_gh_failure_names_the_credential_variable_in_use()
+    test_origin_masters_refusal_carries_no_credential_marker()
     test_the_check_is_wired_to_a_target_and_the_merge_job()
     test_the_merge_job_proves_closure_with_a_credential_that_can_read_issues()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
