@@ -1,6 +1,7 @@
 # Proposal: auto-merge-message-pattern-hold
 
 Issue: #1704
+PR: #1708
 
 ## Why
 
