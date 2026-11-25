@@ -2436,6 +2436,49 @@ def test_a_cancelled_push_run_with_a_readable_diagnosis_still_files() -> None:
               row.get("error_excerpt") and row.get("failure_class") != F.EMPTY_SHAPE, str(row))
 
 
+def test_a_cancelled_push_with_only_cancel_chatter_is_not_filed() -> None:
+    print("\nsuperseded push (#1741): a CANCELLED push whose readable log holds ONLY GitHub's "
+          "cancellation line files NOTHING — the #1615 real-diagnosis case still files")
+    rid = 45556943490  # measured: event=push, conclusion=cancelled, filed as #1732 after #1673
+    runs = [{"databaseId": rid, "workflowName": "qa-validate.yml", "name": "r",
+             "headBranch": "master", "headSha": "a" * 40, "event": "push",
+             "createdAt": "2026-11-25T05:55:48Z", "conclusion": "cancelled",
+             "status": "completed",
+             "url": f"https://github.com/octo/repo/actions/runs/{rid}"}]
+    canned = {"window-qa-validate_yml-none-p1.json": [_rest(r) for r in runs],
+              "issues.json": [],
+              "jobs-45556943490.json": {"jobs": [
+                  {"databaseId": 970, "name": "validate", "conclusion": "cancelled"}]},
+              "log-job-970.txt":
+                  "2026-11-25T05:56:49.1256956Z ##[error]The operation was canceled.\n"}
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        bodies = list((tmp / "canned").glob("body-*.txt"))
+        check("#1741: the cancel-chatter cancelled push run is NOT filed", not bodies,
+              str([p.read_text()[:200] for p in bodies]))
+        check("#1741: the skip is announced, never silent",
+              "skip 1 cancelled push-to-master run(s)" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text()) if ledger.exists() else {"failures": []}
+        check("#1741: no ledger row for the skipped run",
+              all(e.get("run_id") != rid for e in data["failures"]), str(data))
+
+    # The #1615 counterexample must still file when the SAME cancelled push carries a real error.
+    canned["log-job-970.txt"] = CLASS_LOG_A
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0 with a real diagnosis", proc.returncode == 0, proc.stderr)
+        created = int((tmp / "canned" / "create-count").read_text().strip())
+        check("#1741: a real diagnosis on a cancelled push still files", created == 1,
+              f"create-count={created}\n{proc.stdout}")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -2500,6 +2543,7 @@ def main() -> int:
     test_a_cancelled_push_run_is_not_filed()
     test_the_superseded_skip_is_announced_in_dry_output()
     test_a_cancelled_push_run_with_a_readable_diagnosis_still_files()
+    test_a_cancelled_push_with_only_cancel_chatter_is_not_filed()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 

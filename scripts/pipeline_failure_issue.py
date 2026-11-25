@@ -38,8 +38,10 @@ A CANCELLED `push`-to-`master` run carrying NO diagnosis is NOT a tracked failur
 GitHub cancels the older validation when a newer push lands (#1560's concurrency), so it never
 concluded a delivery and its cancelled jobs' logs are gone (`gh: HTTP 404`). Filing it produced a
 content-free UNDIAGNOSED issue under the EMPTY_SHAPE class (`da39a3ee5e6b`), which rule 6r forbids.
-Such runs are skipped and the sweep ANNOUNCES the count; a cancelled run whose log DID yield a
-diagnosis still files (#1615), and a cancelled `schedule`/dispatch run stays a dropped delivery.
+A readable log holding ONLY GitHub's own `The operation was canceled.` line is the same
+content-free class (issue #1741) and is skipped too. Such runs are skipped and the sweep ANNOUNCES
+the count; a cancelled run whose log DID yield a real diagnosis still files (#1615), and a
+cancelled `schedule`/dispatch run stays a dropped delivery.
 
 Dedup is the ledger (run id) plus a scan of issues (open OR closed) carrying the marker: one run
 files once, ever. A log fetch that fails after one retry is recorded in the ledger as UNDIAGNOSED
@@ -155,6 +157,11 @@ PR_BLOCK_CONCLUSIONS = ("failure",)
 #: failing-region lines are ALL absent hashes to this key, so two unrelated branches collapse
 #: into one "blockage" (issue #1604). Such a member is skipped, never grouped.
 EMPTY_SHAPE = hashlib.sha1(b"").hexdigest()[:12]
+
+#: GitHub's own cancellation verdict is NOT a diagnosis (issue #1741). A cancelled push run
+#: whose readable log holds nothing but this line is the same content-free class #1669 removed.
+CANCEL_MARKER = "The operation was canceled."
+_LOG_TIMESTAMP_RE = re.compile(r"^\s*\d{4}-\d{2}-\d{2}T[^\s]+\s*")
 
 #: Bounded extraction (the issue must carry a diagnosis, not a log dump).
 MAX_LOG_TAIL_BYTES = 60_000
@@ -662,21 +669,45 @@ def _one_member_per_run(members: list[dict]) -> list[dict]:
     return [by_run[rid] for rid in sorted(by_run)]
 
 
+def _only_cancel_chatter(block: list[str] | str, targets: list[str]) -> bool:
+    """A readable log holding ONLY GitHub's cancellation line names no real failure (#1741).
+
+    Timestamps and `##[group]`/`##[endgroup]` annotations are structure, not diagnosis. Any
+    `make` target or any other `FAIL`/`##[error]` line keeps the run filing (the #1615 case).
+    """
+    if targets:
+        return False
+    lines = block if isinstance(block, list) else (block or "").splitlines()
+    meaningful = []
+    for raw in lines:
+        line = _LOG_TIMESTAMP_RE.sub("", str(raw)).strip()
+        if not line or line.startswith("##[group]") or line.startswith("##[endgroup]"):
+            continue
+        meaningful.append(line)
+    if not meaningful:
+        return True
+    return all(line in (CANCEL_MARKER, f"##[error]{CANCEL_MARKER}") for line in meaningful)
+
+
 def _superseded_cancelled_push(item: dict) -> bool:
     """A CANCELLED `push`-to-`master` run carrying NO diagnosis is superseded, not a failure.
 
     Issue #1669: GitHub cancels the older validation when a newer push lands (#1560's
     concurrency), so the run never concluded a delivery and its cancelled jobs' logs are gone
     (`gh: HTTP 404`). Grouping it filed ONE content-free `UNDIAGNOSED` issue under the
-    `EMPTY_SHAPE` class, which rule 6r forbids. A cancelled run whose log DID yield a failing
-    step, `make` target or error block still files (issue #1615), and a cancelled
-    `schedule`/dispatch run is a dropped delivery, which `BAD_CONCLUSIONS` deliberately keeps.
+    `EMPTY_SHAPE` class, which rule 6r forbids. Issue #1741 extends the same skip to a readable
+    log whose ONLY content is GitHub's own `The operation was canceled.` marker — measured on
+    runs `45556943490`/`45596951334`, still filed after #1673 landed. A cancelled run whose log
+    DID yield a failing step, `make` target or real error block still files (issue #1615), and a
+    cancelled `schedule`/dispatch run is a dropped delivery, which `BAD_CONCLUSIONS` keeps.
     """
     run = item.get("run") or {}
-    return (run.get("event") == "push"
-            and run.get("conclusion") == "cancelled"
-            and item.get("shape") == EMPTY_SHAPE
-            and item.get("exact_shape", item.get("shape")) == EMPTY_SHAPE)
+    if run.get("event") != "push" or run.get("conclusion") != "cancelled":
+        return False
+    if (item.get("shape") == EMPTY_SHAPE
+            and item.get("exact_shape", item.get("shape")) == EMPTY_SHAPE):
+        return True
+    return _only_cancel_chatter(item.get("block") or [], item.get("targets") or [])
 
 
 def group_failure_classes(items: list[dict]) -> list[dict]:
