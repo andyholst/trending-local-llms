@@ -458,6 +458,110 @@ def test_a_declared_lane_append_survives_a_whole_copy_reprovision():
               chk.returncode == 0 and "CLEAN" in chk.stdout, chk.stdout[-200:] + chk.stderr[-200:])
 
 
+def test_skills_and_soul_are_backed_up_before_a_reprovision_overwrites_them():
+    """Issue #1754: an M-sync must never destroy host-ahead skill/SOUL bytes (rule 3b)."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        lane = "tll-tester"
+        skill_dir = root / "agents" / lane / "skills" / lane
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# base v1\n", encoding="utf-8")
+        (root / "agents" / lane / "SOUL.md").write_text("base soul\n", encoding="utf-8")
+        home = Path(td) / "profiles"
+        first = run_provision("--lane", lane, "--profiles-home", str(home), root=root)
+        check("the first provision is green", first.returncode == 0, (first.stdout + first.stderr)[-200:])
+
+        host_skill = home / lane / "skills" / lane / "SKILL.md"
+        host_soul = home / lane / "SOUL.md"
+        host_skill.write_text("# base v1\nFORWARD-SKILL-CLAUSE\n", encoding="utf-8")
+        host_soul.write_text("base soul\nFORWARD-SOUL-CLAUSE\n", encoding="utf-8")
+        (skill_dir / "SKILL.md").write_text("# base v2\n", encoding="utf-8")
+        (root / "agents" / lane / "SOUL.md").write_text("base soul v2\n", encoding="utf-8")
+
+        second = run_provision("--lane", lane, "--profiles-home", str(home), root=root)
+        out = second.stdout + second.stderr
+        check("the re-provision is green", second.returncode == 0, out[-300:])
+        check("the active skill now holds the newer base bytes",
+              host_skill.read_text(encoding="utf-8") == "# base v2\n", host_skill.read_text())
+        skill_backups = sorted((home / lane / "skills" / lane).glob("SKILL.md.bak-*"))
+        check("a timestamped SKILL.md backup exists", len(skill_backups) == 1, str(skill_backups))
+        if not skill_backups:
+            return
+        check("the forward skill bytes survive byte-for-byte in the backup",
+              "FORWARD-SKILL-CLAUSE" in skill_backups[0].read_text(encoding="utf-8"),
+              skill_backups[0].read_text())
+        check("the seam names the skill backup in its own output",
+              "backup" in out and "SKILL.md.bak-" in out, out[-500:])
+        soul_backups = sorted((home / lane).glob("SOUL.md.bak-*"))
+        check("a timestamped SOUL.md backup exists", len(soul_backups) == 1, str(soul_backups))
+        if not soul_backups:
+            return
+        check("the forward SOUL bytes survive in the backup",
+              "FORWARD-SOUL-CLAUSE" in soul_backups[0].read_text(encoding="utf-8"),
+              soul_backups[0].read_text())
+
+
+def test_a_nested_skill_backup_is_named_and_a_fresh_home_writes_no_backup():
+    """Issue #1754: nested skill files are covered; a fresh home creates no spurious backup."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        nested = root / "agents" / "tll-tester" / "skills" / "tll-tester" / "references"
+        nested.mkdir(parents=True)
+        (nested / "deep.md").write_text("# deep v1\n", encoding="utf-8")
+        home = Path(td) / "profiles"
+        proc = run_provision("--lane", "tll-tester", "--profiles-home", str(home), root=root)
+        check("the nested-file lane provisions green", proc.returncode == 0,
+              (proc.stdout + proc.stderr)[-200:])
+        host_nested = home / "tll-tester" / "skills" / "tll-tester" / "references" / "deep.md"
+        host_nested.write_text("# deep v1\nFORWARD-NESTED\n", encoding="utf-8")
+        (nested / "deep.md").write_text("# deep v2\n", encoding="utf-8")
+        again = run_provision("--lane", "tll-tester", "--profiles-home", str(home), root=root)
+        out = again.stdout + again.stderr
+        backups = sorted(host_nested.parent.glob("deep.md.bak-*"))
+        check("the nested file is backed up", len(backups) == 1, str(backups))
+        if not backups:
+            return
+        check("the nested forward bytes survive",
+              "FORWARD-NESTED" in backups[0].read_text(encoding="utf-8"), backups[0].read_text())
+        check("the nested backup is named in the output", "deep.md.bak-" in out, out[-400:])
+
+        fresh = Path(td) / "fresh-profiles"
+        new = run_provision("--lane", "tll-reviewer", "--profiles-home", str(fresh), root=root)
+        check("a fresh lane home provisions green", new.returncode == 0,
+              (new.stdout + new.stderr)[-200:])
+        check("a fresh home writes no skill backup",
+              not list((fresh / "tll-reviewer" / "skills").rglob("*.bak-*")),
+              str(list((fresh / "tll-reviewer").rglob("*"))))
+
+
+def test_a_repeated_reprovision_never_overwrites_the_first_backup():
+    """Issue #1754: a same-second re-run must not launder the first backup's forward bytes."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        lane = "tll-tester"
+        skill_dir = root / "agents" / lane / "skills" / lane
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# base\n", encoding="utf-8")
+        home = Path(td) / "profiles"
+        assert run_provision("--lane", lane, "--profiles-home", str(home), root=root).returncode == 0
+        host_skill = home / lane / "skills" / lane / "SKILL.md"
+        host_skill.write_text("# base\nFORWARD-KEEP\n", encoding="utf-8")
+        for _ in range(2):
+            proc = run_provision("--lane", lane, "--profiles-home", str(home), root=root)
+            check("each re-provision is green", proc.returncode == 0,
+                  (proc.stdout + proc.stderr)[-200:])
+        backups = sorted((home / lane / "skills" / lane).glob("SKILL.md.bak-*"))
+        check("two distinct backups exist after two re-runs", len(backups) == 2, str(backups))
+        if len(backups) < 2:
+            return
+        check("the FIRST backup still holds the forward clause",
+              "FORWARD-KEEP" in backups[0].read_text(encoding="utf-8"),
+              repr([p.read_text(encoding="utf-8") for p in backups]))
+        check("the second backup holds the post-first-provision bytes",
+              backups[1].read_text(encoding="utf-8") == "# base\n",
+              repr([p.read_text(encoding="utf-8") for p in backups]))
+
+
 def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("the Makefile defines the internal recipe (the seam, not a second copy)",
@@ -501,6 +605,9 @@ def main() -> int:
     test_check_names_every_stale_home_writes_nothing_and_needs_no_credential()
     test_check_is_green_after_provisioning_and_a_missing_home_is_exit_2()
     test_a_declared_lane_append_survives_a_whole_copy_reprovision()
+    test_skills_and_soul_are_backed_up_before_a_reprovision_overwrites_them()
+    test_a_nested_skill_backup_is_named_and_a_fresh_home_writes_no_backup()
+    test_a_repeated_reprovision_never_overwrites_the_first_backup()
     test_the_target_is_wired_to_the_makefile_and_a_pipeline_job()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
