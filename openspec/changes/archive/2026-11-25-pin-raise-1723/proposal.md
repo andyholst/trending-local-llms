@@ -1,6 +1,7 @@
 # Proposal: pin-raise-1723
 
 Issue: #1723
+PR: #1725
 
 ## Why
 

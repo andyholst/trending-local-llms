@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **556**
+Active changes: **1** · archived: **557**
 
 ## Active changes
 
@@ -83,7 +83,7 @@ Active changes: **1** · archived: **556**
 | `2026-11-25-gateway-error-outage-class` | archived | #1699 | #1705 | [gateway-error-outage-classification](openspec/changes/archive/2026-11-25-gateway-error-outage-class/specs/gateway-error-outage-classification/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-gateway-error-outage-class/proposal.md) |
 | `2026-11-25-gateway-status-shape-1714` | archived | #1714 | #1717 | [fetch-outage-verdict](openspec/changes/archive/2026-11-25-gateway-status-shape-1714/specs/fetch-outage-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-gateway-status-shape-1714/proposal.md) |
 | `2026-11-25-live-pr-body-preflight-1710` | archived | #1710 | #1715 | [pr-message-preflight](openspec/changes/archive/2026-11-25-live-pr-body-preflight-1710/specs/pr-message-preflight/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-25-live-pr-body-preflight-1710/proposal.md) |
-| `2026-11-25-pin-raise-1723` | archived | #1723 | — | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
+| `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
