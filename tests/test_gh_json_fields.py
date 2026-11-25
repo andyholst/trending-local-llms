@@ -761,7 +761,7 @@ def test_python_pick_rename_is_caught():
 
 
 def test_registered_reads_match_tree():
-    """All 13 sites re-derive their recorded fields from the real tree — including the splat.
+    """All 18 sites re-derive their recorded fields from the real tree — including the splat.
 
     `getattr` reads the new surface defensively so the pin makes this FAIL as assertions, not
     crash mid-module. The root filter is proved non-vacuously: `os.environ.get("ISSUE")` and
@@ -770,8 +770,8 @@ def test_registered_reads_match_tree():
     sites = getattr(contract, "API_PYTHON_READ_SITES", None)
     fields = getattr(contract, "API_PYTHON_FIELDS", None)
     derive = getattr(contract, "api_python_read_problems", None)
-    check("the registry records 13 no-projection read sites (absent on the base)",
-          sites is not None and len(sites) == 13,
+    check("the registry records 18 read sites (13 slice A + 5 identity, absent on the base)",
+          sites is not None and len(sites) == 18,
           len(sites) if sites is not None else "absent on the base")
     if sites is None or fields is None or derive is None:
         return
@@ -833,7 +833,7 @@ def test_fixed_origin_master_arm_is_green():
     fixed_sites = getattr(fixed, "API_PYTHON_READ_SITES", None) if fixed is not None else None
     check("the pinned fixture stays the pre-change BASE after the simulated merge",
           base is not None and getattr(base, "API_PYTHON_READ_SITES", None) is None
-          and fixed_sites is not None and len(fixed_sites) == 13, "")
+          and fixed_sites is not None and len(fixed_sites) == 18, "")
     if base is None or fixed is None or fixed_sites is None:
         return
     for site in fixed_sites:
@@ -881,6 +881,183 @@ def test_shipped_jq_shapes_still_green():
           len(contract.FIELD_SETS) == 10, len(contract.FIELD_SETS))
 
 
+#: --------------------------------------------------------------------------- issue #1711, slice 2
+#: PINNED base, never a moving `origin/master` read (#1675 post-merge defect, #1683 fixture
+#: pattern). Commit 6163bed6 (slice A merged); module blob fd57014f. The fixture is an
+#: authentic copy of scripts/gh_json_fields.py at that commit, committed into the tree so a
+#: linked worktree in the container (where `git show` can go empty) still reads it.
+BASE_1711_MODULE_COMMIT = "6163bed6e4dc8f86d04d32fa24373213016a7912"
+BASE_1711_MODULE_BLOB = "fd57014f869edee538387d5470ee23f218505e8d"
+BASE_1711_FIXTURE = "tests/fixtures/gh_json_fields_base_1711.py"
+
+#: (file, old, planted, head line, planted field) — all measured on the pinned base.
+IDENTITY_SITES_1711 = (
+    ("announce_image_fallback.py", 'comment.get("body")', 'comment.get("bodyX")', 74, "bodyX"),
+    ("issue_thread.py", 'c.get("created_at", "")', 'c.get("createdAtX", "")', 85, "createdAtX"),
+    ("owed_rows_check.py", 'c.get("body")', 'c.get("bodyX")', 58, "bodyX"),
+    ("pipeline_failure_issue.py", 'c.get("body")', 'c.get("bodyX")', 1377, "bodyX"),
+    ("sweep_outcome.py", 'comment.get("createdAt")', 'comment.get("createdAtX")', 132,
+     "createdAtX"),
+)
+
+
+def _pinned_base_1711_module():
+    source = (ROOT / BASE_1711_FIXTURE).read_text(encoding="utf-8")
+    check("the pinned fixture is the pre-#1711 (slice A only) module",
+          bool(source.strip()) and "announce_image_fallback.py" not in source
+          and "API_PYTHON_READ_SITES" in source, len(source))
+    module = _import_fixture_module("gh_json_fields_base_1711", source)
+    check("the pinned base carries slice A's 13 records, not slice B's 5",
+          module is not None
+          and len(getattr(module, "API_PYTHON_READ_SITES", ())) == 13, "")
+    return module
+
+
+def test_identity_jq_pick_rename_is_caught():
+    """Each planted identity-site rename is RED on the pinned base, GREEN on the head.
+
+    The base has slice A's 13 records only, so no identity plant can be a finding there.
+    The head must name file:line and the unrecorded field on all five sites. Guard
+    granularity is per-site field set: pipeline_failure_issue's 3 readers all pick `body`,
+    so the plant is applied to all three (a single-reader rename is not detectable).
+    """
+    base = _pinned_base_1711_module()
+    for filename, old, new, lineno, field in IDENTITY_SITES_1711:
+        td, count = _planted_python_tree(filename, old, new)
+        check(f"the plant lands on the real {filename}", count >= 1, count)
+        head = [p for p in contract.scan_scripts(td) if filename in p and field in p]
+        check(f"{filename}:{lineno} '{field}' is a head finding naming file:line",
+              bool(head) and any(re.search(rf"{re.escape(filename)}:{lineno}:", p)
+                                 for p in head), head[:2])
+        blind = base.scan_scripts(td) if base is not None else []
+        check(f"RED on the pinned base: the {filename} plant is silent there",
+              not any(field in p for p in blind), blind[:2])
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_all_18_registered_reads_match_tree():
+    """All 18 records re-derive from the real tree, and `blocked` is load-bearing: without
+    it the whole-object `title` at issue_thread.py:80 false-reds against the identity answer.
+    """
+    sites = getattr(contract, "API_PYTHON_READ_SITES", None)
+    fields = getattr(contract, "API_PYTHON_FIELDS", None)
+    derive = getattr(contract, "api_python_read_problems", None)
+    check("the registry records 18 Python read sites (13 slice A + 5 identity)",
+          sites is not None and len(sites) == 18,
+          len(sites) if sites is not None else "absent on the base")
+    if sites is None or fields is None or derive is None:
+        return
+    by_key = {(s.file, s.caller, s.family): s for s in sites}
+    want = {
+        ("announce_image_fallback.py", "read_comments", "issues/{}/comments"): {"body"},
+        ("issue_thread.py", "main", "issues/{}/comments"):
+            {"user", "login", "created_at", "body"},
+        ("owed_rows_check.py", "read_thread", "issues/{}/comments"):
+            {"created_at", "body"},
+        ("pipeline_failure_issue.py", "_issue_comments", "issues/{}/comments"): {"body"},
+        ("sweep_outcome.py", "_comments", "issues/{}/comments"): {"createdAt", "body"},
+    }
+    check("all 5 identity sites are registered with their measured field sets",
+          all(k in by_key and set(by_key[k].fields) == v for k, v in want.items()),
+          [k for k in want if k not in by_key])
+    check("user/login added to the EXISTING issues/{}/comments family",
+          "issues/{}/comments" in fields
+          and {"user", "login"} <= set(fields["issues/{}/comments"]), "")
+    check("every registered site's fields are a subset of its family's answer",
+          all(set(s.fields) <= set(fields[s.family]) for s in sites if s.family in fields), "")
+    for site in sites:
+        tree = ast.parse((ROOT / "scripts" / site.file).read_text(encoding="utf-8"))
+        problems = derive(tree, site.file)
+        check(f"{site.file}:{site.caller} re-derives exactly its recorded fields",
+              problems == [], problems[:3])
+
+    src = (ROOT / "scripts" / "issue_thread.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    rec = by_key.get(("issue_thread.py", "main", "issues/{}/comments"))
+    owed = by_key.get(("owed_rows_check.py", "read_thread", "issues/{}/comments"))
+    check("the issue_thread identity record blocks the whole-object local",
+          rec is not None and "issue" in rec.blocked, "")
+    check("the owed_rows identity record blocks both whole-object locals",
+          owed is not None and {"issue", "issue_json"} <= set(owed.blocked), "")
+    if rec is not None:
+        saved = contract.API_PYTHON_READ_SITES
+        try:
+            contract.API_PYTHON_READ_SITES = tuple(
+                s._replace(blocked=frozenset()) if s is rec else s for s in saved)
+            unblocked = derive(tree, "issue_thread.py")
+            check("without blocked the whole-object `title` false-reds at :80",
+                  any(p.startswith("80:") and "'title'" in p for p in unblocked), unblocked[:2])
+        finally:
+            contract.API_PYTHON_READ_SITES = saved
+    check("with blocked there is no whole-object false red",
+          derive(tree, "issue_thread.py") == [], "")
+
+
+def test_shipped_jq_projections_still_green():
+    """Non-breaking proof: `--scan` is exit 0 / 0 findings, discovery stays 31/17/14 with
+    exactly the 5 identity `.[]` projections, and every discovered expression still parses.
+    """
+    proc = _run_cli("--scan")
+    check("`--scan` on the shipped tree exits 0 with 0 findings",
+          proc.returncode == 0 and "FAIL" not in proc.stdout, proc.stdout[:300])
+    projected, without, identity, expressions = [], [], [], []
+    for path in sorted((ROOT / "scripts").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        consts = contract._string_bindings(tree)
+        found_here = contract.api_jq_requests(tree, consts)
+        expressions.extend(found_here)
+        for node, tokens in contract._api_token_lists(tree):
+            if "--json" in tokens or "api" not in tokens:
+                continue
+            key = (path.name, getattr(node, "lineno", 0))
+            bucket = projected if any(t in ("--jq", "-q") for t in tokens) else without
+            if key not in bucket:
+                bucket.append(key)
+        for _node, _tokens, expr in found_here:
+            if expr and expr.strip() == ".[]":
+                identity.append(path.name)
+    check("discovery unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
+          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+          f"{len(projected) + len(without)}/{len(projected)}/{len(without)}")
+    check("exactly the 5 identity `--jq .[]` projections are discovered",
+          sorted(identity) == sorted(f for f, *_ in IDENTITY_SITES_1711), identity)
+    bad = [e for e in expressions if e and
+           contract.api_jq_problems("repos/o/r/pulls/1", e) is None]
+    check("all discovered `--jq` expressions still parse (no new unreadable expression)",
+          bad == [], bad[:3])
+    check("the recorded `--jq` endpoint families are unchanged (7)",
+          len(contract.API_SHAPES) == 7, len(contract.API_SHAPES))
+    check("the Python pass did not change the `--json` field sets",
+          len(contract.FIELD_SETS) == 10, len(contract.FIELD_SETS))
+
+
+def test_fixed_origin_master_arm_is_green_1711():
+    """With origin/master simulated to the FIXED head, every arm stays GREEN and the pinned
+    fixture stays the pre-#1711 base; no guard asserts a moving ref lacks the seam (#1675).
+    """
+    base = _pinned_base_1711_module()
+    fixed = _fixed_origin_master_module()
+    fixed_sites = getattr(fixed, "API_PYTHON_READ_SITES", None) if fixed is not None else None
+    base_sites = getattr(base, "API_PYTHON_READ_SITES", None) if base is not None else None
+    check("pinned fixture stays pre-#1711 (13) while fixed head has 18 records",
+          base_sites is not None and len(base_sites) == 13
+          and fixed_sites is not None and len(fixed_sites) == 18, "")
+    if base is None or fixed is None or base_sites is None or fixed_sites is None:
+        return
+    for site in fixed_sites:
+        tree = ast.parse((ROOT / "scripts" / site.file).read_text(encoding="utf-8"))
+        check(f"fixed-head arm: {site.file}:{site.caller} still re-derives clean",
+              fixed.api_python_read_problems(tree, site.file) == [], "")
+    td, count = _planted_python_tree("issue_thread.py", 'c.get("created_at", "")',
+                                     'c.get("createdAtX", "")')
+    check("the fixed-head arm plants the same identity rename", count == 1, count)
+    caught = [p for p in fixed.scan_scripts(td)
+              if "issue_thread.py" in p and "createdAtX" in p]
+    check("fixed-head arm: the identity rename is STILL caught (GREEN after merge)",
+          bool(caught), caught[:2])
+    shutil.rmtree(td, ignore_errors=True)
+
+
 def main() -> int:
     test_the_field_set_is_the_real_cli_answer()
     test_every_recorded_field_set_is_the_real_cli_answer()
@@ -902,6 +1079,10 @@ def main() -> int:
     test_registered_reads_match_tree()
     test_fixed_origin_master_arm_is_green()
     test_shipped_jq_shapes_still_green()
+    test_identity_jq_pick_rename_is_caught()
+    test_all_18_registered_reads_match_tree()
+    test_shipped_jq_projections_still_green()
+    test_fixed_origin_master_arm_is_green_1711()
     print(f"\n{PASSED} passed, {FAILED} failed")
     return 1 if FAILED else 0
 
