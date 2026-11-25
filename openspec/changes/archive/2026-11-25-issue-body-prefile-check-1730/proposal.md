@@ -1,6 +1,7 @@
 # Proposal: issue-body-prefile-check-1730
 
 Issue: #1730
+PR: #1740
 
 ## Why
 
