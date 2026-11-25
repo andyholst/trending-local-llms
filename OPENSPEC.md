@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **544**
+Active changes: **1** · archived: **546**
 
 ## Active changes
 
@@ -78,6 +78,7 @@ Active changes: **1** · archived: **544**
 | `2026-11-24-os-agnostic-make-utility-batch-seam` | archived | #1494 | — | [python-env-utility-batch](openspec/changes/archive/2026-11-24-os-agnostic-make-utility-batch-seam/specs/python-env-utility-batch/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-24-os-agnostic-make-utility-batch-seam/proposal.md) |
 | `2026-11-24-watch-s-marker-1620` | archived | #1620 | — | [fleet-watch](openspec/changes/archive/2026-11-24-watch-s-marker-1620/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-24-watch-s-marker-1620/proposal.md) |
 | `2026-11-24-worktree-base-mode-path-1334` | archived | #1334 | — | [worktree-base-checkout-provenance](openspec/changes/archive/2026-11-24-worktree-base-mode-path-1334/specs/worktree-base-checkout-provenance/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-24-worktree-base-mode-path-1334/proposal.md) |
+| `2026-11-25-gateway-error-outage-class` | archived | #1699 | #1705 | [gateway-error-outage-classification](openspec/changes/archive/2026-11-25-gateway-error-outage-class/specs/gateway-error-outage-classification/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-gateway-error-outage-class/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
