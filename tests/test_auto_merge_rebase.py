@@ -979,21 +979,26 @@ def test_classification_is_pure_and_partitions():
 #: (issue #1158) every `--json` REQUEST is validated through the REAL field contract
 #: (scripts/gh_json_fields.py): the stub can no longer answer a query the real gh would refuse,
 #: which is exactly how `htmlUrl` stayed green for the whole life of the alarm.
+#: (issue #1672) the SAME loop fires on `--jq`/`-q` too, so the second recorded family
+#: (`gh api <path> --jq`, #1668/#1676) cannot reach the stub's dispatch unvalidated; and an
+#: `api` request answers from `$FAKE_API` so both halves are observable end to end.
 STUB_GH_RUNS = """#!/bin/sh
 echo "gh $*" >> "$GH_LOG"
 if [ -n "$GH_FAIL" ]; then echo "gh: could not read runs" >&2; exit 1; fi
 for arg in "$@"; do
-  case "$prev" in
-    --json) "$PYTHON" "$GH_FIELD_CONTRACT" --check-argv "gh $*" >/dev/null || {
-      echo "Unknown JSON field: $arg (stub gh refuses what the real gh refuses)" >&2
-      exit 1
-    } ;;
+  case "$arg" in
+    --json|--jq|-q)
+      "$PYTHON" "$GH_FIELD_CONTRACT" --check-argv "gh $*" >&2 || {
+        echo "gh: request refused by the field contract (stub gh refuses what the real gh refuses)" >&2
+        exit 1
+      }
+      break ;;
   esac
-  prev="$arg"
 done
 case "$1 $2" in
   "run list") cat "$FAKE_RUNS" ;;
   "run view") cat "$FAKE_JOBS_DIR/$3.json" ;;
+  "api "*) if [ -n "$FAKE_API" ]; then cat "$FAKE_API"; else echo "unexpected gh: $*" >&2; exit 3; fi ;;
   *) echo "unexpected gh: $*" >&2; exit 3 ;;
 esac
 """
@@ -1227,6 +1232,58 @@ def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
 
     check("ghost_verdict is pure (rule 6d): action_required + zero jobs is a ghost",
           __import__("pr_health") and _ghost_verdict_check(), "")
+
+
+def _run_ghost_stub(args: list[str], *, api: dict | None = None,
+                    fail: bool = False) -> subprocess.CompletedProcess:
+    """Drive the STUB gh itself (an external stand-in, rule 6m): for issue #1672 the stub's
+    OWN contract half is the unit under test. The REAL field contract runs inside the stub,
+    exactly as it does in CI; no `scripts/` symbol is stubbed."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "gh"
+        stub.write_text(STUB_GH_RUNS)
+        stub.chmod(0o755)
+        env = {"PATH": f"{td}:{os.environ['PATH']}", "PYTHON": sys.executable,
+               "GH_FIELD_CONTRACT": str(ROOT / "scripts" / "gh_json_fields.py"),
+               "GH_LOG": str(td / "gh.log")}
+        if api is not None:
+            (td / "api.json").write_text(json.dumps(api))
+            env["FAKE_API"] = str(td / "api.json")
+        if fail:
+            env["GH_FAIL"] = "1"
+        return subprocess.run([str(stub), *args], capture_output=True, text=True, env=env)
+
+
+def test_the_ghost_gh_stub_refuses_a_jq_path_the_contract_refuses():
+    """(issue #1672) the stub's contract half covers the SECOND recorded family too: a
+    `gh api <path> --jq <expr>` naming a path the real gh cannot answer must be REFUSED by
+    the stub, never answered by its own dispatch (`unexpected gh`)."""
+    proc = _run_ghost_stub(["api", "repos/o/r/pulls/1", "--jq", ".mergedAtX"],
+                           api={"title": "t", "merged": True})
+    out = proc.stdout + proc.stderr
+    check("(issue #1672) an unknown --jq path is refused, never answered",
+          proc.returncode == 1 and "mergedAtX" in out and "unexpected gh" not in out, out[:300])
+
+
+def test_the_ghost_gh_stub_answers_a_recorded_jq_path():
+    """(issue #1672) the healthy direction is observable too: a recorded `--jq` path passes
+    the contract and answers from the planted `api` payload."""
+    proc = _run_ghost_stub(["api", "repos/o/r/pulls/1", "--jq", ".title"],
+                           api={"title": "hello", "merged": True})
+    out = proc.stdout + proc.stderr
+    check("(issue #1672) a recorded --jq path answers from the planted payload",
+          proc.returncode == 0 and "hello" in out and "unexpected gh" not in out, out[:300])
+
+
+def test_the_ghost_gh_stub_refuses_a_q_projection_outside_its_json_list():
+    """(issue #1672, #1676) `-q` beside a `--json` list is validated by the SAME stub loop:
+    a projection reading a field the argv did not request is refused at RUN time by the real
+    gh, so the stub must refuse it too."""
+    proc = _run_ghost_stub(["pr", "list", "--json", "number", "-q", ".title"])
+    out = proc.stdout + proc.stderr
+    check("(issue #1672) a -q projection outside its own --json list is refused",
+          proc.returncode == 1 and ".title" in out and "unexpected gh" not in out, out[:300])
 
 
 def test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape():
@@ -1518,6 +1575,10 @@ def main():
         test_a_rebased_head_whose_run_has_zero_jobs_is_never_reported_as_a_landed_rebase,
         test_the_ci_proof_never_reads_a_wrong_shaped_answer_as_scheduled_jobs,
         test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs,
+        # (issue #1672) the stub's contract half covers `--jq`/`-q` too, and answers `api`.
+        test_the_ghost_gh_stub_refuses_a_jq_path_the_contract_refuses,
+        test_the_ghost_gh_stub_answers_a_recorded_jq_path,
+        test_the_ghost_gh_stub_refuses_a_q_projection_outside_its_json_list,
         test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape,
         test_a_missing_gh_is_a_loud_read_failure_not_a_traceback,
         test_ghost_run_and_push_identity_wiring,

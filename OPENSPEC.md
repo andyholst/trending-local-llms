@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **543**
+Active changes: **1** · archived: **544**
 
 ## Active changes
 
@@ -274,6 +274,7 @@ Active changes: **1** · archived: **543**
 | `gh-api-jq-field-contract` | archived | #1668 | #1670 | [gh-api-jq-fields](openspec/changes/archive/gh-api-jq-field-contract/specs/gh-api-jq-fields/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/gh-api-jq-field-contract/proposal.md) |
 | `gh-json-field-surface` | archived | #1160 | #1167 | [gh-json-field-surface](openspec/changes/archive/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/gh-json-field-surface/proposal.md) |
 | `gh-json-projection-membership` | archived | #1676 | #1679 | [gh-json-projection-membership](openspec/changes/archive/gh-json-projection-membership/specs/gh-json-projection-membership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/gh-json-projection-membership/proposal.md) |
+| `gh-json-stub-jq-validation` | archived | #1672 | #1702 | [gh-json-stub-contract](openspec/changes/archive/gh-json-stub-jq-validation/specs/gh-json-stub-contract/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/gh-json-stub-jq-validation/proposal.md) |
 | `ghost-alarm-gh-field-contract` | archived | #1158 | #1159 | [gh-json-field-contract](openspec/changes/archive/ghost-alarm-gh-field-contract/specs/gh-json-field-contract/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ghost-alarm-gh-field-contract/proposal.md) |
 | `ghost-pr-handoff-1251` | archived | #1251 | #1253 | [fleet-handover](openspec/changes/archive/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ghost-pr-handoff-1251/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
