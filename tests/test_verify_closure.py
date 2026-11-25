@@ -19,8 +19,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "verify_closure.py"
+WORKFLOW = ROOT / ".github" / "workflows" / "qa-validate.yml"
+PAT = "secrets.FIXBOT_DISPATCH_TOKEN"
 
 _PASS = 0
 _FAIL = 0
@@ -116,6 +120,104 @@ def test_the_check_is_wired_to_a_target_and_the_merge_job():
     check("closure: the merge job verifies what it closed", "make verify-closure" in wf, "")
 
 
+def _auto_merge_steps(text: str) -> list[dict]:
+    return yaml.safe_load(text)["jobs"]["auto-merge"]["steps"]
+
+
+def _closure_wiring_problems(steps: list[dict], permissions: dict) -> list[str]:
+    """The closure proof must read ISSUES with a credential that can, and the squash
+    must keep its owner-PAT path byte-identical (issue #1677).
+
+    `scripts/verify_closure.py::open_references` falls through to
+    `gh issue view <n> --json state` whenever a `closingIssuesReferences` entry omits
+    `state` — which GitHub always omits (measured on PRs #1658 / #1670) — so the proof
+    needs a token with the Issues scope. The owner PAT declares none (AGENTS.md §6b),
+    and the pre-#1677 wiring ran the proof inside the squash step under that PAT: the
+    read answered `HTTP 401: Bad credentials` AFTER the squash had already landed.
+    """
+    problems: list[str] = []
+    verify = [s for s in steps if "make verify-closure" in str(s.get("run", ""))]
+    if len(verify) != 1:
+        return [f"auto-merge: {len(verify)} steps run `make verify-closure` (want exactly one)"]
+    token = str((verify[0].get("env") or {}).get("GH_TOKEN", ""))
+    if not token:
+        problems.append("the closure proof runs with NO GH_TOKEN — `gh` would answer 401")
+    elif PAT in token:
+        problems.append(
+            f"the closure proof runs under the owner PAT ({PAT}), which carries no Issues "
+            "scope (§6b): its `gh issue view <n> --json state` answers HTTP 401 after a merge")
+    elif "github.token" not in token:
+        problems.append(f"the closure proof runs under {token!r}, not the default github.token")
+    perms = permissions or {}
+    for scope in ("issues", "pull-requests"):
+        if str(perms.get(scope, "")).lower() != "read":
+            problems.append(
+                f"auto-merge job permissions lack `{scope}: read` — the proof reads issues "
+                "AND the PR itself")
+
+    merge = [s for s in steps if "gh pr merge" in str(s.get("run", ""))]
+    if len(merge) != 1:
+        problems.append(f"auto-merge: {len(merge)} steps squash-merge (want exactly one)")
+    else:
+        env = merge[0].get("env") or {}
+        run = str(merge[0].get("run", ""))
+        if PAT not in str(env.get("GH_TOKEN", "")):
+            problems.append("the squash no longer merges under the owner PAT — the merge path moved")
+        for needle in ("--squash", "--delete-branch", "--match-head-commit"):
+            if needle not in run:
+                problems.append(f"the squash lost {needle} — the squash path is not byte-identical")
+    return problems
+
+
+def test_the_merge_job_proves_closure_with_a_credential_that_can_read_issues():
+    """Issue #1677: the post-squash proof must not inherit the owner PAT.
+
+    RED on the old wiring (the proof inside the squash step, under the PAT that has no
+    Issues scope) and GREEN only when the proof carries the default token with the
+    scopes it reads.
+    """
+    doc = yaml.safe_load(WORKFLOW.read_text())
+    job = doc["jobs"]["auto-merge"]
+    steps = job["steps"]
+
+    check("closure: the auto-merge job carries exactly one closure-proof step",
+          len([s for s in steps if "make verify-closure" in str(s.get("run", ""))]) == 1)
+    shipped = _closure_wiring_problems(steps, job.get("permissions"))
+    check("closure: the shipped wiring reads issues with a credential that can", shipped == [], shipped)
+
+    # Planted: the proof moved back under the owner PAT (the pre-#1677 shape).
+    planted_doc = yaml.safe_load(WORKFLOW.read_text())
+    planted = planted_doc["jobs"]["auto-merge"]
+    for s in planted["steps"]:
+        if "make verify-closure" in str(s.get("run", "")):
+            s.setdefault("env", {})["GH_TOKEN"] = "${{ " + PAT + " }"
+    planted_problems = _closure_wiring_problems(planted["steps"], planted.get("permissions"))
+    check("closure: a proof under the owner PAT is refused by this guard",
+          any("no Issues scope" in p for p in planted_problems), planted_problems)
+
+    # Planted: the proof dropped the default token AND the job its scopes.
+    bare_doc = yaml.safe_load(WORKFLOW.read_text())
+    bare = bare_doc["jobs"]["auto-merge"]
+    for s in bare["steps"]:
+        if "make verify-closure" in str(s.get("run", "")):
+            (s.get("env") or {}).pop("GH_TOKEN", None)
+    bare["permissions"] = {"contents": "write"}
+    bare_problems = _closure_wiring_problems(bare["steps"], bare.get("permissions"))
+    check("closure: a keyless proof and a job without the read scopes are refused",
+          any("NO GH_TOKEN" in p for p in bare_problems)
+          and sum("read`" in p for p in bare_problems) >= 2, bare_problems)
+
+    # The guard is RED on origin/master's wiring (rule 6c).
+    base = subprocess.run(["git", "-C", str(ROOT), "show",
+                           "origin/master:.github/workflows/qa-validate.yml"],
+                          capture_output=True, text=True)
+    if base.returncode == 0:
+        base_problems = _closure_wiring_problems(
+            _auto_merge_steps(base.stdout), yaml.safe_load(base.stdout)["jobs"]["auto-merge"].get("permissions"))
+        check("closure: origin/master's PAT-wired proof is refused by this guard",
+              bool(base_problems), base_problems)
+
+
 def main() -> int:
     print("verify the issue actually closed (issue #288)")
     test_a_merge_that_closed_its_issue_passes()
@@ -124,6 +226,7 @@ def main() -> int:
     test_a_pr_that_closes_nothing_is_not_a_failure()
     test_an_unreadable_state_is_loud_never_a_pass()
     test_the_check_is_wired_to_a_target_and_the_merge_job()
+    test_the_merge_job_proves_closure_with_a_credential_that_can_read_issues()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
