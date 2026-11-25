@@ -1824,6 +1824,102 @@
       ],
       "error_region": "Run set -euo pipefail",
       "error_excerpt": "2026-11-24T06:00:41.3187442Z   echo \"[merge-tree-index] FAIL: the index is stale on master + this PR.\"\n2026-11-24T06:00:41.5512811Z ##[error]Process completed with exit code 1.\n[filer] --- 25 further error-shaped line(s) from OTHER step regions (not `Run set -euo pipefail`) follow as FILLER context; they did not end the job ---\n2026-11-24T05:59:34.7700961Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-24T05:59:34.7702521Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-24T05:59:34.7707291Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-24T05:59:34.7717346Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-24T05:59:34.7790140Z   FAIL: missing trailing newline: test.txt\n2026-11-24T05:59:34.7843831Z PASSED 202 | FAILED 0\n2026-11-24T05:59:34.9270136Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-24T05:59:34.9271693Z PASSED 14 | FAILED 0\n2026-11-24T05:59:35.0587144Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-24T05:59:35.0650445Z PASSED 114 | FAILED 0\n2026-11-24T05:59:35.1994939Z PASSED 87 | FAILED 0\n2026-11-24T06:00:03.4299810Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-24T06:00:03.4311076Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-24T06:00:03.4311965Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-24T06:00:03.4321462Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-24T06:00:03.4326328Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-24T06:00:03.4327026Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-24T06:00:03.4332085Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-24T06:00:03.4339147Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-24T06:00:03.4340918Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-24T06:00:03.4344294Z   FAIL: link-present: nvidia-1.json/m1 missing HF link (hf)\n2026-11-24T06:00:03.4346379Z   FAIL: link-present: nvidia-1.json/m1 engine 'llama.cpp' missing source_post link\n2026-11-24T06:00:03.4356212Z PASSED 57 | FAILED 0\n2026-11-24T06:00:03.9200072Z PASSED 22 | FAILED 0\n2026-11-24T06:00:16.6600121Z PASSED 124 | FAILED 0"
+    },
+    {
+      "run_id": 45556943490,
+      "workflow": null,
+      "job": "validate",
+      "head_sha": "8d7435a42555262d6bcea3b0fa426c873d0673da",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45556943490",
+      "created_utc": "2026-11-25T05:55:48Z",
+      "filed_utc": "2026-11-25T11:42:24.796671+00:00",
+      "targets": [],
+      "issue_number": "1732",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1732",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Prepare runner images (published for this revision, else build)"
+      ],
+      "error_region": "Run make image-ensure",
+      "error_excerpt": "2026-11-25T05:56:49.1256956Z ##[error]The operation was canceled.",
+      "failure_class": "391a501f5b5a",
+      "class_runs": [
+        45556943490
+      ]
+    },
+    {
+      "run_id": 45585404150,
+      "workflow": null,
+      "job": "build",
+      "head_sha": "e1d9a5a7917628609c64393f4fcefa2a5e369a1f",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45585404150",
+      "created_utc": "2026-11-25T09:26:22Z",
+      "filed_utc": "2026-11-25T11:42:24.796671+00:00",
+      "targets": [],
+      "issue_number": "1733",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1733",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Build + push image (missing, Dockerfile changed, Sunday, or forced)"
+      ],
+      "error_region": "Check build summary support",
+      "error_excerpt": "2026-11-25T09:30:43.6392213Z ##[error]buildx failed with: ERROR: failed to build: failed to solve: process \"/bin/sh -c chmod +x /usr/local/bin/install_hermes_ci.sh     && /usr/local/bin/install_hermes_ci.sh\" did not complete successfully: exit code: 1",
+      "failure_class": "f93ba78780d7",
+      "class_runs": [
+        45585404150
+      ]
+    },
+    {
+      "run_id": 45596951334,
+      "workflow": null,
+      "job": "live-smoke",
+      "head_sha": "440aa96e0c65904001199bff02717161ee4a4ef9",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45596951334",
+      "created_utc": "2026-11-25T10:38:42Z",
+      "filed_utc": "2026-11-25T11:42:24.796671+00:00",
+      "targets": [],
+      "issue_number": "1734",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1734",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Prepare runner images (published for this revision, else build)"
+      ],
+      "error_region": "Run make image-ensure",
+      "error_excerpt": "2026-11-25T10:40:07.6350128Z ##[error]The operation was canceled.",
+      "failure_class": "f23135d4e76f",
+      "class_runs": [
+        45596951334
+      ]
+    },
+    {
+      "run_id": 45599082315,
+      "workflow": null,
+      "job": "build",
+      "head_sha": "f37c78f87f9b390be85ad57be3b8af4d707e9526",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45599082315",
+      "created_utc": "2026-11-25T10:52:18Z",
+      "filed_utc": "2026-11-25T11:42:24.796671+00:00",
+      "targets": [],
+      "issue_number": "1735",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1735",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Prove the arm64 base runs, not just exists (QEMU smoke)"
+      ],
+      "error_region": "Run docker run --rm --platform linux/arm64 \"ghcr.io/andyholst/trending-local-llms:dockerfile-caf2e88e470b\" hermes --version",
+      "error_excerpt": "2026-11-25T11:14:24.6969966Z ##[error]Process completed with exit code 255.",
+      "failure_class": "a221c9528436",
+      "class_runs": [
+        45599082315
+      ]
     }
   ]
 }
