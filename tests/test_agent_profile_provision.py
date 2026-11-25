@@ -134,7 +134,7 @@ def test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
               dest.read_text(encoding="utf-8") == lane_config(root, "tll-tester"), "")
         check("the chain's `nous` config replaced the measured strata-first shape in the live home",
               "provider: nous" in dest.read_text(encoding="utf-8")
-              and "default: meituan/longcat-2.5:free" in dest.read_text(encoding="utf-8")
+              and f"default: {AMC.read_chain(root)[0].primary.model}" in dest.read_text(encoding="utf-8")
               and "qwen3.8-flash-next-q2_0" not in dest.read_text(encoding="utf-8"),
               dest.read_text()[:200])
         check("the local tier survives ONLY as the credential-less local_fallback step (issue #1192)",
@@ -208,7 +208,8 @@ def test_a_lane_config_that_drifted_from_the_chain_is_refused_not_copied():
         # model replacing the free primary, in the repository copy that would be provisioned.
         cfg = root / "agents" / "tll-tester" / AMC.CONFIG_REL
         text = cfg.read_text(encoding="utf-8")
-        drifted = text.replace("default: meituan/longcat-2.5:free", "default: some-paid-model")
+        primary = AMC.read_chain(root)[0].primary.model
+        drifted = text.replace(f"default: {primary}", "default: some-paid-model")
         assert drifted != text, "the fixture edit must actually change the lane config"
         cfg.write_text(drifted, encoding="utf-8")
 
@@ -301,7 +302,7 @@ def test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_b
         check("merging a named non-lane profile exits green", proc.returncode == 0, out[-300:])
         merged = (pdir / AMC.CONFIG_REL).read_text(encoding="utf-8")
         check("the stale strata-first model block is gone; the free primary is the default",
-              "default: meituan/longcat-2.5:free" in merged
+              f"default: {AMC.read_chain(root)[0].primary.model}" in merged
               and "qwen3.8-flash-next-q2_0" not in merged, merged[:200])
         check("every non-owned top-level block survives BYTE-FOR-BYTE (custom_providers, terminal, auxiliary)",
               kept_tail in merged and "custom_providers:\n  - name: strata\n    base_url: http://127.0.0.1:8080/v1\n" in merged
@@ -353,7 +354,7 @@ def test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_ref
         out = proc.stdout + proc.stderr
         check("--profile default writes the Hermes home's OWN config.yaml (beside the profiles root)",
               proc.returncode == 0
-              and "default: meituan/longcat-2.5:free" in (home.parent / AMC.CONFIG_REL).read_text(encoding="utf-8"),
+              and f"default: {AMC.read_chain(root)[0].primary.model}" in (home.parent / AMC.CONFIG_REL).read_text(encoding="utf-8"),
               out[-300:])
         check("a prior default config is kept as a backup",
               any(p.name.startswith(f"{AMC.CONFIG_REL}.bak-") for p in home.parent.iterdir()), "")

@@ -83,13 +83,24 @@ def _models(free: list[tuple[str, int]], paid: tuple[str, ...] = ("deepseek/deep
     return {"object": "list", "data": data}
 
 
-SHIPPED_FREE = [
-    ("meituan/longcat-2.5:free", 1048576),
-    ("tencent/hy4-flash:free", 1048576),
-    ("qwen/qwen4-max:free", 1000000),
-    ("upstage/solar-mini4:free", 524288),
-    ("stepfun/step-3.7-flash:free", 262144),
-]
+def shipped_free() -> list[tuple[str, int]]:
+    """The free tier is a LIVE truth: read it from the ONE chain source, never a snapshot.
+
+    Issue #1744: a weekly refresh changes this set. A test that pins last week's ids or context
+    windows goes red on a perfectly healthy refresh (and then tempts a "fix" that deletes the
+    guarantee). Deriving the seed from `agents/model_chain.json` keeps the guarantees while the
+    catalogue moves; `test_the_fixtures_follow_the_live_chain_not_a_snapshot` proves the modules
+    no longer carry a snapshot at all.
+    """
+    data = json.loads(CHAIN.read_text(encoding="utf-8"))
+    return [(e["model"], e["context_window"]) for e in data["chain"]
+            if e["role"] in ("primary", "fallback")]
+
+
+def shipped_alias(model: str) -> str:
+    """The alias the shipped chain gives a free id (used by retirement announcements)."""
+    data = json.loads(CHAIN.read_text(encoding="utf-8"))
+    return next(e["alias"] for e in data["chain"] if e["model"] == model)
 
 
 def _scratch(td: Path, base_url: str) -> Path:
@@ -127,7 +138,7 @@ def non_free(root: Path) -> list[dict]:
 
 def test_a_new_free_model_is_appended_with_its_live_context_and_the_non_free_tiers_survive():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE + [("newlab/new-model:free", 55555)]))
+        srv, url = _server(_models(shipped_free() + [("newlab/new-model:free", 55555)]))
         try:
             root = _scratch(Path(td), url)
             before_non_free = non_free(root)
@@ -157,21 +168,24 @@ def test_a_new_free_model_is_appended_with_its_live_context_and_the_non_free_tie
 
 def test_a_retired_free_model_drops_and_a_retired_primary_hands_over():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE[1:]))  # the primary (longcat) is gone
+        free = shipped_free()
+        retired = free[0]
+        survivor = free[1]
+        srv, url = _server(_models(free[1:]))  # the current primary is gone
         try:
             root = _scratch(Path(td), url)
             proc = run_refresh("--write", root=root)
             out = proc.stdout + proc.stderr
             check("a retired primary refreshes green", proc.returncode == 0, out[-200:])
             data = chain_of(root)
-            free = [e for e in data["chain"] if e["role"] in ("primary", "fallback")]
+            free_now = [e for e in data["chain"] if e["role"] in ("primary", "fallback")]
             check("the retired id is gone from the chain",
-                  all(e["model"] != "meituan/longcat-2.5:free" for e in data["chain"]), str(free))
+                  all(e["model"] != retired[0] for e in data["chain"]), str(free_now))
             check("the first survivor becomes the primary",
-                  free[0]["model"] == "tencent/hy4-flash:free" and free[0]["role"] == "primary", str(free[0]))
+                  free_now[0]["model"] == survivor[0] and free_now[0]["role"] == "primary", str(free_now[0]))
             check("the retirement is announced and recorded",
-                  "retired free-longcat" in out
-                  and data["measured"]["refresh_history"][-1]["retired"] == ["meituan/longcat-2.5:free"],
+                  f"retired {shipped_alias(retired[0])}" in out
+                  and data["measured"]["refresh_history"][-1]["retired"] == [retired[0]],
                   out[-200:])
             check("the paid pin stays LAST", data["chain"][-1]["role"] == "last_resort", str(data["chain"][-1]))
         finally:
@@ -180,7 +194,7 @@ def test_a_retired_free_model_drops_and_a_retired_primary_hands_over():
 
 def test_an_unchanged_live_set_writes_nothing():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE))
+        srv, url = _server(_models(shipped_free()))
         try:
             root = _scratch(Path(td), url)
             before = (root / "agents" / "model_chain.json").read_bytes()
@@ -195,22 +209,24 @@ def test_an_unchanged_live_set_writes_nothing():
 
 def test_a_context_drift_follows_the_live_read():
     with tempfile.TemporaryDirectory() as td:
-        drifted = [(mid, 999999 if mid == "qwen/qwen4-max:free" else ctx) for mid, ctx in SHIPPED_FREE]
+        free = shipped_free()
+        drifted_id = free[-1][0]
+        drifted = [(mid, 999999 if mid == drifted_id else ctx) for mid, ctx in free]
         srv, url = _server(_models(drifted))
         try:
             root = _scratch(Path(td), url)
             proc = run_refresh("--write", root=root)
             check("a context drift refreshes green", proc.returncode == 0, proc.stderr[-200:])
-            qwen = next(e for e in chain_of(root)["chain"] if e["model"] == "qwen/qwen4-max:free")
+            drifted_row = next(e for e in chain_of(root)["chain"] if e["model"] == drifted_id)
             check("the surviving model's context_window follows the live read",
-                  qwen["context_window"] == 999999, str(qwen))
+                  drifted_row["context_window"] == 999999, str(drifted_row))
         finally:
             srv.shutdown()
 
 
 def test_an_absent_credential_or_a_failed_read_is_exit_2_and_writes_nothing():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE + [("newlab/new-model:free", 55555)]))
+        srv, url = _server(_models(shipped_free() + [("newlab/new-model:free", 55555)]))
         try:
             root = _scratch(Path(td), url)
             before = (root / "agents" / "model_chain.json").read_bytes()
@@ -224,7 +240,7 @@ def test_an_absent_credential_or_a_failed_read_is_exit_2_and_writes_nothing():
             srv.shutdown()
 
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE), status=500)
+        srv, url = _server(_models(shipped_free()), status=500)
         try:
             root = _scratch(Path(td), url)
             before = (root / "agents" / "model_chain.json").read_bytes()
@@ -273,7 +289,7 @@ def test_a_live_set_with_no_free_model_or_no_context_is_refused():
 
 def test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real_gate():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE + [("newlab/new-model:free", 55555)]))
+        srv, url = _server(_models(shipped_free() + [("newlab/new-model:free", 55555)]))
         try:
             root = _scratch(Path(td), url)
             before = (root / "agents" / "model_chain.json").read_bytes()
@@ -311,7 +327,7 @@ def test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real
 
 def test_the_pr_body_is_a_keeper_with_no_closing_keyword():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE + [("newlab/new-model:free", 55555)]))
+        srv, url = _server(_models(shipped_free() + [("newlab/new-model:free", 55555)]))
         try:
             root = _scratch(Path(td), url)
             run_refresh("--write", root=root)
@@ -329,6 +345,24 @@ def test_the_pr_body_is_a_keeper_with_no_closing_keyword():
             check("the keeper body refs the refresh issue", "#1195" in body, body[:200])
         finally:
             srv.shutdown()
+
+
+def test_the_fixtures_follow_the_live_chain_not_a_snapshot():
+    """#1744: a live catalogue change must not red three unrelated test modules.
+
+    RED-first evidence: against the pre-fix modules at base `03987d9` this guard FAILS on every
+    shipped free id still spelled out in the three test files; against this head it passes. The
+    guard does not pin WHICH models are free — only that the tests derive them from the chain.
+    """
+    free_ids = [mid for mid, _ in shipped_free()]
+    snapshot_files = ("tests/test_agent_model_chain.py",
+                      "tests/test_agent_profile_provision.py",
+                      "tests/test_free_model_refresh.py")
+    for rel in snapshot_files:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        stale = [mid for mid in free_ids if mid in text]
+        check(f"{rel} derives its free fixtures from the chain (no snapshot ids)",
+              not stale, ", ".join(stale))
 
 
 def test_the_seam_is_wired_where_it_bites():
@@ -358,6 +392,7 @@ def main() -> int:
     test_a_live_set_with_no_free_model_or_no_context_is_refused()
     test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real_gate()
     test_the_pr_body_is_a_keeper_with_no_closing_keyword()
+    test_the_fixtures_follow_the_live_chain_not_a_snapshot()
     test_the_seam_is_wired_where_it_bites()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

@@ -101,9 +101,10 @@ def test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green():
     check("the shipped tree passes `--check`", res.returncode == 0, out[-300:])
     check("the OK line counts every fleet lane", f"{len(LANES)} lane config(s)" in out,
           f"lanes={LANES} out={out[-200:]}")
+    data = _chain_json(ROOT)
+    expected_order = "in order " + " -> ".join(e["alias"] for e in data["chain"])
     check("the chain order is reported primary-first, local tier before the paid pin, last-resort last",
-          "in order free-longcat -> free-hy4 -> free-qwen4 -> free-solar -> free-step -> local-strata -> nous-deepseek" in out,
-          out[-200:])
+          expected_order in out, out[-200:])
 
 
 def test_every_free_step_comes_before_the_paid_last_resort():
@@ -212,10 +213,10 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
           rendered.stdout + rendered.stderr)
     fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
     models = re.findall(r"(?m)^    model: (\S+)", fb)
+    chain = _chain_json(ROOT)["chain"]
+    expected_fallbacks = [e["model"] for e in chain if e["role"] != "primary"]
     check("fallback_providers lists every non-primary step in chain order",
-          models == ["tencent/hy4-flash:free", "qwen/qwen4-max:free", "upstage/solar-mini4:free",
-                     "stepfun/step-3.7-flash:free", "qwen3.8-flash-next-iq3_xxs",
-                     "deepseek/deepseek-v4-flash-0731"], str(models))
+          models == expected_fallbacks, str(models))
     entries = re.split(r"(?m)^  - ", fb)[1:]
     local_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" in e]
     check("the local fallback entry is credential-less (no key_env) and names its own endpoint",
@@ -238,10 +239,12 @@ def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
         root = _scratch(Path(td))
         cfg = root / "agents" / "tll-tester" / "config.yaml"
         text = cfg.read_text(encoding="utf-8")
+        # #1744: the primary is a LIVE free id; pinning it here made a healthy refresh red.
+        primary = _chain_json(root)["chain"][0]["model"]
+        needle = f"default: {primary}"
         edited_line = next(i for i, line in enumerate(text.splitlines(), start=1)
-                           if "default: meituan/longcat-2.5:free" in line)
-        cfg.write_text(text.replace("default: meituan/longcat-2.5:free",
-                                    "default: deepseek/deepseek-v4-flash-0731"), encoding="utf-8")
+                           if needle in line)
+        cfg.write_text(text.replace(needle, "default: deepseek/deepseek-v4-flash-0731"), encoding="utf-8")
         res = run("--check", root=root)
         out = res.stdout + res.stderr
         check("a hand-edited lane config fails the gate", res.returncode == 1, out[-200:])
@@ -249,7 +252,7 @@ def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
               "agents/tll-tester/config.yaml" in out, out[-300:])
         check("the failure names the line and both spellings",
               f"line {edited_line}:" in out and "deepseek/deepseek-v4-flash-0731" in out
-              and "meituan/longcat-2.5:free" in out, out[-400:])
+              and primary in out, out[-400:])
         check("the other lane is reported as clean (only the drifted one fails)",
               "tll-reviewer" not in out, out[-300:])
         check("the refusal tells the author to re-render rather than hand-edit",
