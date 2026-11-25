@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **548**
+Active changes: **1** · archived: **549**
 
 ## Active changes
 
@@ -538,6 +538,7 @@ Active changes: **1** · archived: **548**
 | `the-artifact-is-the-alarm` | archived | #452 | — | [bot-alarms](openspec/changes/archive/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-artifact-is-the-alarm/proposal.md) |
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |
+| `timeout-prong-neutral-failed-1707` | archived | #1707 | #1713 | [fetch-outage-verdict](openspec/changes/archive/timeout-prong-neutral-failed-1707/specs/fetch-outage-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/timeout-prong-neutral-failed-1707/proposal.md) |
 | `tll-docs-lane` | archived | #1396 | #1420 | [fleet-docs](openspec/changes/archive/tll-docs-lane/specs/fleet-docs/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/tll-docs-lane/proposal.md) |
 | `tracker-sweep-failure-guard-1256` | archived | #1256 | #1257 | [tracker-sweep](openspec/changes/archive/tracker-sweep-failure-guard-1256/specs/tracker-sweep/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/tracker-sweep-failure-guard-1256/proposal.md) |
 | `trending-for-your-card` | archived | #349 — `feat(readme): the trending list for YOUR card — VRAM-tiered trending tables, low end (8–24 GB) first` | — | [readme-trending](openspec/changes/archive/trending-for-your-card/specs/readme-trending/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/trending-for-your-card/proposal.md) |
