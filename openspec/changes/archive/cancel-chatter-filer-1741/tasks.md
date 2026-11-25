@@ -6,5 +6,5 @@
 - [x] Regenerate `ARCHITECTURE.md` §10 for the edited script docstring and run `make architecture-check`
 - [x] Run `make lint`, `make findings-check ISSUE=1741`, `make openspec-validate NAME=cancel-chatter-filer-1741`
 - [x] Write `findings/1741.md` with the owed rulebook row declaration
-- [ ] Open a non-draft PR closing #1741, archive the change with `Issue: #1741` / `PR: <n>`, regenerate `OPENSPEC.md`, hand over to `tll-reviewer`
+- [x] Opened non-draft PR #1743 closing #1741, recorded `Issue: #1741` / `PR: #1743`, archived the change and regenerated `OPENSPEC.md`; handover to `tll-reviewer` posted on the issue
 - [~] AGENTS.md §8 guard row — blocked: rule 3c human sign-off (AGENTS.md protected in a headless leg); declared as an owed row in findings/1741.md
