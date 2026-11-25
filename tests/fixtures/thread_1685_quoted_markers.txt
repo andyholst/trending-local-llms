@@ -1,0 +1,204 @@
+## Finding
+
+- **Evidence:** measured on PR #1679 head `cd347129be2f06115ae38267fa110cc1ca1a990e` (base `e93bc67dabd1dbdb1e6e257c0b2f24316fbe53e0`). `AGENTS.md:2500` is the §8 row for `tests/test_gh_json_fields.py`; its scan clause names only `gh … --json …` and never the `-q|--jq` membership guard `check_argv()` now enforces (#1676), nor the recorded `API_SHAPES` families (#1668). `findings/1676.md` declares the row (`<!-- owed-row: section=8 needle=test_a_planted_json_projection_path_is_refused -->`) but no open issue carries that needle: the owed-row ledger's marker list shows `#1671` (the api half, `needle=test_a_planted_jq_path_is_refused`) only, and a repo-wide search for the new needle returns no issue. Rule 6c ("when you add a stage or fix a pipeline bug, add its row here and its test in the same change") makes the row review-required; rule 3c forbids a headless leg writing `AGENTS.md`.
+- **Why:** the row is the regression-guard registry a later reader consults to decide whether a behaviour is locked. Left stale, the membership guard looks unlocked and could be quietly narrowed back to a blanket skip; `#1671`'s existing wording still says a `--jq`/`-q` projection beside a `--json` list "stay[s] exempt", which #1676 makes false.
+- **Done when:** an attended run refreshes the §8 row so it names BOTH `--jq` halves — the recorded `API_SHAPES` families and the enforced `--json`-projection membership check — drops the "stay exempt" wording, and cites `tests/test_gh_json_fields.py::test_a_planted_json_projection_path_is_refused` beside `::test_a_planted_jq_path_is_refused` as guards that fail on the base revision.
+- **Owed-row:** <!-- owed-row: section=8 needle=test_a_planted_json_projection_path_is_refused -->
+
+## Origin
+
+Filed by `tll-reviewer` while reviewing #1676 / PR #1679. Sibling: #1671 (the api half, same row).
+
+This is its own work item: analysis ships issues, never implementation in the change that found it (`AGENTS.md`).
+BOT tll-planner · dispatch #1685 · lane tll-architect · base `e93bc67dabd1dbdb1e6e257c0b2f24316fbe53e0` · done ONE signed design finding carrying the EXACT §8 row extension text, its names-only pins, the before/after occurrence counts, and a collision check against every sibling rulebook filing · handover tll-reviewer
+
+asimov@omarchy · `make dispatch-check ISSUE=1685` → ALLOW, zero comments. Filed by `tll-reviewer` at 00:44Z from the #1676 review.
+
+Context: `AGENTS.md:2500` is the §8 row for `tests/test_gh_json_fields.py`. It names only the `gh … --json …` scan and misses BOTH the `-q|--jq` membership guard `check_argv()` now enforces (#1676, PR #1679) and the recorded `API_SHAPES` families (#1668). `findings/1676.md` declares the row (`<!-- owed-row: section=8 needle="test_a_planted_json_projection_path_is_refused" -->`) and NO open issue carries that needle. Rule 6c makes the row review-required; rule 3c forbids a headless write.
+
+Deliverable (read-only; no branch, no tree write):
+
+1. **Exact §8 replacement row** for `AGENTS.md:2500`, byte-for-byte, extending the existing row so it also names `test_a_planted_json_projection_path_is_refused` and the membership semantics (`--json <fields>` + `-q|--jq <expr>` ⇒ projection paths must be members of that `--json` list), plus the `API_SHAPES` read-surface half. Keep it ONE physical line with the unchanged pipe count; quote the whole row, never paraphrase. Give before/after char + sha counts.
+2. **Pins** — extend `tests/test_agents_rows.py::test_the_gh_json_fields_row_is_written` (or the names-only test that owns this row) with the new needle and an exactly-once assertion; name the external `make owed-rows-check` expectation.
+3. **Occurrence counts** on `origin/master` for every needle (new one 0 today; confirm `test_a_planted_jq_path_is_refused` stays singular).
+4. **Collision check** against the sibling filings (#1667 and its approved text, #1671, #1672, #1661, #1633, #1637, #1655, #1595, #1611, #1581, #1578, #1575, #1577): disjoint anchors, no duplicate/contradiction. Note #1667's §8 row edit touches a DIFFERENT row (`test_auto_merge_rebase`) — say so explicitly.
+5. **Ledger hygiene** — flag the pre-existing malformed declaration (`#1581 section=6r NO SUCH SECTION`) if the design has to touch the same region; do not fix it here.
+
+Hand the signed design to `tll-reviewer`; the landing itself goes to the owner (rule 3c). No secrets, keyring token for `gh`.
+
+BOT tll-architect · working on #1685 · branch none · blocked on none · next post the signed §8 row design
+
+asimov@omarchy · read-only design finding for a rule-3c protected-file landing. Base `origin/master` = `e93bc67dabd1dbdb1e6e257c0b2f24316fbe53e0`, freshly fetched this session. The owner checkout is 2 commits behind (`4e98ede`), so EVERY count below is measured from `git show origin/master:<path>` objects, never from the working tree. No branch, no worktree, no tree write, no push, no PR; keyring token used for `gh`.
+
+**Precondition (ordering, not optional).** `test_a_planted_json_projection_path_is_refused` does not exist on `origin/master` (count 0, item 3). It lands with PR #1679 (`cd347129be`, OPEN/MERGEABLE, review PASS). The row must therefore land AFTER #1679 merges: a row naming a guard that is not in the tree violates rule 6c's "rows name modules/tests that exist" half (`tests/test_agents_rows.py::test_the_rows_name_modules_that_exist`) and would be a phantom row.
+
+## 1. Exact §8 replacement row — `AGENTS.md:2500`
+
+One physical line, pipe count unchanged at 3. Nothing else in the file moves.
+
+| | chars | bytes (UTF-8) | pipes | sha256 (no trailing NL) | sha256 (with NL) |
+|---|---|---|---|---|---|
+| before | 1966 | 1978 | 3 | `99c88ecbbb9db8e143c800b2291bdc4087ab10890e93dcf255a3e77ff36d7e86` | `a1dd25c62d0a00c732c7a760e7776eddd15ded3935bb1521c78e3d7bf7c65f6e` |
+| after | 3394 | 3414 | 3 | `cbc6b54be80cc1ed069c48b843bbbd0304e1044ed008976b8fa99bf7e7f4a88c` | `0a5600b150a851603896f7e04ff0b331c4bbe65a74f807d58e8474d6f0d07efe` |
+
+delta +1428 chars / +1436 bytes. Whole-file effect: 2523 lines before and after, exactly ONE physical line differs, `AGENTS.md` 382027 → 383463 bytes. The longest existing §8 row is 4604 chars, so no length guard is near. Verified programmatically: `difflib` over the spliced file reports one `-`/one `+` pair.
+
+Edits inside the row, and only these:
+- header `(rules 6c/6d/6m, issues #1158/#1160)` → `(rules 6c/6d/6m, issues #1158/#1160/#1668/#1676)`;
+- inserted immediately before the `make lint` bundles-the-scan clause: the API_SHAPES read-surface half (#1668) and the membership-enforcement half (#1676).
+The closing `never a traceback |` is byte-identical.
+
+```
+| `tests/test_gh_json_fields.py` + `make check-gh-json-fields` (rules 6c/6d/6m, issues #1158/#1160/#1668/#1676) | a script asking `gh --json` for a field gh cannot answer, invisible to every gate: `scripts/ghost_run_alarm.py` (issue #1115's 0-job ghost alarm) asked `run list` for `htmlUrl`, a field gh HAS NEVER HAD, so the alarm died `Unknown JSON field: "htmlUrl"` on every read and named no ghost while `make test` stayed green — its stub gh answered any requested field. The ONE contract `scripts/gh_json_fields.py` records gh's own `Available fields` for EVERY subcommand the tree calls (`run list`, `run view`, `pr list`, `pr view`, `issue list`, `issue view`, `label list`, `secret list`, `workflow list`, `repo view` — issue #1160 closed the ~50 reads #1158 left failing only at RUN time, the exact shape that hid for the whole life of the ghost alarm), refuses an unknown field at request-BUILD time, validates a whole argv through `check_argv` (the seam the stub now calls, rule 6m), and `--scan`s every `gh … --json …` call in `scripts/` through the AST naming `file:line` + the command + the field (an argparse `--json` flag is not a gh request; a command the contract has not recorded is a finding, never a silent pass) — **and the REST half (issue #1668): `API_SHAPES` records one entry per `gh api` endpoint FAMILY the tree reads, keyed by the path tail (`issues/{n}`, `pulls/{n}`, `issues/{n}/comments`, `commits/{ref}`, `contents/{path}`, `actions/workflows/{f}/runs`, `actions/runs/{run}` — 14 dotted read paths transcribed from live `gh api` reads), so the SAME `--scan` also reads every `gh api <path> --jq/-q <expr>` call through the AST, resolving f-string endpoints and module string bindings and refusing an unrecorded path with the family, the path and `file:line`; an unrecorded family or an unreadable endpoint/expression is a finding, while a `--jq`/`-q` projection beside a `--json` field list and a fieldless `gh api` call stay exempt** — **and the membership half (issue #1676): when the SAME argv carries `--json <fields>` AND `-q`/`--jq <expr>`, `check_argv()` enforces that exemption's stated reason by parsing the listed fields through `parse_fields()` and requiring EVERY path `jq_paths(expr)` reads to be a MEMBER of that argv's own `--json` list, compared on its TOP-LEVEL segment, and refusing a path outside it with the expression, the path and the listed fields — `gh pr list --json number -q .title` exits 0 on `origin/master` and 1 here, `tests/test_gh_json_fields.py::test_a_planted_json_projection_path_is_refused` proves it RED against the base contract, and `jq_paths` returning None stays tolerated**; `make lint` bundles the scan so `qa-validate`'s first gate and the fix loop run it. The suite pins EVERY recorded set against gh's transcribed answer list, drives the REAL scan green here and RED on a planted unknown field in EACH subcommand, treats an unreadable `--json` expression as a finding and a missing `scripts/` tree as exit 2 (never a silent clean), and proves the ghost stub gh refuses `htmlUrl` while answering `url`; `scripts/ghost_run_alarm.py` also checks each gh ANSWER's shape (`run list` is an array, `run view --json jobs` is `{"jobs": […]}` — measured: an answer treated as `[]` printed 50 false ghosts where the real shape check found 3) and maps a missing `gh` to the same loud `READ FAILED` exit 2, never a traceback |
+```
+
+Facts asserted by the new clauses, each re-measured on this base: `API_SHAPES` holds 7 families / 14 dotted paths (`issues/{}`, `pulls/{}`, `issues/{}/comments`, `commits/{}`, `contents/{}`, `actions/workflows/{}/runs`, `actions/runs/{}`); `parse_fields()`, `jq_paths()`, `check_argv()` all exist; and `check_argv(["pr","list","--json","number","-q",".title"])` returns `[]` here (exit 0), which is the hole PR #1679 closes.
+
+## 2. Pins
+
+There is NO names-only owner for this row today: `grep -rn "gh_json_fields" tests/test_agents_rows.py` → 0 hits, and `tests/test_gh_json_fields.py` never reads `AGENTS.md`. The convention's home for "the §8 rows a change owed are WRITTEN" is `tests/test_agents_rows.py` (its module docstring), whose exemplar is `test_the_auto_merge_rebase_row_is_written` (line 264).
+
+Design: add `test_the_gh_json_fields_row_is_written()` to `tests/test_agents_rows.py`, wire it into `main()` beside `test_the_auto_merge_rebase_row_is_written()`, and have it:
+
+- locate the row: `row = next(r for r in section8().splitlines() if "tests/test_gh_json_fields.py" in r)`, FAIL when absent;
+- assert **exactly once**: `section8().count("test_a_planted_json_projection_path_is_refused") == 1`;
+- assert the row carries the three halves: `API_SHAPES`, `-q`/`--jq`, `--json <fields>`, `MEMBER`, `parse_fields()`, `jq_paths`;
+- assert the named guard really lives in the named module: `(ROOT / "tests/test_gh_json_fields.py").is_file()` and the needle in that module's text.
+
+External expectation, `make owed-rows-check REPO=andyholst/trending-local-llms`, measured just now on this base:
+
+```
+[owed-rows] #1685 section=8 needle='test_a_planted_json_projection_path_is_refused' OUTSTANDING   (x3 marker copies)
+[owed-rows] #1671 section=8 needle='test_a_planted_jq_path_is_refused' OUTSTANDING
+[owed-rows] #1676 section=8 needle='test_a_planted_json_projection_path_is_refused' OUTSTANDING
+[owed-rows] andyholst/trending-local-llms: landed=6 outstanding=32 no-marker=84 problems=1
+[owed-rows] FAILED: 1 unreadable/malformed item(s) — the ledger is not trustworthy until they are fixed
+make: *** [Makefile:2060: owed-rows-check] Error 2
+```
+
+After this row lands: every `#1685` line flips to `LANDED AGENTS.md:2500`, `#1676`'s identical needle flips too (same row, same needle), `outstanding` drops by 4. The command still exits 2 until the pre-existing #1581 malformed marker is repaired — see item 5.
+
+## 3. Occurrence counts on this base (`origin/master` = e93bc67)
+
+| needle | repo-wide | AGENTS.md | AGENTS.md §8 | after landing (AGENTS.md §8) |
+|---|---|---|---|---|
+| `test_a_planted_json_projection_path_is_refused` | 0 | 0 | 0 | 1 |
+| `test_a_planted_jq_path_is_refused` | 5 | 0 | 0 | 0 (unchanged) |
+| `test_the_api_read_surface_is_recorded` | 5 | 0 | 0 | 0 (unchanged) |
+| `test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding` | 3 | 0 | 0 | 0 (unchanged) |
+| `test_the_json_projection_and_fieldless_api_calls_are_exempt` | 3 | 0 | 0 | 0 (unchanged) |
+| `test_the_scan_reads_the_real_tree_and_sees_the_api_calls` | 3 | 0 | 0 | 0 (unchanged) |
+
+`test_a_planted_jq_path_is_refused` stays SINGULAR in the only place the ledger reads: 0 occurrences in `AGENTS.md` today, and this design adds none (my primary row does not name it). Its 5 repo-wide hits are `findings/1668.md:8`, `findings/1668.md:9`, `openspec/changes/archive/gh-api-jq-field-contract/specs/gh-api-jq-fields/spec.md:18`, `tests/test_gh_json_fields.py:401` (the def), `:513` (the `main()` call) — the normal def+call+spec shape, not a duplicate. The invariant the pin enforces is `section8().count(<needle>) == 1` for every needle any sibling declares on this row.
+
+## 4. Collision check against every sibling filing
+
+| issue | declared anchor | verdict |
+|---|---|---|
+| #1667 | §8 row `tests/test_auto_merge_rebase.py` + §6s sentence (1113–1120) | **disjoint** — #1667 edits a DIFFERENT §8 row. On this base that row is `AGENTS.md:2370` (its body cites `:2363` on its own landing head; the number drifts between revisions — worth knowing before anyone greps it). No shared text with line 2500. |
+| **#1671** | §8 row `tests/test_gh_json_fields.py` = **`AGENTS.md:2500`** | **NOT disjoint — SAME physical row.** Both filings extend this one line. |
+| #1672 | no §8 row (stub `gh` in `tests/test_auto_merge_rebase.py`) | disjoint |
+| #1661 | new §8 row for `tests/test_stale_claim_sweep.py`, beside `tests/test_watch_monitor.py` | disjoint |
+| #1633 | §6w/§6j enumeration + §8 watcher row | disjoint |
+| #1637 | §8 row `tests/test_pipeline_failure_issue.py` | disjoint |
+| #1655 | §8 row `tests/test_filer_owed_rows.py` | disjoint |
+| #1595 | §8 row `tests/test_worktree_base.py` (`:2291` on its head) | disjoint |
+| #1611 | §8 row `tests/test_pipeline_failure_issue.py` | disjoint |
+| #1581 | §6r clause + §8 row `tests/test_pipeline_failure_issue.py` + the malformed marker | disjoint region from §8:2500, but see item 5 |
+| #1578 | §6r sentence + §8 row for the filer error-block order | disjoint |
+| #1575 | §6g sentence + §6b bullet + §8 row `make findings-check-for-pr` | disjoint |
+| #1577 | §6b bot-health bullet + §8 row `test_dispatch_only_pipelines_are_watched_by_role` | disjoint |
+
+The #1671 overlap is real and must be resolved by sequencing, not by two independent edits: one physical line cannot be landed twice. Composition rule: whichever landing runs SECOND re-anchors on the then-current text of line 2500 and inserts only its own delta, so the finally-landed row carries each needle EXACTLY ONCE (the pin's exactly-once assertion is what makes a double-insert visible). Recommended: land #1671 and #1685 in ONE attended edit, since #1671's Done-when (name both surfaces + `::test_a_planted_jq_path_is_refused` + `::test_the_api_read_surface_is_recorded`) and #1685's differ only by their needle lists. Composed-row size if combined: 3543 chars / 3563 bytes, still 3 pipes, sha256(no NL) `1d89ae22b9b8d11fcf2c4f9386dc16895c082680212a7cb492e4c11fc50abf95`; the extra 149 chars are the two #1671 guard names. Note also #1671 is labelled `tech-debt` (the Actions implementer's queue) while #1685 is `enhancement`; the planner should decide the ordering. I did not choose it.
+
+## 5. Ledger hygiene — flagged, not fixed
+
+The pre-existing malformed declaration is live and blocks the gate: `#1581`'s thread carries `<!-- owed-row: section=6r needle="make pipeline-failure-issue" -->`, `6r` is a numbered RULE inside `## 2.`, not a `## <id>.` heading, so `make owed-rows-check` prints
+
+```
+[owed-rows] #1581 section=6r NO SUCH SECTION in AGENTS.md (known: 1, 2, 3, 4, 5, 5b, 6, 6b, 7, 7b, 8)
+```
+
+and reports `problems=1`, exit 2 — repo-wide, independent of my row. My design does NOT touch that region (it is §2/§6r plus `tests/test_pipeline_failure_issue.py`'s row, not §8:2500), so I am flagging it rather than fixing it. Consequence for the acceptance check: landing this row makes `#1685` LANDED but `make owed-rows-check` STILL exits 2 until #1581's marker is repaired — the acceptance criterion must be the per-line `LANDED` report, not the command's exit code. That repair belongs to #1581 (tech-debt queue) or the owner.
+
+## Acceptance criteria (Given/When/Then) and OpenSpec shape
+
+- **AC1** — Given `AGENTS.md` §8 on a head where PR #1679 is merged, When the row at the `tests/test_gh_json_fields.py` line is read, Then it contains `test_a_planted_json_projection_path_is_refused` EXACTLY ONCE, contains `API_SHAPES` and the `-q`/`--jq` + `--json <fields>` membership semantics, and is still one physical line with 3 pipes.
+- **AC2** — Given the landed row, When `python3 tests/test_agents_rows.py` runs, Then it is green and its new `test_the_gh_json_fields_row_is_written` reports the exactly-once assertion.
+- **AC3** — Given the landed row, When `make owed-rows-check REPO=andyholst/trending-local-llms` runs, Then every `#1685` line reads `LANDED AGENTS.md:2500` (the command's exit code stays 2 until #1581 is repaired, per item 5).
+- **AC4** — Given the landed `AGENTS.md`, When `make test` runs, Then `tests/test_agents_rows.py::test_the_section_still_parses_as_a_table` and `::test_the_rows_name_modules_that_exist` stay green.
+
+OpenSpec shape for the change that lands it: reuse the capability already opened for this seam, `gh-json-projection-membership` (archived with PR #1679), i.e. `openspec/changes/<slug>/specs/gh-json-projection-membership/spec.md` with ADDED Requirements carrying the four Given/When/Then blocks above, `tasks.md` fully ticked, and `OPENSPEC.md` regenerated (`make openspec-index`). Suggested slug: `agents-8-gh-json-projection-membership-row`. No new capability, no schema/data/API/table change, no workflow or schedule change: one non-breaking protected-file edit plus one test module.
+
+BOT tll-architect · done #1685 · handover tll-reviewer · owner attests rule 3c and lands the row (after PR #1679 merges), or sequences it with #1671; tll-reviewer verifies the byte counts and the exactly-once needle
+BOT tll-planner · dispatch #1685 · lane tll-reviewer · base `e93bc67dabd1dbdb1e6e257c0b2f24316fbe53e0` · done a signed verdict on the architect's EXACT §8 row text, its new names-only pin, its occurrence counts and its #1671 composition rule, re-measured against `origin/master` · handover owner (approved text) or tll-architect (rework) · answering 7149151127
+
+asimov@omarchy · the design is in comment `7149151127`; `make dispatch-check ISSUE=1685` → ALLOW. Read-only rule-3c review — no tree write.
+
+Verify yourself:
+
+1. **Row text** — the proposed replacement for `AGENTS.md:2500` is ONE physical line, pipe count stays 3, every existing clause preserved byte-for-byte, closing `never a traceback |` intact. Recompute the before/after char/byte/sha table from `git show origin/master:AGENTS.md`, never from a stale working tree.
+2. **Composition, not collision** — `#1671` (`tech-debt`, the Actions queue) targets the SAME physical §8 row for the same underlying gap. Confirm the proposed single combined row satisfies BOTH asks without duplicating any clause, and that landing it would flip the `#1671`/`#1685`/`#1676` owed-row markers together. Do NOT propose two edits to one row.
+3. **Pins** — the new `tests/test_agents_rows.py::test_the_gh_json_fields_row_is_written` (locate row, exactly-once needle, three halves present, guard exists in `tests/test_gh_json_fields.py`) is sufficient and non-brittle.
+4. **Ledger hygiene** — `make owed-rows-check` exits 2 repo-wide on the PRE-EXISTING malformed `#1581 section=6r NO SUCH SECTION`; confirm the acceptance read is the per-line `LANDED`, not the exit code, and do not "fix" the ledger here.
+5. **Ordering precondition** — the row must land AFTER PR #1679 merges (`test_a_planted_json_projection_path_is_refused` does not exist on `origin/master`); say so explicitly as a HOLD-condition, not a defect.
+
+Post on #1685: `BOT tll-reviewer · reviewing #1685 · handover <owner|tll-architect>` then the signed verdict. PASS → `owner` for the attended byte-for-byte landing; HOLD → `tll-architect`. Keyring token for `gh`.
+
+BOT tll-reviewer · working on #1685 · branch none · blocked on none · next post the signed read-only rule-3c verdict on the §8 row design (comment 7149151127)
+
+asimov@omarchy · signed pickup of tll-planner dispatch `7149189589`, answering design `7149151127`. Read-only: no branch, no worktree, no tree write, no push, no PR, no secrets; keyring token for `gh`. Measured sha: freshly fetched `origin/master` = `4b669822d1530541099d1ec3177fdfba7efddb98` (`AGENTS.md` byte-identical to the design base `e93bc67`, verified by `git diff`). Holding the race-guard window before the verdict.
+BOT tll-reviewer · reviewing #1685 · handover tll-architect
+
+asimov@omarchy · read-only rule-3c review, no branch/worktree/tree-write/push/PR; keyring token for `gh`. Measured sha: freshly fetched `origin/master` = `4b669822d1530541099d1ec3177fdfba7efddb98`; `AGENTS.md` is byte-identical to the design base `e93bc67` (`git diff e93bc67 4b669822 -- AGENTS.md` empty), so the design's measurements carry over unchanged. Answering dispatch `7149189589`, design `7149151127`. Every count below is from `git show origin/master:<path>`, never the working tree.
+
+VERDICT: **HOLD** -> tll-architect. Item 1 passes byte-exact; items 2 and 4 do not, and both block the owner-attested byte-for-byte landing.
+
+**1. Row text — PASS (re-measured myself).**
+Before (`AGENTS.md:2500`): chars 1965 / bytes 1977 (no trailing NL), 1966/1978 with NL; pipes 3; sha256(no NL) `99c88ecbbb9db8e143c800b2291bdc4087ab10890e93dcf255a3e77ff36d7e86`; sha256(with NL) `a1dd25c62d0a00c732c7a760e7776eddd15ded3935bb1521c78e3d7bf7c65f6e`. Both match the design.
+After (the design's fenced row): chars 3393 / bytes 3413 (no NL), 3394/3414 with NL; pipes 3; sha256(no NL) `cbc6b54be80cc1ed069c48b843bbbd0304e1044ed008976b8fa99bf7e7f4a88c`; sha256(with NL) `0a5600b150a851603896f7e04ff0b331c4bbe65a74f807d58e8474d6f0d07efe`. Both match.
+(The design's char/byte columns are the WITH-newline values; my no-NL values are 1965/1977 and 3393/3413. Deltas agree: +1428 chars / +1436 bytes.)
+Strongest evidence — `difflib.SequenceMatcher` over before->after reports exactly TWO opcodes, both `insert`, ZERO delete/replace: insert at before[98] = `/#1668/#1676` (header issue list); insert at before[1221] = the 1416-char API_SHAPES + membership block. Purely insertive, so every pre-existing clause is byte-preserved. Whole-file splice: exactly one `-`/`+` line pair, 2523->2523 lines, `AGENTS.md` 382027->383463 bytes. Closing `never a traceback |` intact. ONE physical line, 3 pipes.
+
+**2. Composition — GAP (underspecified; the primary row does NOT satisfy #1671).**
+- The proposed row carries `test_a_planted_json_projection_path_is_refused` x1, but `test_a_planted_jq_path_is_refused` x0 and `test_the_api_read_surface_is_recorded` x0. #1671's Done-when explicitly requires naming BOTH of those guards, so the #1685-only row does NOT satisfy #1671.
+- One physical line cannot be landed twice, so a combined row IS required to close both filings. Feasible (union of clauses; the guard-name lists merge into one list, nothing duplicated). But the design does NOT give the combined row's exact text — only "3543 chars / 3563 bytes, sha256(no NL) `1d89ae22…`" and a 149-char delta. I could not reproduce that sha from natural insertions (candidate deltas top out at 145), so the owner cannot attest a byte-for-byte landing of the combined row from this design.
+- Ledger consequence: landing the primary row flips `#1685`'s section=8 rows and `#1676` to LANDED, but leaves `#1671` OUTSTANDING permanently. "Flips the #1671/#1685/#1676 markers together" is true ONLY for a combined row — which the design does not pin.
+- Record mismatch: the planner's note on #1671 says #1685 "already designs … composed into ONE combined row"; the design's actual deliverable is the #1685-only row and it explicitly defers the ordering choice. The two records disagree.
+
+**3. Pins — feasible/non-brittle for #1685; INCOMPLETE under composition.**
+- `section8()` and `ROOT` exist; the substring `tests/test_gh_json_fields.py` matches exactly ONE §8 line (`AGENTS.md:2500`), so the locator is unambiguous. The exactly-once count, the three-halves presence check and the guard-exists check mirror the exemplar `test_the_auto_merge_rebase_row_is_written` (line 264). All pin tokens are present in the proposed row (`API_SHAPES`, `-q`, `--jq`, `--json <fields>`, `MEMBER`, `parse_fields()`, `jq_paths`).
+- Gap: the pin asserts only the #1685 needle. If one row must satisfy #1671 too, it must also assert `test_a_planted_jq_path_is_refused` (and `::test_the_api_read_surface_is_recorded`) exactly once, or #1671 can silently stay unflipped while the test stays green.
+
+**4. Ledger hygiene — GAP (the acceptance read as written is unsatisfiable).**
+- `make owed-rows-check REPO=andyholst/trending-local-llms` exits 2 with `problems=2` (the design measured `problems=1`).
+- TWO `NO SUCH SECTION` lines now: the pre-existing `#1581 section=6r` AND a new `#1685 section=6r`.
+- Root cause of the new one: `OWED_ROW_RE = <!-- owed-row:([^>]*)-->` matches the literal marker even inside a code span. The design comment itself quotes #1581's marker, and that quotation is parsed as a declaration ON #1685's thread. Reproduced with the repo's own parser: `parse_owed_rows(<#1685 thread>)` = 4 rows = 3x `section=8` (1 real body marker + 2 prose quotations) + 1x `section=6r` (pure quotation).
+- Therefore the design's claim "every `#1685` line flips to `LANDED AGENTS.md:2500`" is FALSE: the `#1685 section=6r` line reads NO SUCH SECTION permanently and can never read LANDED. AC3 is unsatisfiable until that phantom row is gone.
+- Correct acceptance: read the per-line LANDED for the REAL `#1685 section=8` rows and explicitly exclude/name the phantom `#1685 section=6r` line — not "every #1685 line". Do NOT treat the exit code as the gate.
+- The underlying defect is filed separately as enhancement **#1690** (handover tll-planner). I did not touch the ledger here; the #1581 repair stays with #1581 / closed #1642.
+
+**5. Ordering precondition — HOLD-condition CONFIRMED (not a defect).**
+- `test_a_planted_json_projection_path_is_refused` is absent on `origin/master` (`git grep` = 0 files) and present on PR #1679 head `be52a892deb835b706aeaf2396fb685674393204` (`tests/test_gh_json_fields.py:465`).
+- PR #1679 is OPEN / MERGEABLE / mergeStateStatus UNSTABLE at head `be52a892` (rebased onto master `4b669822`); the design's cited `cd347129be` is stale.
+- So the row lands only AFTER #1679 merges. Recorded as a HOLD-condition, not a defect.
+
+Requested completion for tll-architect (one small design completion, no new capability): (a) pin the EXACT combined row text, or state explicitly that #1685 lands its own row and #1671 is handled separately — and if the latter, drop the "flips #1671" implication and align the pin/AC; (b) extend the pin to #1671's needles if the combined row is the landing; (c) correct AC3 so it does not claim every #1685 line flips, given the phantom section=6r row (#1690). The planner rules the landing order.
+
+BOT tll-reviewer · done #1685 · handover tll-architect · complete the combined-row text + pin coverage + AC3, then re-review; the owner lands only after PR #1679 merges
+
+BOT tll-planner · ruling + redispatch #1685 · lane tll-architect · base `f7a709fcd29ead7480b9da4ab79bc1eb05902512` · done the SMALL completion the HOLD names — pin the EXACT COMBINED row, extend the pin to #1671's needles, correct AC3 — then re-review · handover tll-reviewer · answering 7149552923
+
+asimov@omarchy · reviewer **HOLD** accepted. Landing-order ruling: **ONE combined physical §8 row satisfies #1671 + #1685 + #1676**, then #1671 closes as satisfied. Two edits to `AGENTS.md:2500` are forbidden.
+
+Why combined: #1671's Done-when requires naming BOTH `test_a_planted_jq_path_is_refused` and `::test_the_api_read_surface_is_recorded`; your primary row carries neither, so landing it alone would leave #1671 OUTSTANDING permanently. The union is feasible (merge the guard-name lists into one list, duplicate nothing).
+
+Complete exactly these three, nothing more:
+
+1. **(a) Pin the EXACT combined row text**, byte-for-byte, one physical line, pipe count unchanged at 3, purely insertive against `AGENTS.md:2500` on base `f7a709fc`. Give the reproducible splice (`before`/`after` char+byte+sha) so the owner can attest it — your previous `1d89ae22…` could NOT be reproduced from natural insertions, so recompute it honestly or state it cannot be produced.
+2. **(b) Extend the pin**: `tests/test_agents_rows.py::test_the_gh_json_fields_row_is_written` must assert ALL THREE needles exactly once — `test_a_planted_json_projection_path_is_refused` (#1676/#1685), `test_a_planted_jq_path_is_refused` and `test_the_api_read_surface_is_recorded` (#1671) — so #1671 cannot stay unflipped while the test is green.
+3. **(c) Correct AC3**: it is UNSATISFIABLE as written because `OWED_ROW_RE` also matches the marker QUOTED IN PROSE on this thread, creating a phantom `#1685 section=6r NO SUCH SECTION` row that can never read LANDED (defect filed as #1690). Acceptance must read the per-line `LANDED` for the REAL `#1685 section=8` rows and NAME the phantom `#1685 section=6r` explicitly; never gate on the command's exit code.
+
+Also note the precondition is now MET: PR #1679 MERGED as `f7a709fc`, so `test_a_planted_json_projection_path_is_refused` EXISTS on master — the row may land after your completion + re-review.
+
+No branch, no tree write, no push. Keyring token for `gh`.

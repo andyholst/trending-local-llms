@@ -219,6 +219,46 @@ OWED_ROW_RE = re.compile(r"<!-- owed-row:(?P<body>[^>]*)-->")
 _OA_SECTION = re.compile(r"section=([A-Za-z0-9]+)")
 _OA_NEEDLE = re.compile(r'needle=(?:"([^"]*)"|(\S+))')
 
+#: The QUOTATION devices GitHub markdown renders as code (issue #1690). A marker that appears
+#: inside one of these is being QUOTED, not declared: the defect measured on the #1685 thread was
+#: `OWED_ROW_RE` matching the literal substring anywhere in thread text, so a comment that quoted
+#: #1581's malformed marker parsed as #1685's OWN `section=6r` declaration and kept the ledger red.
+#: Both are applied per line by `declaration_text()` — a fenced block's state has to be tracked
+#: across lines, so the stripper works on whole text rather than as three independent regexes.
+_FENCE_LINE = re.compile(r"^\s*(```|~~~)")
+_INLINE_CODE = re.compile(r"`[^`\n]*`")
+_QUOTED_LINE = re.compile(r"^\s*>")
+
+
+def declaration_text(text: str) -> str:
+    """`text` with every QUOTED span removed, so only real declarations reach the parser.
+
+    Three devices, each of which a human or a bot uses to quote a marker it is DISCUSSING:
+
+      * a fenced code block (` ``` ` … ` ``` `, or `~~~`) — its body is literal sample text;
+      * an inline code span (`` `…` `` on one line) — the shape a review comment uses to name a
+        marker's exact spelling;
+      * a block-quoted line (`> …`) — a reply quoting an earlier comment.
+
+    Everything else is left untouched, so a genuine declaration — `- **Owed-row:** <marker>` on
+    an issue body or a `findings/*.md` file, which is exactly how `scripts/file_findings.py`
+    stamps one — still registers. Deliberately NOT "only read `findings/<issue>.md` bodies": the
+    ledger reads THREADS, so a hand-written declaration on an issue must keep working, and a
+    marker dropped into plain prose (no quotation at all) is still a declaration by that contract.
+    """
+    out: list[str] = []
+    fenced = False
+    for line in (text or "").split("\n"):
+        if _FENCE_LINE.match(line):
+            fenced = not fenced
+            out.append("")                       # the fence line itself declares nothing
+            continue
+        if fenced or _QUOTED_LINE.match(line):
+            out.append("")
+            continue
+        out.append(_INLINE_CODE.sub("", line))
+    return "\n".join(out)
+
 
 def owed_row_marker(section: str, needle: str) -> str:
     """Write an owed-row declaration: the ONE writer-side shape (rule 6d)."""
@@ -227,15 +267,17 @@ def owed_row_marker(section: str, needle: str) -> str:
 
 
 def parse_owed_rows(text: str) -> dict[str, list]:
-    """Every owed-row declaration in `text`.
+    """Every owed-row DECLARATION in `text` — a marker quoted in prose is not one (issue #1690).
 
     -> {"rows": [{section, needle}], "malformed": [raw-marker-string]}
     A declaration missing `section=` or `needle=` lands in `malformed`; the caller must make it
     loud (rule 6d: a marker that fails to parse raises nothing unless a check says so).
+    Quotation is stripped FIRST (`declaration_text`), so a phantom row can never be minted from
+    a comment discussing someone else's marker.
     """
     rows: list[dict] = []
     malformed: list[str] = []
-    for m in OWED_ROW_RE.finditer(text or ""):
+    for m in OWED_ROW_RE.finditer(declaration_text(text)):
         body = m.group("body")
         sec = _OA_SECTION.search(body)
         need = _OA_NEEDLE.search(body)
