@@ -18,6 +18,11 @@ Exit codes: 0 = every open PR has runs and no conflict, 1 = at least one is sile
 scheduled run goes red), 2 = a GitHub call failed. Read-only apart from one deduplicated
 comment per affected PR.
 
+Issue #1647 adds the SECOND red: with `--rebase`, a branch the rebaser PUSHED whose own new
+head did not schedule real CI (`ci_verified: False`, issue #1616) also exits 1, naming that
+PR — a green sweep over a stuck rebase read as "nothing needs a human". A VERIFIED rebase
+changes nothing.
+
 With `--rebase --comment` the rebaser half announces itself too (issue #964): a rebase the
 sweep TRIED and could not land (git conflict, failed lease push, unreadable refs) posts ONE
 marker-deduplicated comment on that PR's thread — stamped with the failed (branch, head) pair,
@@ -860,6 +865,27 @@ def failed_rebases(outcomes: list[dict]) -> list[dict]:
             and str(o.get("done") or "") != "already current"]
 
 
+#: The sweep's UNVERIFIED-REBASE verdict (issue #1647). A rebase that pushed a branch but whose
+#: new head did NOT schedule real CI is not a completed repair: the PR now sits on a head
+#: nothing validated — the #1115 ghost shape — and a GREEN sweep over it reads to an operator
+#: as "nothing needs a human". So it must RED the round, naming the PR.
+UNVERIFIED_REBASE_REASON = ("REBASED but CI UNVERIFIED — the branch moved onto a head whose "
+                            "own qa-validate run scheduled no jobs, so the sweep cannot call "
+                            "this a completed repair")
+
+
+def unverified_rebases(outcomes: list[dict]) -> list[dict]:
+    """The rebaser outcomes that PUSHED a branch but could not prove its CI (issue #1647).
+
+    Pure on purpose (rule 6d), the mirror of `failed_rebases`: `run_rebaser` already carries
+    `ci_verified: False` on exactly those rows (`REBASED but CI UNVERIFIED: …`, issue #1616),
+    but `main`'s exit code read only the silent-PR half — so `make pr-health REBASE=1` exited
+    GREEN over a stuck rebase. Every other outcome is untouched: a VERIFIED rebase is a clean
+    green, and a refused/failed/unreadable rebase is already reported by `failed_rebases`.
+    """
+    return [o for o in outcomes if o.get("ci_verified") is False]
+
+
 def rebase_run_key(head: str, oid: str) -> str:
     """The failed (branch, head) pair, as the `run=` value a marker dedup keys on (the shape
     parse_markers accepts: letters, digits, `_`, `-`). Keyed on the head oid, so one failed
@@ -1009,7 +1035,19 @@ def main() -> int:
                 print(f"  #{o['number']}: could not announce the failed rebase ({exc})",
                       file=sys.stderr)
 
-    if not silent:
+    # THE UNVERIFIED-REBASE VERDICT (issue #1647): the rebaser half already NAMES a pushed head
+    # whose own CI never started (`REBASED but CI UNVERIFIED: …`, issue #1616), but the exit
+    # code below read ONLY the silent-PR verdict — so `make pr-health REBASE=1` exited GREEN
+    # over a branch it had just moved onto a 0-job head, and an operator read that green as
+    # "nothing needs a human". A push without proof REDS the round instead, naming every PR.
+    unverified = unverified_rebases(rebaser_outcomes)
+    if unverified:
+        print(f"[pr-health] {len(unverified)} rebased head(s) left CI UNVERIFIED — the sweep "
+              "goes RED")
+        for o in unverified:
+            print(f"  #{o['number']} {o['head']}: {UNVERIFIED_REBASE_REASON} ({o['done']})")
+
+    if not silent and not unverified:
         return 0
 
     # Silent-PR flagging (issue #814 retired the dispatched repairer): the sweep comments

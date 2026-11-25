@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **563**
+Active changes: **1** · archived: **564**
 
 ## Active changes
 
@@ -431,6 +431,7 @@ Active changes: **1** · archived: **563**
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
 | `pr-health-agent-login-1349` | archived | #1349 | #1350 | [rebase-ownership](openspec/changes/archive/pr-health-agent-login-1349/specs/rebase-ownership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/pr-health-agent-login-1349/proposal.md) |
 | `pr-health-bot-ownership-1295` | archived | #1295 | #1296 | [pr-health](openspec/changes/archive/pr-health-bot-ownership-1295/specs/pr-health/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-health-bot-ownership-1295/proposal.md) |
+| `pr-health-unverified-rebase-red` | archived | #1647 — "an unverified `pr-health REBASE=1` sweep exits green, so a stuck rebased head | #1653 | [pr-health-rebase-verdict](openspec/changes/archive/pr-health-unverified-rebase-red/specs/pr-health-rebase-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-health-unverified-rebase-red/proposal.md) |
 | `pr-ready-never-draft-1563` | archived | #1563 — "Fleet: never open a draft PR — every fleet PR is ready for review" | #1570 | [pr-readiness](openspec/changes/archive/pr-ready-never-draft-1563/specs/pr-readiness/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-ready-never-draft-1563/proposal.md) |
 | `pr-rebase-skill-push-verify-1427` | archived | #1427 | #1429 | [fleet-lane-contracts](openspec/changes/archive/pr-rebase-skill-push-verify-1427/specs/fleet-lane-contracts/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-rebase-skill-push-verify-1427/proposal.md) |
 | `pr-rebase-soul-generated-artifacts` | archived | #1361 | #1362 | [pr-rebase-lane](openspec/changes/archive/pr-rebase-soul-generated-artifacts/specs/pr-rebase-lane/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/pr-rebase-soul-generated-artifacts/proposal.md) |
