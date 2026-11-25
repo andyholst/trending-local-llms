@@ -911,12 +911,48 @@ def test_fourth_batch_host_ahead_notes_are_landed() -> int:
     return failed
 
 
+
+PREFLIGHT = "make pr-message-check PR=<n>"
+PREFLIGHT_REFUSAL = "A non-zero verdict means DO NOT post the"
+
+
+def test_every_lane_carries_the_live_pr_preflight() -> int:
+    """Issue #1716: the seam #1710 shipped must be called by every lane's PR handover."""
+    failed = 0
+    for lane in LANES:
+        text = (ROOT / "agents" / lane / "SOUL.md").read_text(encoding="utf-8")
+        failed += check(PREFLIGHT in text, f"{lane}/SOUL.md carries the live PR preflight")
+    return failed
+
+
+def test_the_preflight_refuses_a_nonzero_verdict() -> int:
+    """A non-zero verdict must forbid the handover comment, not merely be printed."""
+    failed = 0
+    for lane in LANES:
+        text = (ROOT / "agents" / lane / "SOUL.md").read_text(encoding="utf-8")
+        failed += check(
+            PREFLIGHT_REFUSAL in text and "handover comment" in text,
+            f"{lane}/SOUL.md forbids the handover on a non-zero verdict",
+        )
+    return failed
+
+
+def test_reviewer_skill_carries_the_live_pr_preflight() -> int:
+    """The reviewer cannot skip the seam by reading only its skill mirror."""
+    text = (ROOT / "agents" / "tll-reviewer" / "skills" / "tll-reviewer" / "SKILL.md").read_text(encoding="utf-8")
+    failed = check(PREFLIGHT in text, "reviewer skill carries the live PR preflight")
+    failed += check(PREFLIGHT_REFUSAL in text, "reviewer skill carries the non-zero refusal")
+    return failed
+
 def main() -> int:
     failed = 0
     for fn in (
         test_fourth_batch_host_ahead_notes_are_landed,
         test_third_batch_host_ahead_implementer_notes_are_landed,
         test_every_lane_carries_the_pr_handover_shapes,
+        test_every_lane_carries_the_live_pr_preflight,
+        test_the_preflight_refuses_a_nonzero_verdict,
+        test_reviewer_skill_carries_the_live_pr_preflight,
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
         test_second_batch_host_ahead_notes_are_landed,

@@ -56,6 +56,8 @@ the owner still starts the fleet on the host. But once active you remain engaged
 
 ### PR and review handover (issue #1209)
 
+- **Before any PR handover, run the live body preflight (issue #1716).** Run `make pr-message-check PR=<n>` on the PR you are about to hand over. A non-zero verdict means DO NOT post the `pr #<id>` / `reviewing #<id>` handover comment — repair the body and re-run until the verdict is zero.
+
 - **Comment on the issue BEFORE you do the work.** No lane starts a branch, a review or a rebase until its signed comment is on the issue thread; `tll-planner` orchestrates from those comments.
 - **While a test or CI gate runs, post a status comment on the ISSUE (issue #1232).** Name your machine as `user@hostname` (e.g. `asimov@omarchy`), then say what you are doing, what you are waiting for and which issue/PR you can help with next; repeat on each state change. One comment per state: this does not replace the claim, the PR comment or the `done #<id> · handover <...>` comment, and it never claims an issue another machine owns. The planner reads these notes to delegate; the other host reads them to decide what to take next.
 - **A PR is never the handover.** When you open a PR, post on the ISSUE thread:
