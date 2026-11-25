@@ -10,25 +10,17 @@
 
 model:
   provider: nous
-  default: meituan/longcat-2.5:free
+  default: tencent/hy4-flash:free
   context_length: 1048576
 
 # The chain, in the order it is used: primary, then each fallback, then the last resort.
 # A lane selects a step with `hermes -m <alias>`; `key_env` names the variable the
 # container receives, never its value (AGENTS.md rule 3e).
 model_aliases:
-  free-longcat:
-    model: meituan/longcat-2.5:free
-    provider: nous
-    context_window: 1048576
   free-hy4:
     model: tencent/hy4-flash:free
     provider: nous
     context_window: 1048576
-  free-qwen4:
-    model: qwen/qwen4-max:free
-    provider: nous
-    context_window: 1000000
   free-solar:
     model: upstage/solar-mini4:free
     provider: nous
@@ -36,7 +28,7 @@ model_aliases:
   free-step:
     model: stepfun/step-3.7-flash:free
     provider: nous
-    context_window: 262144
+    context_window: 256000
   local-strata:
     model: qwen3.8-flash-next-iq3_xxs
     provider: strata
@@ -51,10 +43,6 @@ model_aliases:
 # provider/model/base_url/key_env per entry): every free fallback, then the
 # credential-less local tier, then the paid pin. The primary is model.default above.
 fallback_providers:
-  - provider: nous
-    model: tencent/hy4-flash:free
-  - provider: nous
-    model: qwen/qwen4-max:free
   - provider: nous
     model: upstage/solar-mini4:free
   - provider: nous
