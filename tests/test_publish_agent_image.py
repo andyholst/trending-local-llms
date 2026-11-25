@@ -41,7 +41,24 @@ MAKEFILE = ROOT / "Makefile"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_ensure_image import _run  # the real-script + fake-docker harness  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "scripts"))
+# The ONE platform verdict (issue #958/#1143, rule 6d): the publisher must derive
+# its Buildx --platform from this constant, never spell a second list (issue #1724).
+from image_manifest_check import REQUIRED_PLATFORMS  # noqa: E402
+
 from wiring import wired  # noqa: E402  (issues #176/#192)
+
+_EXPECTED_PLATFORMS = ",".join(f"{os_name}/{arch}" for os_name, arch in REQUIRED_PLATFORMS)
+
+
+def _build_call(calls):
+    """The single multi-arch Buildx build, if the publisher made one."""
+    return [c for c in calls if c[:2] == ["buildx", "build"]]
+
+
+def _platform_of(call):
+    """The --platform value on a build call, read defensively (no IndexError on RED)."""
+    return call[call.index("--platform") + 1] if "--platform" in call else None
 
 _PASS = 0
 _FAIL = 0
@@ -104,21 +121,51 @@ def test_publish_builds_and_pushes_both_refs_when_absent():
     # When  publish runs
     rc, calls, out = _run(["publish"], available=[])
 
-    # Then  it builds once, tags both refs and pushes both
-    builds = [c for c in calls if c[:1] == ["build"]]
-    pushes = [c for c in calls if c[:1] == ["push"]]
+    # Then  ONE Buildx build declares both refs and pushes them in the same step
+    builds = _build_call(calls)
     rc_tags, _, out_tags = _run(["tags"])
     base = dict(l.split("=", 1) for l in out_tags.splitlines() if "=" in l)["BASE_TAG"]
 
     check("publish: exit 0", rc == 0, out)
-    check("publish: exactly one build", len(builds) == 1, calls)
+    check("publish: exactly one buildx build", len(builds) == 1, calls)
     check("publish: the build carries the hash tag",
-          builds and base in builds[0], builds)
-    check("publish: it pushes the hash tag",
-          any(base in " ".join(c) for c in pushes), pushes)
-    check("publish: it pushes the consumer :latest ref too",
-          any(c[-1].endswith(":latest") for c in pushes), pushes)
+          bool(builds) and base in builds[0], builds)
+    check("publish: the build carries the consumer :latest ref too",
+          bool(builds) and any(c.endswith(":latest") for c in builds[0]), builds)
+    check("publish: the build pushes both refs in one step",
+          bool(builds) and "--push" in builds[0], builds)
     check("publish: it says what it pushed", "pushed" in out, out)
+
+
+def test_publish_declares_both_platforms_from_the_one_contract():
+    """Slice 1 (#1724): one multi-arch build declares the ONE platform set."""
+
+    # Given this revision's hash tag is NOT on the registry
+    # When  `publish` runs
+    rc, calls, out = _run(["publish"], available=[])
+
+    # Then  its Buildx build declares exactly REQUIRED_PLATFORMS' string, both
+    #       refs are published by that build, and _serves() still re-probes them
+    builds = _build_call(calls)
+    rc_tags, _, out_tags = _run(["tags"])
+    base = dict(l.split("=", 1) for l in out_tags.splitlines() if "=" in l)["BASE_TAG"]
+    checks = [c for c in calls if c[:2] == ["manifest", "inspect"]]
+
+    check("publish(platforms): exit 0", rc == 0, out)
+    check("publish(platforms): exactly one buildx build", len(builds) == 1, calls)
+    check("publish(platforms): --platform is the ONE contract's value",
+          bool(builds) and _platform_of(builds[0]) == _EXPECTED_PLATFORMS,
+          f"{[_platform_of(c) for c in builds]!r} / {_EXPECTED_PLATFORMS!r}")
+    check("publish(platforms): both platforms are declared",
+          _EXPECTED_PLATFORMS == "linux/amd64,linux/arm64", _EXPECTED_PLATFORMS)
+    check("publish(platforms): the hash tag is still declared",
+          bool(builds) and base in builds[0], builds)
+    check("publish(platforms): :latest is still declared",
+          bool(builds) and any(c.endswith(":latest") for c in builds[0]), builds)
+    check("publish(platforms): the build pushes in the same step",
+          bool(builds) and "--push" in builds[0], builds)
+    check("publish(platforms): _serves() re-probed the consumer ref",
+          any(c[-1].endswith(":latest") for c in checks), checks)
 
 
 def test_force_rebuilds_the_same_inputs_on_demand():
@@ -131,10 +178,34 @@ def test_force_rebuilds_the_same_inputs_on_demand():
     # When  publish --force runs
     rc, calls, out = _run(["publish", "--force"], available=[base])
 
-    # Then  it builds and pushes anyway
+    # Then  it builds, pushes and declares BOTH platforms anyway
+    builds = _build_call(calls)
     check("publish --force: exit 0", rc == 0, out)
-    check("publish --force: it built", any(c[:1] == ["build"] for c in calls), calls)
-    check("publish --force: it pushed", any(c[:1] == ["push"] for c in calls), calls)
+    check("publish --force: it built", len(builds) == 1, calls)
+    check("publish --force: the build pushes both refs",
+          bool(builds) and "--push" in builds[0], builds)
+    check("publish --force: the rebuild declares the ONE platform set",
+          bool(builds) and _platform_of(builds[0]) == _EXPECTED_PLATFORMS,
+          f"{[_platform_of(c) for c in builds]!r} / {_EXPECTED_PLATFORMS!r}")
+
+
+def test_the_publisher_derives_platforms_from_the_one_verdict():
+    """Rule 6d: no second platform list and no host-arch selector in the publisher."""
+
+    # Given scripts/ensure_image.py
+    script = (ROOT / "scripts" / "ensure_image.py").read_text()
+
+    # When  its platform source is read
+    # Then  it consumes REQUIRED_PLATFORMS and adds no host-architecture branch
+    check("publisher: it imports REQUIRED_PLATFORMS from the one contract",
+          "from image_manifest_check import REQUIRED_PLATFORMS" in script, "")
+    check("publisher: the platform string is built from REQUIRED_PLATFORMS",
+          re.search(r"join\([^\n]*REQUIRED_PLATFORMS", script) is not None, "")
+    check("publisher: no second host-architecture selector",
+          re.search(r"platform\.machine\(|uname\s+-m|dpkg\s+--print-architecture",
+                    script) is None, "")
+    check("publisher: one Buildx build declares the platforms and pushes",
+          "buildx\", \"build\", \"--platform\", platforms, \"--push\"" in script, "")
 
 
 # --------------------------------------------------------- the push probe -----
@@ -404,7 +475,9 @@ def main() -> int:
     test_ref_prints_the_hash_tag_and_the_consumer_tag()
     test_publish_is_a_noop_when_this_revision_is_already_published()
     test_publish_builds_and_pushes_both_refs_when_absent()
+    test_publish_declares_both_platforms_from_the_one_contract()
     test_force_rebuilds_the_same_inputs_on_demand()
+    test_the_publisher_derives_platforms_from_the_one_verdict()
     test_push_check_proves_the_credential_before_the_build()
     test_the_pipeline_is_dispatch_only()
     test_the_guard_runs_first_and_before_any_secret()

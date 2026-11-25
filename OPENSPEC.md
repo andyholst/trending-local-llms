@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **559**
+Active changes: **1** · archived: **560**
 
 ## Active changes
 
@@ -104,6 +104,7 @@ Active changes: **1** · archived: **559**
 | `agent-image-decision-asks-architectures` | archived | #1143 — "refresh-bot's publisher reuses the legacy amd64-only agent image tag, so `image-manifest-check` reds the build job and the refresh delivers nothing" | #1144 | [agent-image-publish](openspec/changes/archive/agent-image-decision-asks-architectures/specs/agent-image-publish/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-image-decision-asks-architectures/proposal.md) |
 | `agent-image-prompt-smoke` | archived | #1214 | #1229 | [agent-image-smoke](openspec/changes/archive/agent-image-prompt-smoke/specs/agent-image-smoke/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/agent-image-prompt-smoke/proposal.md) |
 | `agent-image-publish` | archived | #206 | — | [agent-image-publish](openspec/changes/archive/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-image-publish/proposal.md) |
+| `agent-image-publisher-declares-both-platforms` | archived | #1724 — the privileged publisher declares both platforms on the SAME hash tag (slice 1 of the arm64 image fix) | #1726 | [agent-image-publish](openspec/changes/archive/agent-image-publisher-declares-both-platforms/specs/agent-image-publish/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-image-publisher-declares-both-platforms/proposal.md) |
 | `agent-install-seam` | archived | #207 | — | [agent-image](openspec/changes/archive/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/agent-install-seam/proposal.md) |
 | `agent-lanes-generated-architecture` | archived | #935 | #1105 | [architecture-inventory](openspec/changes/archive/agent-lanes-generated-architecture/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-lanes-generated-architecture/proposal.md) |
 | `agent-leg-runs-in-test-image` | archived | #833 | #1057 | [agent-leg-runs-in-test-image](openspec/changes/archive/agent-leg-runs-in-test-image/specs/agent-leg-runs-in-test-image/spec.md) | 14/15 · 1 blocked | [proposal.md](openspec/changes/archive/agent-leg-runs-in-test-image/proposal.md) |

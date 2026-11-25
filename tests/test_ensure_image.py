@@ -43,6 +43,26 @@ case "$1" in
       [ "$prev" = "-t" ] && echo "$arg" >> "$FAKE_DOCKER_TAGS"
       prev="$arg"
     done ;;
+  buildx)
+    # Issue #1724: the privileged multi-arch publisher calls
+    # `docker buildx build --platform … --push -t …`. Record the declared refs
+    # AND make them READABLE (buildx --push publishes them directly; there is no
+    # separate `docker push` for a multi-platform OCI index), so the publisher's
+    # post-build `_serves()` re-probe sees what the registry now serves. Plain
+    # `build` calls keep the behaviour above, unchanged.
+    if [ "$2" = "build" ]; then
+      prev=""
+      for arg in "$@"; do
+        if [ "$prev" = "-t" ]; then
+          echo "$arg" >> "$FAKE_DOCKER_TAGS"
+          # A buildx --push makes the ref READABLE — unless the test asks for a
+          # registry that accepts the write and never serves it (issue #228),
+          # exactly as the plain `push` case below does.
+          [ -z "$FAKE_DOCKER_PUSH_INVISIBLE" ] && echo "$arg" >> "$FAKE_DOCKER_AVAILABLE"
+        fi
+        prev="$arg"
+      done
+    fi ;;
   tag) echo "$3" >> "$FAKE_DOCKER_TAGS" ;;
   manifest|image)
     case "$2" in
@@ -110,6 +130,16 @@ def check(name, cond, detail=""):
     else:
         _FAIL += 1
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
+
+
+def _platform_declaring_builds(calls):
+    """The privileged multi-arch build: the build that declares --platform.
+
+    `publish` builds with `docker buildx build --platform … --push` (issue #1724).
+    A plain `build` call is a different, unchanged code path and must not be
+    mistaken for the platform-declaring build this seam asserts on.
+    """
+    return [c for c in calls if c[:2] == ["buildx", "build"] and "--platform" in c]
 
 
 def _run(args, available=(), env_extra=None, images=None, arches=None):
@@ -394,20 +424,20 @@ def test_force_reaches_the_script_as_a_value_not_a_bare_flag():
 
         # Then  nothing is rebuilt and the script says why
         check(f"publish: FORCE={off!r} does NOT rebuild", rc == 0
-              and not any(c[:1] == ["build"] for c in calls), str(calls))
+              and not _platform_declaring_builds(calls), str(calls))
         check(f"publish: FORCE={off!r} reports nothing to do",
               "already published" in out, out)
 
     # Given the value as a separate argument (the `decide` shape)
     rc, calls, out = _run(["publish", "--force", "0"], available=[tag])
     check("publish: `--force 0` does NOT rebuild",
-          not any(c[:1] == ["build"] for c in calls), str(calls))
+          not _platform_declaring_builds(calls), str(calls))
 
     # Given a BARE --force (what `FORCE=1` used to become, and what a human types)
     for args in (["publish", "--force"], ["publish", "--force=1"], ["publish", "--force", "true"]):
         rc, calls, out = _run(args, available=[tag])
         check(f"publish: {' '.join(args[1:])} is ON",
-              any(c[:1] == ["build"] for c in calls), str(calls))
+              len(_platform_declaring_builds(calls)) == 1, str(calls))
 
     # Given `decide` with a bare --force — it used to die with IndexError
     rc, _, out = _run(["decide", "--force", "--dow", "1"], available=[])
