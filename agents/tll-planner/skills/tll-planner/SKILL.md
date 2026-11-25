@@ -304,6 +304,9 @@ needed to move the board.
   shell batch. Re-read the thread after posting (`gh issue view <n> --comments --json comments`,
   last comment) whenever the record matters — a handover or ruling that was never posted leaves both
   hosts without the decision.
+- **Write the issue body to a draft and run `make issue-message-check BODY_FILE=<draft>` BEFORE `gh issue create` on a body declaring `message-pattern-opt-in` (issue #1730).** A non-zero verdict blocks the filing;
+  repair the draft and re-run, never hand-edit a body after it landed. This is the same gate CI runs on
+  `issues:opened/edited/reopened`, so a bot-filed body can no longer red `pr-closure` on its own shape.
 - **A red naming a MISSING PRODUCT ARTIFACT is implementer work, not a rebase.** When `validate` fails
   because `findings/<issue>.md`, an OpenSpec change, or a test module is absent, the branch lacks output a
   lane was supposed to author — a rebase cannot fabricate it and must hand back. Measure whether the red is

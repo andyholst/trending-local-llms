@@ -348,6 +348,38 @@ cat "$TLL_STUB_PR_JSON"
           (made_bad.returncode, made_bad.stderr[-300:]))
 
 
+FILING_LANE_PROMPTS = (
+    "agents/tll-reviewer/skills/tll-reviewer/SKILL.md",
+    "agents/tll-tester/skills/tll-tester/SKILL.md",
+    "agents/tll-planner/skills/tll-planner/SKILL.md",
+)
+
+
+def test_a_filing_lane_validates_its_draft_issue_body_before_create() -> None:
+    """A bot-filed issue body cannot red the `issues` branch of pr-closure (issue #1730).
+
+    The filing lanes use the ONE validator the CI gate runs -- `make issue-message-check
+    BODY_FILE=` -- before `gh issue create`, so no second parser creeps into a lane prompt.
+    """
+    for rel in FILING_LANE_PROMPTS:
+        src = (ROOT / rel).read_text()
+        pre = src.find("make issue-message-check BODY_FILE=")
+        create = src.find("gh issue create")
+        check(f"{rel}: names the issue-body preflight", pre >= 0,
+              "no BODY_FILE seam in the filing prompt")
+        check(f"{rel}: preflight precedes gh issue create",
+              pre >= 0 and create >= 0
+              and src.find("issue-message-check") < create,
+              "the create instruction appears before the validator")
+
+    makefile = (ROOT / "Makefile").read_text()
+    recipe = makefile.split("issue-message-check:", 1)[-1].split("\n\n", 1)[0]
+    check("issue-message-check forwards BODY_FILE to --check-issue-file",
+          '--check-issue-file "$(BODY_FILE)"' in recipe, recipe[:300])
+    check("pr_body.py owns the --check-issue-file seam",
+          '"--check-issue-file"' in (ROOT / "scripts" / "pr_body.py").read_text())
+
+
 def main() -> int:
     print("pr-message pattern (issue #771)")
     test_the_composed_body_follows_the_message_pattern()
@@ -358,6 +390,7 @@ def main() -> int:
     test_the_commit_gate_discriminates_an_archive_squash()
     test_the_commit_claim_parser_lives_in_pr_closure()
     test_declared_issue_is_validated_and_legacy_passes()
+    test_a_filing_lane_validates_its_draft_issue_body_before_create()
     test_a_non_implementation_pr_is_not_forced_to_carry_the_sections()
     test_the_squash_title_is_a_conventional_commit()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

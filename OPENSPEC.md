@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **560**
+Active changes: **1** · archived: **561**
 
 ## Active changes
 
@@ -82,6 +82,7 @@ Active changes: **1** · archived: **560**
 | `2026-11-25-fleet-handover-live-pr-preflight` | archived | #1716 | #1720 | [tll-fleet-handover](openspec/changes/archive/2026-11-25-fleet-handover-live-pr-preflight/specs/tll-fleet-handover/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-25-fleet-handover-live-pr-preflight/proposal.md) |
 | `2026-11-25-gateway-error-outage-class` | archived | #1699 | #1705 | [gateway-error-outage-classification](openspec/changes/archive/2026-11-25-gateway-error-outage-class/specs/gateway-error-outage-classification/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-gateway-error-outage-class/proposal.md) |
 | `2026-11-25-gateway-status-shape-1714` | archived | #1714 | #1717 | [fetch-outage-verdict](openspec/changes/archive/2026-11-25-gateway-status-shape-1714/specs/fetch-outage-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-gateway-status-shape-1714/proposal.md) |
+| `2026-11-25-issue-body-prefile-check-1730` | archived | #1730 | #1740 | [issue-filing](openspec/changes/archive/2026-11-25-issue-body-prefile-check-1730/specs/issue-filing/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-25-issue-body-prefile-check-1730/proposal.md) |
 | `2026-11-25-live-pr-body-preflight-1710` | archived | #1710 | #1715 | [pr-message-preflight](openspec/changes/archive/2026-11-25-live-pr-body-preflight-1710/specs/pr-message-preflight/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-25-live-pr-body-preflight-1710/proposal.md) |
 | `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
