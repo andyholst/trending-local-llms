@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -279,6 +280,34 @@ def _commit_issue(text: str) -> int | None:
     return pr_closure.implemented_issue_from_message(text)
 
 
+def _live_pr_artifacts(pr_number: str) -> tuple[str, str]:
+    """(body, head branch) of a LIVE PR, read through `gh pr view` (issue #1710).
+
+    This is the pre-push / verdict preflight seam: a lane that is about to claim or hand
+    over a branch reads the body GitHub will ACTUALLY parse, so a body its own check
+    refuses can never be handed on as ready. One `gh` call with recorded fields only
+    (`body`, `headRefName`, both in scripts/gh_json_fields.py's contract), and the text
+    goes through the SAME `_problems_for` parser as the webhook gate — no second view.
+    A failed or unreadable gh read RAISES: a preflight that cannot read the artifact is
+    loud, never a silent clean.
+    """
+    proc = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "body,headRefName"],
+        capture_output=True, text=True, check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(f"[pr-message-check] cannot read PR #{pr_number}: {detail}")
+    try:
+        data = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"[pr-message-check] unreadable gh answer for PR #{pr_number}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError(f"[pr-message-check] unexpected gh answer shape for PR #{pr_number}")
+    return str(data.get("body") or ""), str(data.get("headRefName") or "")
+
+
 def _read_issue_event(path: str) -> tuple[str, int | None]:
     """(issue body, issue number) from an `issues` webhook payload ($GITHUB_EVENT_PATH)."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -311,16 +340,16 @@ def _check_message(args) -> int:
     body, or a commit message against the message pattern (+ closure for PR/commit). When
     a webhook `--event` / `--issue-event` is passed, the artifact is read from the payload
     exactly as `pr-closure` does, so the gate reads the artifact on screen now (#290)."""
-    if args.check_body_file or args.check_event:
+    if args.check_body_file or args.check_event or args.check_live_pr:
         artifact, label = "pr", "pr-message-check"
     elif args.check_issue_file or (hasattr(args, "issue_event") and args.issue_event):
         artifact, label = "issue", "issue-message-check"
     elif args.check_commit_file:
         artifact, label = "commit", "commit-message-check"
     else:
-        print("Usage: pr_body.py --check-body-file <f> [--branch <b>] | --event <payload> "
-              "| --check-issue-file <f> | --issue-event <payload> | --check-commit-file <f> "
-              "[--issue <n>]", file=sys.stderr)
+        print("Usage: pr_body.py --check-body-file <f> [--branch <b>] | --check-live-pr <n> "
+              "| --event <payload> | --check-issue-file <f> | --issue-event <payload> "
+              "| --check-commit-file <f> [--issue <n>]", file=sys.stderr)
         return 2
 
     text = branch = issue = None
@@ -332,6 +361,10 @@ def _check_message(args) -> int:
                 print(f"[{label}] no pull_request body in this event — nothing to check.",
                       file=sys.stderr)
                 return 0
+        elif args.check_live_pr:
+            gh_body, gh_branch = _live_pr_artifacts(args.check_live_pr)
+            text = gh_body
+            branch = args.branch or gh_branch
         elif args.check_body_file:
             text = Path(args.check_body_file).read_text(encoding="utf-8")
             branch = args.branch
@@ -381,6 +414,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="print the PR TITLE for --kind instead of the body (issue #541)")
     ap.add_argument("--check-body-file", dest="check_body_file",
                     help="validate a PR body FILE against the message pattern + closure")
+    ap.add_argument("--check-live-pr", dest="check_live_pr", metavar="N",
+                    help="validate the LIVE body/head branch of PR #N before claiming or "
+                         "handing it over (pre-push preflight, issue #1710)")
     ap.add_argument("--check-issue-file", dest="check_issue_file",
                     help="validate an ISSUE body FILE against the message pattern (five sections)")
     ap.add_argument("--check-commit-file", dest="check_commit_file",
@@ -403,8 +439,12 @@ def main(argv: list[str] | None = None) -> int:
     # commit message instead of composing. Reached only through the `make *-message-check`
     # targets (rules 6d/6m).
     if (args.check_body_file or args.check_event or args.check_issue_file
-            or args.issue_event or args.check_commit_file):
-        return _check_message(args)
+            or args.issue_event or args.check_commit_file or args.check_live_pr):
+        try:
+            return _check_message(args)
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
 
     # The two NON-implementation bodies (issue #542) — they close no issue, so they never
     # reach the `render()` path that binds a closing keyword.

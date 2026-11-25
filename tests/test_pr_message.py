@@ -13,6 +13,7 @@ Run:  python3 tests/test_pr_message.py   or   make test
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -277,11 +278,82 @@ def test_the_squash_title_is_a_conventional_commit() -> None:
         check(f"title: '{kind}' matches the conventional shape", bool(pattern.match(title)), title)
 
 
+def test_the_live_pr_preflight_refuses_a_body_the_check_rejects() -> None:
+    """Issue #1710: a lane can refuse to claim/hand over a branch whose LIVE PR body fails
+    the same gate CI will apply. The only stand-in is the external `gh` CLI (rule 6m)."""
+    import os
+
+    stub = """#!/bin/sh
+printf '%s\\n' "$@" > "$TLL_STUB_ARGV"
+if [ "$TLL_STUB_GH_RC" = "1" ]; then
+  echo 'not found' >&2
+  exit 1
+fi
+cat "$TLL_STUB_PR_JSON"
+"""
+
+    def run(body: str, branch: str, *, gh_fails: bool = False,
+            via_make: bool = False) -> tuple[subprocess.CompletedProcess, str, str]:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            payload = root / "pr.json"
+            payload.write_text(json.dumps({"body": body, "headRefName": branch}))
+            argv_log = root / "argv.txt"
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            gh = bin_dir / "gh"
+            gh.write_text(stub)
+            gh.chmod(0o755)
+            env = dict(os.environ)
+            env["PATH"] = str(bin_dir) + os.pathsep + env.get("PATH", "")
+            env["TLL_STUB_PR_JSON"] = str(payload)
+            env["TLL_STUB_ARGV"] = str(argv_log)
+            env["TLL_STUB_GH_RC"] = "1" if gh_fails else "0"
+            env["PYTHONDONTWRITEBYTECODE"] = "1"
+            cmd = (["make", "pr-message-check", "PR=4242"] if via_make else
+                   [sys.executable, str(SCRIPT), "--check-live-pr", "4242"])
+            proc = subprocess.run(cmd, cwd=ROOT if via_make else None, env=env,
+                                  capture_output=True, text=True)
+            return proc, argv_log.read_text() if argv_log.exists() else "", str(root)
+
+    # Given  a conforming live body on a branch that encodes its issue
+    ok, argv, _ = run(conforming_body(), BRANCH)
+    check("live-PR preflight: a conforming body passes",
+          ok.returncode == 0 and "OK" in ok.stdout, (ok.returncode, ok.stderr[-200:]))
+    check("live-PR preflight: one recorded gh field set, no invented call",
+          "pr\nview\n4242\n--json\nbody,headRefName\n" in argv, argv)
+
+    # Then   a body CI refuses is refused HERE, naming the missing section
+    bad, _, _ = run(conforming_body().replace("\n## What\n", "\n## WhatFiller\n", 1), BRANCH)
+    check("live-PR preflight: a body missing a section is refused",
+          bad.returncode == 1 and "REFUSED" in bad.stderr and "## What" in bad.stderr,
+          (bad.returncode, bad.stderr[-300:]))
+
+    # And    an unreadable PR is loud (exit 2), never a silent clean
+    unreadable, _, _ = run(conforming_body(), BRANCH, gh_fails=True)
+    check("live-PR preflight: a failed gh read is loud",
+          unreadable.returncode == 2 and "cannot read PR #4242" in unreadable.stderr,
+          (unreadable.returncode, unreadable.stderr[-200:]))
+
+    # And    the same seam is reachable from the lane's Makefile, not only the script
+    made_ok, made_argv, _ = run(conforming_body(), BRANCH, via_make=True)
+    check("live-PR preflight: make pr-message-check PR=<n> passes a good body",
+          made_ok.returncode == 0, (made_ok.returncode, made_ok.stderr[-200:]))
+    check("live-PR preflight: the Makefile reads the live PR, not a stale file",
+          "pr\nview\n4242\n--json\nbody,headRefName\n" in made_argv, made_argv)
+    made_bad, _, _ = run(conforming_body().replace("\n## Benefits\n", "\n## BenefitsX\n", 1),
+                         BRANCH, via_make=True)
+    check("live-PR preflight: make pr-message-check PR=<n> refuses a bad body",
+          made_bad.returncode != 0 and "REFUSED" in made_bad.stderr,
+          (made_bad.returncode, made_bad.stderr[-300:]))
+
+
 def main() -> int:
     print("pr-message pattern (issue #771)")
     test_the_composed_body_follows_the_message_pattern()
     test_a_body_that_skips_a_section_is_refused()
     test_the_pr_message_cli_refuses_a_non_conforming_body_by_name()
+    test_the_live_pr_preflight_refuses_a_body_the_check_rejects()
     test_commit_cli_refuses_a_non_conforming_message()
     test_the_commit_gate_discriminates_an_archive_squash()
     test_the_commit_claim_parser_lives_in_pr_closure()
