@@ -1,6 +1,7 @@
 # Proposal: free-model-refresh-fixtures-1744
 
 Issue: #1744
+PR: #1749
 
 ## Why
 
