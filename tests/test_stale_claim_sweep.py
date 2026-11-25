@@ -477,6 +477,11 @@ def test_the_offline_contract_needs_no_network() -> None:
     check("--check exits 0", S.main(["--check"]) == 0, "")
     out = _stdout_of(["--check"])
     check("--check writes no verdict line", not any(line.startswith("S:") for line in out.splitlines()), out)
+    check("--check keeps the doubled run-bearing pair in the summary",
+          f"(x{S.LIVE_RUN_MULTIPLIER} when the claim carries a run id" in out, out)
+    check("--check states the #1265 §3B still-LIVE exemption beside the doubled pair",
+          f"(x{S.LIVE_RUN_MULTIPLIER} when the claim carries a run id, "
+          f"unless its evidence is still LIVE, #1265 §3B)" in out, out)
     check("a disordered grace pair is refused", S.main(["--check", "--stale-after", "200",
                                                        "--release-after", "100"]) == 2, "")
     check("a zero grace is refused", S.main(["--check", "--stale-after", "0"]) == 2, "")
