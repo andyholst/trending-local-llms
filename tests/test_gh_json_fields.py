@@ -22,9 +22,11 @@ Plain-script harness (the test image runs these as scripts, not pytest — the s
 command CI runs must be the command you can run locally, rule 6m).
 """
 import ast
+import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -485,6 +487,140 @@ def test_a_planted_json_projection_path_is_refused():
           "")
 
 
+def _base_revision_module():
+    """Import `git show origin/master:scripts/gh_json_fields.py` as a throwaway module.
+
+    RED-first seam for #1675: the base revision predates the boundary, so it carries neither
+    constant and still makes the unqualified claim. It must IMPORT cleanly — no attribute that
+    only exists after the fix is touched here — so the guard FAILs as an assertion on the base,
+    never crashes mid-module and hides the later genuine failures. `safe.directory` is pinned
+    because `make test` runs this inside a container as root over host-owned files: without it
+    git exits 128 with "detected dubious ownership" and the check would red for the environment,
+    not the claim (the same override `scripts/lint_syntax.py` and `tests/test_fleet_lifecycle.py`
+    carry).
+    """
+    proc = subprocess.run(
+        ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT),
+         "show", "origin/master:scripts/gh_json_fields.py"],
+        capture_output=True, text=True)
+    check("the base revision of scripts/gh_json_fields.py is readable through git",
+          proc.returncode == 0 and bool(proc.stdout.strip()),
+          f"rc={proc.returncode} {proc.stderr[:120]}")
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    handle = tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8")
+    try:
+        handle.write(proc.stdout)
+        handle.close()
+        spec = importlib.util.spec_from_file_location("gh_json_fields_base", handle.name)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        os.unlink(handle.name)
+
+
+def _base_has_the_boundary(module) -> bool:
+    """True when a revision already declares the #1675 Python-side `.get()` boundary."""
+    return getattr(module, "UNVALIDATED_PYTHON_API_READ_SITES", None) is not None
+
+
+def test_the_scope_claim_matches_the_tree():
+    """Issue #1675: the contract claims ONLY `--jq` projections; Python-side `.get()` picks are OUT OF SCOPE.
+
+    RED-first across this PR's OWN merge: `_base_revision_module()` reads `origin/master`. While
+    #1700 is open that revision predates the boundary, so the two BASE checks go RED — the guard
+    proves it fails on the old, unqualified claim. Once #1700 squashes into master,
+    `origin/master` IS the fixed module, so the arm asserts the boundary IS present instead of
+    skipping: an unconditional "the base lacks the constants" assertion would go red forever on
+    the next push run (reviewer blocker 2, reproduced `101 passed, 2 failed`). This is the shape
+    `tests/test_auto_merge_rebase.py:912-920` uses for its own moving-ref seam. NON-VACUOUS: a
+    scratch tree whose only `gh api` call picks its fields in PYTHON scans GREEN — the scan really
+    is SILENT on Python picks, so the narrowed claim is TRUE rather than merely reworded — and the
+    shipped discovery totals stay pinned, proving the change altered no verdict.
+    """
+    base = _base_revision_module()
+    if base is None:
+        return
+    if _base_has_the_boundary(base):
+        check("origin/master already carries the #1675 boundary constant (post-merge arm)",
+              getattr(base, "UNVALIDATED_PYTHON_API_READ_SITES", None) == 18,
+              getattr(base, "UNVALIDATED_PYTHON_API_READ_SITES", None))
+        base_doc = base.__doc__ or ""
+        check("origin/master's claim is qualified to `--jq` call sites (post-merge arm)",
+              "so a `--jq` call site can never sit outside the contract silently" in base_doc, "")
+    else:
+        check("BASE revision carries no UNVALIDATED_PYTHON_API_READ_SITES constant (RED-first)",
+              getattr(base, "UNVALIDATED_PYTHON_API_READ_SITES", None) is None,
+              getattr(base, "UNVALIDATED_PYTHON_API_READ_SITES", None))
+        base_doc = base.__doc__ or ""
+        check("BASE revision still makes the UNQUALIFIED claim (no `--jq` qualifier)",
+              "can never sit outside the contract silently" in base_doc
+              and "so a `--jq` call site" not in base_doc, "")
+
+    check("the shipped module declares the Python-side `.get()` surface OUT OF SCOPE",
+          getattr(contract, "PYTHON_GET_FIELDS_OUT_OF_SCOPE", None) is True, "")
+    check("the uncovered-site count is pinned at 18 of 32 read sites",
+          getattr(contract, "UNVALIDATED_PYTHON_API_READ_SITES", None) == 18,
+          getattr(contract, "UNVALIDATED_PYTHON_API_READ_SITES", None))
+    doc = contract.__doc__ or ""
+    check("the module docstring narrows the claim to `--jq` call sites",
+          "so a `--jq` call site can never sit outside the contract silently" in doc, "")
+    check("the module docstring states the BOUNDARY marker and the projection-only scope",
+          "BOUNDARY (issue #1675): this contract validates ONLY `--jq`/`-q` projections" in doc,
+          "")
+    check("the module docstring carries the 32 / 18 / 2 counts",
+          "32 `gh api` read sites" in doc and "18 of them naming a REST field" in doc
+          and "2 name no field" in doc, "")
+    api_doc = contract.api_jq_requests.__doc__ or ""
+    check("`api_jq_requests` names the projection-only exemption and cites #1675",
+          "NO `--jq`/`-q` expression" in api_doc and "out of scope" in api_doc
+          and "#1675" in api_doc, "")
+
+    pick = Path(tempfile.mkdtemp())
+    try:
+        (pick / "scripts").mkdir()
+        (pick / "scripts" / "reader.py").write_text(
+            "import json, subprocess\n"
+            "out = subprocess.run([\"gh\", \"api\", \"repos/o/r/issues/1/comments\"],\n"
+            "                     capture_output=True, text=True).stdout\n"
+            "comment = json.loads(out)\n"
+            "print(comment.get(\"created_at\"))\n")
+        problems = contract.scan_scripts(pick)
+        check("NON-VACUOUS: a `gh api` read that picks fields in PYTHON scans GREEN "
+              "(the scan is silent on Python picks, so the narrowed claim is TRUE)",
+              problems == [], problems[:6])
+    finally:
+        shutil.rmtree(pick, ignore_errors=True)
+
+    problems = contract.scan_scripts(ROOT)
+    check("the shipped tree scans GREEN (0 findings) — no scan behaviour change",
+          problems == [], problems[:6])
+
+    projected, without = [], []
+    expressions = []
+    for path in sorted((ROOT / "scripts").glob("*.py")):
+        tree = ast.parse(path.read_text())
+        consts = contract._string_bindings(tree)
+        expressions.extend(expr for _, _, expr in contract.api_jq_requests(tree, consts))
+        for node, tokens in contract._api_token_lists(tree):
+            if "--json" in tokens or "api" not in tokens:
+                continue
+            key = (path.name, getattr(node, "lineno", 0))
+            bucket = projected if any(t in ("--jq", "-q") for t in tokens) else without
+            if key not in bucket:
+                bucket.append(key)
+    check("discovery totals are unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
+          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+          f"{len(projected) + len(without)} total / {len(projected)} projecting / "
+          f"{len(without)} not")
+    identity = sum(1 for e in expressions if (e or "").strip() == ".[]")
+    check("identity `.[]` projections: 5 (their Python side still picks fields)",
+          identity == 5, identity)
+
+
 def test_the_scan_reads_the_real_tree_and_sees_the_api_calls():
     """Green here AND non-vacuous: the scan really discovers the repository's `--jq` reads.
 
@@ -556,6 +692,7 @@ def main() -> int:
     test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding()
     test_the_json_projection_and_fieldless_api_calls_are_exempt()
     test_a_planted_json_projection_path_is_refused()
+    test_the_scope_claim_matches_the_tree()
     test_the_scan_reads_the_real_tree_and_sees_the_api_calls()
     test_the_scan_is_wired_where_ci_runs_it()
     print(f"\n{PASSED} passed, {FAILED} failed")
