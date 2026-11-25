@@ -47,7 +47,19 @@ Every set below is transcribed from the real CLI's own `Available fields:` answe
 subcommand (recorded 2026-11-20), and every `API_SHAPES` entry from a live `gh api` read
 (recorded 2026-11-24); none is invented. A command or endpoint family with no recorded set
 gets NO opinion at request-BUILD time — but the TREE SCAN treats an unrecorded one as a
-finding, so a call site can never sit outside the contract silently.
+finding, so a `--jq` call site can never sit outside the contract silently.
+
+BOUNDARY (issue #1675): this contract validates ONLY `--jq`/`-q` projections. A `gh api`
+read that picks its fields in PYTHON — `payload.get("created_at")`,
+`(c.get("user") or {}).get("login")`, `row["ref"]` — is OUT OF SCOPE and unchecked: `.get()`
+answers `None` for a renamed field, so such a read fails only at RUN time. Measured on
+origin/master `e93bc67d`: 32 `gh api` read sites in scripts/, 18 of them naming a REST field
+in Python — 13 carrying no projection (one of them, refresh_run_block.py:105, is invisible to
+the token-list scan because its prefix is the tuple constant `GH_API = ("gh", "api")`) plus 5
+identity `--jq .[]` sites whose Python side still picks fields; 2 name no field
+(pipeline_failure_issue.py:822 `/actions/jobs/{}/logs` is a log blob, queued_run_alarm.py:132
+`-X POST -f` writes). Re-derive: `grep -rn '"api"' scripts/ | grep -v gh_json_fields.py` plus
+the `GH_API` splat form.
 
 Exit codes: 0 = no problem, 1 = a field or path gh cannot answer (or an unreadable
 expression), 2 = the scan itself could not read the tree (never a silent clean).
@@ -61,6 +73,11 @@ import shlex
 import sys
 from pathlib import Path
 from typing import NamedTuple
+
+#: Issue #1675: the Python-side REST read surface is OUT OF SCOPE for this contract.
+#: Pinned on origin/master e93bc67d: 32 `gh api` read sites, 18 naming a field in Python.
+PYTHON_GET_FIELDS_OUT_OF_SCOPE = True
+UNVALIDATED_PYTHON_API_READ_SITES = 18
 
 # --------------------------------------------------------------------------- recorded sets
 # `gh run list` — `url` is gh's field for a run's HTML link; `htmlUrl` has NEVER existed.
@@ -616,7 +633,9 @@ def api_jq_requests(tree: ast.Module, constants: dict[str, str]):
 
     Two documented exemptions (issue #1668): a call carrying `--json` (that half already
     validates every field the command answers, and the projection re-reads it), and a call with
-    NO field expression (`--slurp`, `-f`, `-X POST`) — it names no field to refuse.
+    NO `--jq`/`-q` expression. That exempts the ABSENCE OF A PROJECTION only: a
+    no-projection read may still pick its fields in Python, and those picks are out of scope
+    (issue #1675) — `--slurp`, `-f` and `-X POST` are not evidence that a call "names no field".
     """
     found = []
     for node, tokens in _api_token_lists(tree):
@@ -635,7 +654,7 @@ def api_jq_requests(tree: ast.Module, constants: dict[str, str]):
             expression = None
             jq_at = next((j for j in range(i + 1, len(tokens)) if tokens[j] in ("--jq", "-q")), None)
             if jq_at is None:
-                continue                 # no field expression: exempt (names no field)
+                continue                 # no --jq/-q projection: exempt (Python-side field picks are out of scope, #1675)
             if jq_at + 1 < len(tokens):
                 expression = _resolve_token(tokens[jq_at + 1], constants)
             found.append((getattr(node, "lineno", 0), endpoint, expression))
