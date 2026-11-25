@@ -211,24 +211,66 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
     text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
     check("the report runs green on the shipped chain", rendered.returncode == 0,
           rendered.stdout + rendered.stderr)
+    # Issues #1744/#1750: every needle is DERIVED from the shipped chain, never frozen.
+    chain = _chain_json(ROOT)
+    local_model = F.local_model(chain)
+    local_provider_needle = f"provider: {F.local_provider(chain)}"
+    local_endpoint_needle = f"base_url: {F.local_endpoint(chain)}"
     fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
     models = re.findall(r"(?m)^    model: (\S+)", fb)
     check("fallback_providers lists every non-primary step in chain order",
-          models == F.fallback_models(_chain_json(ROOT)), str(models))
+          models == F.fallback_models(chain), str(models))
     entries = re.split(r"(?m)^  - ", fb)[1:]
-    local_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" in e]
+    local_entries = [e for e in entries if local_model in e]
     check("the local fallback entry is credential-less (no key_env) and names its own endpoint",
           len(local_entries) == 1 and "key_env" not in local_entries[0]
-          and "base_url: http://127.0.0.1:8080/v1" in local_entries[0]
-          and "provider: strata" in local_entries[0], str(local_entries))
-    remote_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" not in e]
+          and local_endpoint_needle in local_entries[0]
+          and local_provider_needle in local_entries[0], str(local_entries))
+    remote_entries = [e for e in entries if local_model not in e]
     check("every remote fallback entry is a `nous` step with NO key_env (issue #1203)",
           remote_entries and all("key_env" not in e and "provider: nous" in e for e in remote_entries),
           str(remote_entries))
-    alias_block = text.split("  local-strata:", 1)[1].split("\n  nous-deepseek:", 1)[0]
+    alias_block = (text.split(f"  {F.local_alias(chain)}:", 1)[1]
+                   .split(f"\n  {F.paid_alias(chain)}:", 1)[0])
     check("the local alias block carries its own provider/base_url and NO key_env",
-          "provider: strata" in alias_block and "base_url: http://127.0.0.1:8080/v1" in alias_block
+          local_provider_needle in alias_block and local_endpoint_needle in alias_block
           and "key_env" not in alias_block, alias_block)
+
+
+def test_local_tier_fixtures_follow_the_chain_not_a_frozen_snapshot():
+    """Issue #1750: local-tier fixtures must follow the shipped data, not a snapshot.
+
+    A synthetic chain whose local model/alias/provider/endpoint are absent from every
+    old literal REDs the frozen shape and GREENs this one. The shipped derived needles
+    are also proved present in the rendered config, so the guard pins the real seam.
+    """
+    synthetic = {"chain": [
+        {"model": "synthetic-free/one:free", "alias": "free-one", "role": "primary", "context_window": 11111},
+        {"model": "synthetic-free/two:free", "alias": "free-two", "role": "fallback", "context_window": 22222},
+        {"model": "synthetic-local/model-xyz", "alias": "local-synthetic", "role": "local_fallback",
+         "provider": "synthetic-provider", "base_url": "http://127.0.0.1:9999/v1", "context_window": 4096},
+        {"model": "synthetic-paid/model", "alias": "paid-synthetic", "role": "last_resort", "context_window": 8192},
+    ]}
+    check("local model fixture follows a synthetic chain",
+          F.local_model(synthetic) == "synthetic-local/model-xyz")
+    check("local alias fixture follows a synthetic chain",
+          F.local_alias(synthetic) == "local-synthetic")
+    check("local provider fixture follows a synthetic chain",
+          F.local_provider(synthetic) == "synthetic-provider")
+    check("local endpoint fixture follows a synthetic chain",
+          F.local_endpoint(synthetic) == "http://127.0.0.1:9999/v1")
+    check("paid alias fixture follows a synthetic chain",
+          F.paid_alias(synthetic) == "paid-synthetic")
+
+    shipped = _chain_json(ROOT)
+    rendered = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
+    check("the shipped local needles are derived from the chain and present in the rendered config",
+          f"model: {F.local_model(shipped)}" in rendered
+          and f"  {F.local_alias(shipped)}:" in rendered
+          and f"provider: {F.local_provider(shipped)}" in rendered
+          and f"base_url: {F.local_endpoint(shipped)}" in rendered
+          and f"  {F.paid_alias(shipped)}:" in rendered,
+          rendered[:300])
 
 
 def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
@@ -456,6 +498,7 @@ def main() -> int:
     test_the_local_tier_is_guarded_like_every_other_tier()
     test_a_nous_step_carrying_base_url_or_key_env_is_refused()
     test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias()
+    test_local_tier_fixtures_follow_the_chain_not_a_frozen_snapshot()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()
     test_the_last_resort_must_be_the_model_the_makefile_pins()

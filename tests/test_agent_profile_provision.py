@@ -52,6 +52,9 @@ CHAIN = ROOT / "agents" / "model_chain.json"
 # Issues #1744/#1745: the shipped primary is READ, never frozen as a catalogue literal.
 PRIMARY = F.primary_step(F.read_chain(CHAIN))["model"]
 PRIMARY_NEEDLE = f"default: {PRIMARY}"
+# Issue #1750: the local-tier needles are READ from the shipped chain, never frozen.
+LOCAL_MODEL = F.local_model(F.read_chain(CHAIN))
+LOCAL_MODEL_NEEDLE = f"model: {LOCAL_MODEL}"
 
 # The credential the chain names, when it names one. Since issue #1203 the shipped chain runs on
 # the `nous` provider (the Portal session) and names NO key_env; `NOUS_API_KEY` stays as the name
@@ -142,8 +145,8 @@ def test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
               and "qwen3.8-flash-next-q2_0" not in dest.read_text(encoding="utf-8"),
               dest.read_text()[:200])
         check("the local tier survives ONLY as the credential-less local_fallback step (issue #1192)",
-              "model: qwen3.8-flash-next-iq3_xxs" in dest.read_text(encoding="utf-8")
-              and "default: qwen3.8-flash-next-iq3_xxs" not in dest.read_text(encoding="utf-8"),
+              LOCAL_MODEL_NEEDLE in dest.read_text(encoding="utf-8")
+              and f"default: {LOCAL_MODEL}" not in dest.read_text(encoding="utf-8"),
               dest.read_text()[:200])
         backups = sorted(p.name for p in lane_home.iterdir()
                          if p.name.startswith(f"{AMC.CONFIG_REL}{'.bak-'}"))
