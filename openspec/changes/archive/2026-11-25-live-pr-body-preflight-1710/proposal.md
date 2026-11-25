@@ -1,6 +1,7 @@
 # Proposal: live-pr-body-preflight-1710
 
 Issue: #1710
+PR: #1715
 
 ## Why
 
