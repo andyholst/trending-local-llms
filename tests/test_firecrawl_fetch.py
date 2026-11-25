@@ -456,7 +456,53 @@ def test_a_partial_timeout_stays_red():
 def test_timeout_family_recognises_gateway_and_read_timeouts():
     check("read timeout recognised", UT.is_upstream_timeout(RuntimeError("The read operation timed out")))
     check("HTTP 522 recognised", UT.is_upstream_timeout(RuntimeError("target answered HTTP 522")))
+    # issue #1699: the gateway-error family is the same unreachable mirror as a read
+    # timeout, so it must count — one of these among otherwise-timed-out queries used
+    # to flip a real outage to a false `quiet` (run 45526182085).
+    check("HTTP 502 Bad Gateway recognised",
+          UT.is_upstream_timeout(RuntimeError("HTTP Error 502: Bad Gateway")))
+    check("bare 502 recognised", UT.is_upstream_timeout(RuntimeError("502 Server Error for url")))
+    check("HTTP 503 Service Unavailable recognised",
+          UT.is_upstream_timeout(RuntimeError("503 Server Error: Service Unavailable for url")))
+    check("gateway error wording recognised",
+          UT.is_upstream_timeout(RuntimeError("upstream returned a gateway error")))
     check("ordinary error is not a timeout", not UT.is_upstream_timeout(RuntimeError("connection refused")))
+
+
+def test_a_single_gateway_error_among_timeouts_is_an_outage():
+    """THE MEASURED FAILURE (issue #1699): run 45526182085 had 34 read timeouts and ONE
+    `HTTP Error 502: Bad Gateway`. `is_upstream_timeout` missed the 502, so
+    `timeouts=34 != 35`, the total-outage prong never fired, and `live-smoke` reported a
+    QUIET SEARCH on a reachable mirror — red, blocking every open PR's auto-merge. Six
+    minutes later 35/35 plain timeouts under the SAME code printed `[outage]` and stayed
+    green. Identical shape, opposite verdicts."""
+    reasons = ["The read operation timed out"] * 34 + ["HTTP Error 502: Bad Gateway"]
+    # Derive the counter EXACTLY as gather_x does (`failed` for every exception,
+    # `timeouts` only when is_upstream_timeout recognises it) so the guard fails on
+    # the classification rather than on a hand-typed number.
+    stats = {"queries": len(reasons), "with_hits": 0, "outage": 0, "refused": 0,
+             "failed": len(reasons),
+             "timeouts": sum(1 for r in reasons if UT.is_upstream_timeout(RuntimeError(r))),
+             "reasons": reasons}
+    check("the gateway error is counted as a transport failure, like the timeouts",
+          stats["timeouts"] == stats["queries"], stats["timeouts"])
+    kind, code, lines = UT.zero_hit_verdict(stats)
+    check("one gateway error among timeouts is an OUTAGE, not a quiet search",
+          kind == "outage" and code == 0, (kind, code))
+    check("the outage line still names the unreachable mirror",
+          any("UNREACHABLE" in line for line in lines), lines[:1])
+
+    # A half-answering mirror is never excused: one genuinely answered query keeps red.
+    answered = dict(stats, failed=34, timeouts=34, reasons=reasons[:-1])
+    kind, code, lines = UT.zero_hit_verdict(answered)
+    check("one answered query keeps the quiet (blocking) verdict",
+          kind == "quiet" and code == 1, (kind, code))
+
+    # Wiring pin: the counter above is derived the way `gather_x` derives it, so a
+    # guard that only reads this function cannot notice the call being deleted.
+    import inspect
+    check("gather_x consults is_upstream_timeout when an exception escapes",
+          "is_upstream_timeout(e)" in inspect.getsource(UT.gather_x))
 
 
 def test_fetch_timeout_seam_is_wired_to_urlopen():
@@ -487,6 +533,7 @@ def main() -> int:
     test_a_total_transport_timeout_is_a_non_blocking_outage()
     test_a_partial_timeout_stays_red()
     test_timeout_family_recognises_gateway_and_read_timeouts()
+    test_a_single_gateway_error_among_timeouts_is_an_outage()
     test_fetch_timeout_seam_is_wired_to_urlopen()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

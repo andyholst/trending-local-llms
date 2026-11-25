@@ -593,13 +593,23 @@ def extract_models_seen(html: str) -> list[str]:
 
 
 def is_upstream_timeout(exc: BaseException) -> bool:
-    """True for a transport-level timeout / gateway timeout from the mirror.
+    """True for a transport-level timeout / gateway failure from the mirror.
 
     Not an apparently healthy answer and not a credential refusal — the same
     unreachable-mirror class the outage exception covers (issues #291/#1279).
+
+    The gateway family (`502`/`503`, `Bad Gateway`, `Service Unavailable`,
+    `gateway error`) is included because it is the SAME failure seen from the
+    transport instead of from Firecrawl's JSON envelope: measured on run
+    45526182085, 34 read timeouts plus ONE `HTTP Error 502: Bad Gateway` left
+    `timeouts=34 != 35`, the total-outage prong never fired and a dead mirror was
+    reported as a QUIET SEARCH — red on every PR's auto-merge (issue #1699).
     """
     text = str(exc).lower()
-    return any(token in text for token in ("timed out", "timeout", "522", "504", "gateway timeout"))
+    return any(token in text for token in (
+        "timed out", "timeout", "522", "504", "gateway timeout",
+        "502", "503", "bad gateway", "service unavailable", "gateway error",
+    ))
 
 
 def gather_x(store: dict, stats: dict | None = None) -> dict[str, list[str]]:
