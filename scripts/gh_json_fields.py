@@ -67,9 +67,15 @@ SLICE 1 (issue #1683) now closes a RECORDED subset of that boundary: 13 no-proje
 with their read scopes, and `API_PYTHON_FIELDS` records each family's REST answer fields.
 `scan_file` runs `api_python_read_problems(tree)` as one extra pass, so a `.get("created_at")`
 renamed to `.get("createdAt")` or a `r["ref"]` subscript renamed on those sites is a finding
-with file:line at BUILD time. Registration is explicit, not inferred: the 5 identity
-`--jq .[]` sites, the 2 genuine no-field sites and the general `.get()` surface stay OUT OF
-SCOPE for their own later slices.
+with file:line at BUILD time. Registration is explicit, not inferred.
+
+SLICE 2 (issue #1711) registers the 5 identity `--jq .[]` sites whose Python side still
+picks fields — `announce_image_fallback.py`, `issue_thread.py`, `owed_rows_check.py`,
+`pipeline_failure_issue.py`, `sweep_outcome.py` — as 5 more `API_PYTHON_READ_SITES`
+records, adding `user`/`login` to the existing `issues/{}/comments` family. The `blocked`
+partition keeps the whole-object half of `issue_thread.render` / `owed_rows_check.thread`
+out of the identity answer's source set, so neither half false-reds. The 2 genuine
+no-field sites and the general `.get()` surface stay OUT OF SCOPE for their own later slices.
 
 Exit codes: 0 = no problem, 1 = a field or path gh cannot answer (or an unreadable
 expression), 2 = the scan itself could not read the tree (never a silent clean).
@@ -383,7 +389,8 @@ API_PYTHON_FIELDS: dict[object, frozenset[str]] = {
     "branches/{}": frozenset({"required_status_checks", "strict", "contexts",
                               "enforce_admins", "enabled"}),
     "issues/comments": frozenset({"created_at", "user", "login", "id"}),
-    "issues/{}/comments": frozenset({"body", "id", "comment_id", "created_at", "createdAt"}),
+    "issues/{}/comments": frozenset({"body", "id", "comment_id", "created_at", "createdAt",
+                                     "user", "login"}),
     "releases/latest": frozenset({"tag_name"}),
     "git/matching-refs/heads/{}": frozenset({"ref"}),
     "issues/{}": frozenset({"title", "body"}),
@@ -399,10 +406,10 @@ API_PYTHON_FIELDS: dict[object, frozenset[str]] = {
         "html_url", "run_started_at", "jobs", "name", "started_at"}),
 }
 
-#: The 13 no-projection sites that name a REST field in Python (issue #1683, slice 1):
-#: 12 found by `_api_token_lists`, plus the `GH_API = ("gh", "api")` tuple splat in
-#: `refresh_run_block.py:105` that discovery cannot see. The 5 identity `--jq .[]` sites,
-#: the full analyzer and the 2 genuine no-field sites are deliberately LATER slices.
+#: The 18 recorded sites that name a REST field in Python: 13 no-projection sites from
+#: slice 1 (12 found by `_api_token_lists`, plus the `GH_API = ("gh", "api")` tuple splat in
+#: `refresh_run_block.py:105` that discovery cannot see) and the 5 identity `--jq .[]` sites
+#: from slice 2 (issue #1711). The 2 genuine no-field sites and the full analyzer stay later.
 API_PYTHON_READ_SITES: tuple[ApiPythonReadSite, ...] = (
     ApiPythonReadSite("check_branch_protection.py", "main", "branches/{}",
                       ("protection",), (), ("verdict", "main"),
@@ -452,6 +459,27 @@ API_PYTHON_READ_SITES: tuple[ApiPythonReadSite, ...] = (
                       ("meta", "jobs"), ("job",), ("legs_and_aggregate",),
                       frozenset({"html_url", "run_started_at", "jobs", "name",
                                  "started_at"})),
+    # Slice 2 / issue #1711: the 5 identity `--jq .[]` sites. `blocked` keeps the
+    # whole-object half of a shared reader out of this identity answer's source set.
+    ApiPythonReadSite("announce_image_fallback.py", "read_comments", "issues/{}/comments",
+                      ("out", "comments"), ("comment",), ("already_announced",),
+                      frozenset({"body"})),
+    ApiPythonReadSite("issue_thread.py", "main", "issues/{}/comments",
+                      ("raw", "comments"), ("c",), ("render",),
+                      frozenset({"user", "login", "created_at", "body"}),
+                      blocked=frozenset({"issue"})),
+    ApiPythonReadSite("owed_rows_check.py", "read_thread", "issues/{}/comments",
+                      ("raw", "comments"), ("c",), ("thread",),
+                      frozenset({"created_at", "body"}),
+                      blocked=frozenset({"issue", "issue_json"})),
+    ApiPythonReadSite("pipeline_failure_issue.py", "_issue_comments", "issues/{}/comments",
+                      ("raw",), ("c",),
+                      ("post_rediagnose_comment", "post_stamp_comment",
+                       "post_attribution_comment"),
+                      frozenset({"body"})),
+    ApiPythonReadSite("sweep_outcome.py", "_comments", "issues/{}/comments",
+                      ("out", "comments"), ("comment",), ("already_said",),
+                      frozenset({"createdAt", "body"})),
 )
 
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")

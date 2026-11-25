@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **554**
+Active changes: **1** · archived: **555**
 
 ## Active changes
 
@@ -278,6 +278,7 @@ Active changes: **1** · archived: **554**
 | `freshness-alarm-window-follows-cadence` | archived | #1031 | #1034 | [alarms](openspec/changes/archive/freshness-alarm-window-follows-cadence/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/freshness-alarm-window-follows-cadence/proposal.md) |
 | `gap-files-once-per-dimension` | archived | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/archive/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/gap-files-once-per-dimension/proposal.md) |
 | `gap-reader-drops-refused-misattribution` | archived | #1007 | #1117 | [data-gap-analysis](openspec/changes/archive/gap-reader-drops-refused-misattribution/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/gap-reader-drops-refused-misattribution/proposal.md) |
+| `gh-api-identity-jq-read-guard` | archived | #1711 | #1719 | [gh-json-fields](openspec/changes/archive/gh-api-identity-jq-read-guard/specs/gh-json-fields/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/gh-api-identity-jq-read-guard/proposal.md) |
 | `gh-api-jq-field-contract` | archived | #1668 | #1670 | [gh-api-jq-fields](openspec/changes/archive/gh-api-jq-field-contract/specs/gh-api-jq-fields/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/gh-api-jq-field-contract/proposal.md) |
 | `gh-api-python-read-guard` | archived | #1683 | #1712 | [gh-json-fields](openspec/changes/archive/gh-api-python-read-guard/specs/gh-json-fields/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/gh-api-python-read-guard/proposal.md) |
 | `gh-json-field-surface` | archived | #1160 | #1167 | [gh-json-field-surface](openspec/changes/archive/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/gh-json-field-surface/proposal.md) |
