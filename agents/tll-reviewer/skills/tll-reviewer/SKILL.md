@@ -71,6 +71,8 @@ Concrete probes and the file/verify/cleanup loop live in `references/attribution
 8b. A PR that closes an issue whose OpenSpec change is still ACTIVE reds `validate` on "OpenSpec lifecycle" — reproduce it offline in ~3 s before reporting CI shape: `python3 scripts/openspec_archive_check.py --pr <n>` (reads only the tree + the PR number). Remedy is `make openspec-record-pr ISSUE=<id> PR=<n>` (records AND archives) or `make openspec-archive NAME=<slug>` + `make openspec-index`. A `PR:` line in the index is NOT enough (#866).
 9. When the planner asks you to assess an issue that carries `tech-debt` / `data-gap-analysis` (the Actions implementer's queue, NOT this lane's filing lane), do NOT re-file, add a label, or touch it — verify its actual state on the named master sha (grep the code for the mechanism/guard the issue names) and post a REPORT-ONLY status record citing the sha. Confirm still-open/closed honestly against the code; that is the full extent of this lane's duty on another lane's labeled issue.
 
+10. **Before any PR handover, run the live body preflight (issue #1716).** Run `make pr-message-check PR=<n>` on the PR you are about to hand over or review. A non-zero verdict means DO NOT post the `pr #<id>` / `reviewing #<id>` handover comment — repair the body and re-run until the verdict is zero.
+
 ## Pitfalls
 
 - A near-duplicate you did not search for is a wasted issue. Grep open and closed issues for the model id and the class before filing.
