@@ -533,6 +533,11 @@ jobs:
     # only; the merge itself stays the owner PAT's act. A human-owned branch is never pushed to.
     permissions:
       contents: write
+      # (#1677) The closure proof runs in its own step under the DEFAULT token, because it
+      # reads ISSUES (`gh issue view <n> --json state`) and the owner PAT declares no Issues
+      # scope (§6b). It also reads the PR itself, so pull-requests: read rides along.
+      issues: read
+      pull-requests: read
     steps:
       # The job calls `make` (the closure proof below), and `make` needs the Makefile: a
       # `make` call in a job that never checked the repository out dies with
@@ -675,12 +680,32 @@ jobs:
           test -s squash-subject.txt || { echo "PR #$PR_NUM has no title to merge"; exit 1; }
           gh pr merge "$PR_NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA" \
             --subject "$(cat squash-subject.txt)" --body-file squash-body.txt
-          # Then PROVE what the merge closed (issue #288): `make pr-closure` predicts it, this
-          # reads the merged PR's own closing references a moment later. A body whose keyword
-          # did not bind (the measured `Closes #271 and #276`) leaves a red run instead of a
-          # green one over an issue that is still open.
-          make verify-closure PR="$PR_NUM" REPO="$REPO"
           echo "Merged PR #$PR_NUM at $HEAD_SHA (validate + live-smoke green)"
+
+      # (#1677) PROVE what the merge closed (issue #288): `make pr-closure` predicts it, this
+      # reads the merged PR's own closing references a moment later. A body whose keyword did
+      # not bind (the measured `Closes #271 and #276`) leaves a red run instead of a green one
+      # over an issue that is still open.
+      #
+      # It runs in its OWN step under the DEFAULT token, never beside the squash: the squash
+      # step's env is the owner PAT, which declares NO Issues scope (AGENTS.md §6b), while
+      # `scripts/verify_closure.py::open_references` falls through to
+      # `gh issue view <n> --json state` whenever a closing reference omits `state` — which
+      # GitHub's `closingIssuesReferences` always does (measured on PRs #1658 and #1670). Under
+      # the PAT that read answered `HTTP 401: Bad credentials`, so a run whose squash had
+      # ALREADY landed concluded `failure` (runs 45512193546 / 45477830451, head b77307ca)
+      # and tripped the §6r/#1376 alarm logic over a merge that was complete. The default
+      # token answers the same read (the do-not-merge label step above already proves it can
+      # reach the issues API). The squash path itself is byte-identical — same command, same
+      # owner PAT, same `--match-head-commit`.
+      - name: Prove the squash closed what the PR claimed (#1677)
+        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          make verify-closure PR="$PR_NUM" REPO="$REPO"
 
   # The event-driven keeper for a red OpenSpec index gate (issue #304, rule 6q).
   # A merged PR archives its OpenSpec change, so master's tree no longer matches

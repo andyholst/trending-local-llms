@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **538**
+Active changes: **1** · archived: **539**
 
 ## Active changes
 
@@ -135,6 +135,7 @@ Active changes: **1** · archived: **538**
 | `archive-check-gates-the-closing-pr` | archived | #779 (measured: qa-validate runs 43014075519 after PR #777 merged, | #785 | [openspec-archive-lifecycle](openspec/changes/archive/archive-check-gates-the-closing-pr/specs/openspec-archive-lifecycle/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/archive-check-gates-the-closing-pr/proposal.md) |
 | `attribute-pipeline-failure-rows-with-proof` | archived | #1053 | #1138 | [pipeline-failure-attribution](openspec/changes/archive/attribute-pipeline-failure-rows-with-proof/specs/pipeline-failure-attribution/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/attribute-pipeline-failure-rows-with-proof/proposal.md) |
 | `auto-merge-carries-pr-message` | archived | #787 (measured: master run 43050329961, landed squash `d3d4116`, job 130625403397) | #790 | [qa-pipeline](openspec/changes/archive/auto-merge-carries-pr-message/specs/qa-pipeline/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/auto-merge-carries-pr-message/proposal.md) |
+| `auto-merge-closure-proof-token` | archived | #1677 | #1680 | [merge-closure-proof](openspec/changes/archive/auto-merge-closure-proof-token/specs/merge-closure-proof/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/auto-merge-closure-proof-token/proposal.md) |
 | `auto-merge-head-race-1184` | archived | #1184 | #1315 | [auto-merge-head-guard](openspec/changes/archive/auto-merge-head-race-1184/specs/auto-merge-head-guard/spec.md) | 8/10 · 2 blocked | [proposal.md](openspec/changes/archive/auto-merge-head-race-1184/proposal.md) |
 | `auto-merge-index-at-merge-time` | archived | #1049 | #1085 | [auto-merge](openspec/changes/archive/auto-merge-index-at-merge-time/specs/auto-merge/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/auto-merge-index-at-merge-time/proposal.md) |
 | `auto-merge-rebase-architecture-block` | archived | #1601 | #1603 | [merge-queue-rebase](openspec/changes/archive/auto-merge-rebase-architecture-block/specs/merge-queue-rebase/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/auto-merge-rebase-architecture-block/proposal.md) |
