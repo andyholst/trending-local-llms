@@ -1,6 +1,7 @@
 # Proposal: gateway-error-outage-class
 
 Issue: #1699
+PR: #1705
 
 ## Why
 

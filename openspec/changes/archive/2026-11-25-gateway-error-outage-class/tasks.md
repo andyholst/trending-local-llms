@@ -5,4 +5,4 @@
 - [x] Neighbouring modules green with the fix: `test_smoke_search`, `test_query_coverage` (2 modules passed)
 - [x] Update the `ARCHITECTURE.md` §6 row for `scripts/update_trending.py` to name the widened token set, then `make architecture-refresh` — `[architecture-bot] OK the inventory block matches the tree (244 lines)`
 - [x] Write `findings/1699.md` and regenerate `OPENSPEC.md`; `make findings-check ISSUE=1699` green (1 finding)
-- [ ] Push with the agent identity and open a READY PR carrying `Closes #1699`, then record the PR number on the archived change
+- [x] Push with the agent identity and open a READY PR carrying `Closes #1699`, then record the PR number on the archived change — PR #1705 at head `f66143eb`; `PR: #1705` written onto the archived proposal and `OPENSPEC.md` regenerated
