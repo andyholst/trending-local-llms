@@ -535,14 +535,20 @@ def publish(force: bool = False) -> str:
     Publishes BOTH refs the fleet reads: the hash tag (what `ensure` decides on)
     and `:latest` (what every bot job pulls), exactly as refresh-bot's build job
     does, so the two publishers cannot disagree about what is current.
+
+    Both refs are written by ONE multi-arch Buildx build. Its `--platform` comes
+    from `image_manifest_check.REQUIRED_PLATFORMS` — the same single verdict the
+    reuse decision and the registry gate consume (issue #1143, rule 6d) — so this
+    privileged publisher can never overwrite a dual-arch tag with an amd64-only
+    manifest and freeze the refresh at `image-manifest-check` (issue #1724).
     """
     tag = base_tag()
     if published(tag) and not force:
         return (f"publish: {tag} is already published — nothing to do "
                 "(pass --force to rebuild the same inputs)")
-    _run("docker", "build", "-t", IMAGE, "-t", tag, "-t", latest_tag(), ".")
-    _run("docker", "push", tag)
-    _run("docker", "push", latest_tag())
+    platforms = ",".join(f"{os_name}/{arch}" for os_name, arch in REQUIRED_PLATFORMS)
+    _run("docker", "buildx", "build", "--platform", platforms, "--push",
+         "-t", IMAGE, "-t", tag, "-t", latest_tag(), ".")
     # A push's exit code is the CLI's OPINION; `manifest inspect` is the REGISTRY's answer,
     # and that is what every consumer gets — `ensure`, and every bot job that pulls. A push
     # that "succeeded" into a package nothing can read is the failure this catches: a
