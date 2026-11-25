@@ -569,6 +569,35 @@ jobs:
             echo "hold=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # (#1704) Rule 6f says the squash commit message "follows by construction" from the
+      # VALIDATED PR body, but nothing made that validation binding: the `closure` job
+      # (pr-closure.yml) runs `make pr-message-check`, and `closure` is NOT one of master's
+      # required status checks (rule 1 names only `validate` + `live-smoke`). So
+      # qa-validate's auto-merge squashed whatever body the PR carried, a non-conforming
+      # body landed verbatim as a master commit, and the push-to-master `closure` job then
+      # refused it (measured: run 45539207073, push head 8184e59d / PR #1696 —
+      # `[commit-message-check] REFUSED: missing required section(s)`). This step reads the
+      # PR's own body from THIS run's event payload and HOLDS — a clean skip that leaves the
+      # PR open and the run green, exactly like the label hold above — when the message
+      # pattern OR the closing claim refuses it. Holding (never failing) keeps an honest
+      # green run over a PR whose author can still fix the body.
+      - name: Hold a PR whose body fails the message pattern (#1704)
+        id: message-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_EVENT: ${{ github.event_path }}
+        run: |
+          if OUT=$(make pr-message-check PR_EVENT="$PR_EVENT" 2>&1); then
+            echo "PR #$PR_NUM body follows the message pattern — auto-merge allowed."
+            echo "hold=false" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "$OUT"
+            echo "PR #$PR_NUM body FAILS make pr-message-check — holding; will NOT auto-merge (#1704)."
+            echo "hold=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # #1049: auto-merge squashes the PR head as the author last pushed it, but a bot head's
       # generated OPENSPEC.md was rendered against the tree at BRANCH-CUT time — every archive
       # merged into master while the PR waited is absent from it, so the squashed tree lands a
@@ -590,7 +619,7 @@ jobs:
       # (never by disabling errexit), the output is echoed, and only then does the step fail
       # with the seam's own exit code.
       - name: Rebase a behind-and-clean bot branch and regenerate its index before the squash (#1049)
-        if: steps.dnm-check.outputs.hold != 'true'
+        if: steps.dnm-check.outputs.hold != 'true' && steps.message-check.outputs.hold != 'true'
         id: auto-merge-rebase
         env:
           GH_TOKEN: ${{ github.token }}
@@ -631,7 +660,7 @@ jobs:
       # fresh pull_request run the push fired re-validates and merges the new head.
       - name: Refuse a squash whose PR head moved after validation (#1184)
         id: head-check
-        if: steps.dnm-check.outputs.hold != 'true' && steps.auto-merge-rebase.outputs.rebased != 'true'
+        if: steps.dnm-check.outputs.hold != 'true' && steps.message-check.outputs.hold != 'true' && steps.auto-merge-rebase.outputs.rebased != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -654,7 +683,7 @@ jobs:
       # CI on the new head lands the merge.
       # #1184: `moved=true` means the head moved since validation — skip too (above).
       - name: Squash-merge the green PR + delete its branch (owner PAT)
-        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
+        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.message-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
@@ -699,7 +728,7 @@ jobs:
       # reach the issues API). The squash path itself is byte-identical — same command, same
       # owner PAT, same `--match-head-commit`.
       - name: Prove the squash closed what the PR claimed (#1677)
-        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
+        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.message-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
