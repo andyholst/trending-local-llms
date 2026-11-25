@@ -342,7 +342,8 @@ def test_the_prompts_and_the_guard_are_wired():
                          text=True, timeout=60).stdout
     sent = QC.prompt_queries(REAL_STORE)
     check("wiring: the live derivation names a ranked model (the check is never vacuous)",
-          bool(sent), sent[:3])
+          bool(sent) and any(UT.query_names_model(q, m)
+                            for q in sent for m in REAL_STORE["models"]), sent[:3])
     check("wiring: the expanded prompt carries every derived query",
           bool(sent) and all(q in out for q in sent), (len(sent), out[:200]))
     # ... including a FOOTPRINT query per ranked model (the dimension gaps), and a sentence
@@ -392,6 +393,37 @@ def test_the_prompt_derivation_survives_an_aged_out_trending_band():
     check("aged-out: the trending half is empty, so the aged half carried it",
           UT.derived_queries(aged_out) == [] and UT.footprint_queries(aged_out) == [],
           (UT.derived_queries(aged_out), UT.footprint_queries(aged_out)))
+
+
+def test_an_all_nameless_store_yields_no_vacuous_query():
+    """Issue #1688: a store whose ranked rows all lack a usable `id` must NOT yield a
+    non-empty derivation of queries that name nothing. `trending_models()` KEEPS an
+    empty-id row (only the coverage GUARD is meant to flag it), so the raw union was
+    `[' tokens per second', ' vram ...']` and the wiring assertion's `bool(sent)`
+    passed vacuously — measured on PR #1684 head `ccaa9c78`."""
+    nameless = {"models": [
+        {"id": "", "name": "", "last_seen": "2999-01-01",
+         "engagement": {"trend_score": 1.0, "posts_7d": 1},
+         "engines": [{"engine": "llama.cpp", "tps": "10", "hardware": "CPU",
+                      "date": "2026-01-01"}]},
+        {"id": "", "name": "", "last_seen": "2020-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "9", "hardware": "CPU",
+                      "date": "2020-06-01"}]},
+    ]}
+
+    # Given the pre-fix composition (what prompt_queries used to return unchanged)
+    raw = (UT.derived_queries(nameless) + UT.footprint_queries(nameless)
+           + UT.aged_derived_queries(nameless) + UT.aged_footprint_queries(nameless))
+
+    # Then  it was non-empty yet named no model (the vacuity the issue measured) ...
+    check("nameless: the raw composition WAS vacuous (non-empty, names no model)",
+          bool(raw) and not any(UT.query_names_model(q, m)
+                                for q in raw for m in nameless["models"]), raw)
+
+    # ... and now the ONE seam emits nothing, so the wiring assertion cannot pass.
+    sent = QC.prompt_queries(nameless)
+    check("nameless: the seam emits no query at all", sent == [], sent)
 
 
 def test_the_real_store_is_covered():
@@ -489,6 +521,7 @@ def main() -> int:
     test_every_ranked_gap_dimension_is_asked()
     test_the_prompts_and_the_guard_are_wired()
     test_the_prompt_derivation_survives_an_aged_out_trending_band()
+    test_an_all_nameless_store_yields_no_vacuous_query()
     test_the_rule_is_documented()
     test_the_real_store_is_covered()
     test_a_silenced_guard_is_refused()

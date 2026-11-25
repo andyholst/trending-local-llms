@@ -70,10 +70,18 @@ def prompt_queries(store: dict, top_n: int = UT.QUERY_TOP_N,
     never reds on the 7-day clock edge — measured pre-fix: run 45511338595 green
     at 2026-11-24T23:36Z and run 45514736549 red at 00:01Z on the SAME store,
     because the old check required the live top-N trending band to be non-empty.
+
+    Issue #1688: every composed query that names NO row is dropped, decided through
+    the ONE predicate `UT.query_names_model`. `trending_models()` keeps a row with an
+    empty `id` (only the coverage GUARD is meant to flag it), so the union could be
+    non-empty while naming nothing — `[" tokens per second", ...]` — and the wiring
+    assertion passed vacuously. A query built from an empty id reaches no prompt.
     """
-    return (UT.derived_queries(store, top_n) + UT.footprint_queries(store, top_n)
-            + UT.aged_derived_queries(store, aged_n)
-            + UT.aged_footprint_queries(store, aged_n))
+    rows = store.get("models") or []
+    composed = (UT.derived_queries(store, top_n) + UT.footprint_queries(store, top_n)
+                + UT.aged_derived_queries(store, aged_n)
+                + UT.aged_footprint_queries(store, aged_n))
+    return [q for q in composed if any(UT.query_names_model(q, m) for m in rows)]
 
 
 def report(store: dict, top_n: int, aged_n: int) -> str:
