@@ -699,8 +699,8 @@ pr-closure: ## Fail when this PR does not close the issue its branch implements 
 	python3 scripts/pr_closure.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--branch "$(BRANCH)" $(if $(BODY_FILE),--body-file "$(BODY_FILE)",))
 
 pr-message-check: ## Fail when this PR does not follow the message pattern / close what it implements (issue #771)
-	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-message-check [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
-	@python3 scripts/pr_body.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--check-body-file "$(BODY_FILE)" $(if $(BRANCH),--branch "$(BRANCH)",))
+	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" -o -n "$(PR)" || { echo "Usage: make pr-message-check [PR_EVENT=<event json>] | [PR=<n> reads the live PR body] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
+	@python3 scripts/pr_body.py $(if $(PR_EVENT),--event "$(PR_EVENT)",$(if $(PR),--check-live-pr "$(PR)",--check-body-file "$(BODY_FILE)" $(if $(BRANCH),--branch "$(BRANCH)",)))
 
 issue-message-check: ## Fail when an ISSUE body does not follow the message pattern (five ## sections, issue #771)
 	@test -n "$(ISSUE_EVENT)" -o -n "$(BODY_FILE)" || { echo "Usage: make issue-message-check [ISSUE_EVENT=<event json>] | [BODY_FILE=<issue body>]"; exit 1; }
