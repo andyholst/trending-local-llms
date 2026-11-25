@@ -1,6 +1,7 @@
 # The ghost-alarm gh stub must refuse what the real gh refuses, for `--jq` too
 
 **Issue:** #1672
+PR: #1702
 **Capability:** `gh-json-stub-contract`
 
 ## Why
