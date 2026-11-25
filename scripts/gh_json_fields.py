@@ -37,6 +37,12 @@ reads `.actor.login + "|" + (.actor.type // "") + "|" + (.triggering_actor.login
 nothing validating it — the same build-time-vs-run-time hole #1158/#1160 closed for `--json`,
 now closed for `--jq`.
 
+The `--json … -q|--jq …` exemption carries its reason, so `check_argv()` enforces it (issue
+#1676): when the SAME argv lists `--json <fields>` AND projects that answer through `-q|--jq`,
+every path the expression reads must name one of those fields. Otherwise gh answers objects
+carrying only the listed fields and the projection yields `null` at RUN time — measured:
+`gh pr list --json number -q .title` passed green while `.title` was never requested.
+
 Every set below is transcribed from the real CLI's own `Available fields:` answer for that
 subcommand (recorded 2026-11-20), and every `API_SHAPES` entry from a live `gh api` read
 (recorded 2026-11-24); none is invented. A command or endpoint family with no recorded set
@@ -472,26 +478,52 @@ def command_path(argv) -> str | None:
 
 
 def check_argv(argv) -> list[str]:
-    """Problems with a `gh` argv list: a `--json` field gh cannot answer for that command."""
+    """Problems with a `gh` argv list: a `--json` field gh cannot answer for that command, and
+    (issue #1676) a `-q|--jq` projection that reads a field its own `--json` list omits."""
     argv = [str(a) for a in argv]
     if argv and argv[0] == "gh":
         argv = argv[1:]
     cmd = command_path(argv)
     problems = []
+    listed: list[str] = []
     for i, token in enumerate(argv):
         if token != "--json":
             continue
         if i + 1 >= len(argv):
             problems.append("--json with no field list")
             continue
+        listed.extend(parse_fields(argv[i + 1]))
         if cmd is None:
             problems.append(f"--json {argv[i + 1]!r} for a command this contract does not name")
             continue
         problems.extend(f"--json {cmd}: unknown field {field!r}"
                         for field in unknown_fields(cmd, [argv[i + 1]]))
+    # issue #1676 — enforce the exemption's STATED reason. The `#1668` exemption above lets a
+    # `--jq`/`-q` projection sit beside a `--json` field list because "that half already validated
+    # the field this projection re-reads" — but nothing checked it, so `gh pr list --json number
+    # -q .title` passed green while gh answered objects carrying only `number` and `.title`
+    # yielded null at RUN time. When BOTH are present, every path the expression READS must name
+    # one of the SAME argv's listed fields. `jq_paths` returning None stays tolerated (the grammar
+    # deliberately refuses what it cannot read), the depth of an array iteration is irrelevant,
+    # and the TOP-LEVEL segment is the field the projection re-reads.
+    if listed:
+        allowed = frozenset(listed)
+        for i, token in enumerate(argv):
+            if token not in ("--jq", "-q") or i + 1 >= len(argv):
+                continue
+            paths = jq_paths(argv[i + 1])
+            if paths is None:
+                continue
+            for _depth, path in paths:
+                field = path.lstrip(".").split(".", 1)[0]
+                if field and field not in allowed:
+                    problems.append(
+                        f"{token} {argv[i + 1]!r} reads {path}, which the SAME argv's --json "
+                        f"field list does not carry (listed: {', '.join(listed)})")
     # `gh api <endpoint> --jq <expr>` (issue #1668) — a field gh refuses only at RUN time.
-    # Exempt when the SAME argv carries `--json`: that half already validated the field this
-    # projection re-reads (a second path grammar over projected output is out of scope).
+    # Exempt when the SAME argv carries `--json`: that projection is now checked against the
+    # listed fields in the issue-#1676 block above (the second path grammar over projected
+    # output stays out of scope).
     if "--json" not in argv:
         for i, token in enumerate(argv):
             if token != "api":

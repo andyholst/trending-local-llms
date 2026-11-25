@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **538**
+Active changes: **1** · archived: **539**
 
 ## Active changes
 
@@ -272,6 +272,7 @@ Active changes: **1** · archived: **538**
 | `gap-reader-drops-refused-misattribution` | archived | #1007 | #1117 | [data-gap-analysis](openspec/changes/archive/gap-reader-drops-refused-misattribution/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/gap-reader-drops-refused-misattribution/proposal.md) |
 | `gh-api-jq-field-contract` | archived | #1668 | #1670 | [gh-api-jq-fields](openspec/changes/archive/gh-api-jq-field-contract/specs/gh-api-jq-fields/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/gh-api-jq-field-contract/proposal.md) |
 | `gh-json-field-surface` | archived | #1160 | #1167 | [gh-json-field-surface](openspec/changes/archive/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/gh-json-field-surface/proposal.md) |
+| `gh-json-projection-membership` | archived | #1676 | #1679 | [gh-json-projection-membership](openspec/changes/archive/gh-json-projection-membership/specs/gh-json-projection-membership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/gh-json-projection-membership/proposal.md) |
 | `ghost-alarm-gh-field-contract` | archived | #1158 | #1159 | [gh-json-field-contract](openspec/changes/archive/ghost-alarm-gh-field-contract/specs/gh-json-field-contract/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ghost-alarm-gh-field-contract/proposal.md) |
 | `ghost-pr-handoff-1251` | archived | #1251 | #1253 | [fleet-handover](openspec/changes/archive/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ghost-pr-handoff-1251/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
@@ -424,7 +425,7 @@ Active changes: **1** · archived: **538**
 | `python-env-seam-in-container` | archived | #1411 | #1451 | [python-env-seam](openspec/changes/archive/python-env-seam-in-container/specs/python-env-seam/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/python-env-seam-in-container/proposal.md) |
 | `qa-validate-carries-the-guard` | archived | #279 | — | [qa-validate-carries-the-guard](openspec/changes/archive/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/qa-validate-carries-the-guard/proposal.md) |
 | `query-coverage-guard` | archived | #264 | — | [query-coverage](openspec/changes/archive/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/query-coverage-guard/proposal.md) |
-| `query-coverage-window-independent-wiring` | archived | #1678 | #1684 | [query-coverage-prompt-wiring](openspec/changes/archive/query-coverage-window-independent-wiring/specs/query-coverage-prompt-wiring/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/query-coverage-window-independent-wiring/proposal.md) |
+| `query-coverage-window-independent-wiring` | archived | #1678 | #1684 | [query-coverage-prompt-wiring](openspec/changes/archive/query-coverage-window-independent-wiring/specs/query-coverage-prompt-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/query-coverage-window-independent-wiring/proposal.md) |
 | `query-coverage-wiring-derives-live-models` | archived | #1077 | #1078 | [query-coverage-wiring](openspec/changes/archive/query-coverage-wiring-derives-live-models/specs/query-coverage-wiring/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/query-coverage-wiring-derives-live-models/proposal.md) |
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queue-pr-state-case` | archived | #1318 | #1319 | [implementer-queue](openspec/changes/archive/queue-pr-state-case/specs/implementer-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/queue-pr-state-case/proposal.md) |

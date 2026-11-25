@@ -434,13 +434,55 @@ def test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding():
 
 
 def test_the_json_projection_and_fieldless_api_calls_are_exempt():
-    """Two documented exemptions, pinned so a later widening cannot sneak them back in."""
-    check("`gh <cmd> --json … (-q|--jq) …` stays exempt (the --json half already refuses)",
+    """A CONSISTENT `--json … -q|--jq …` projection stays green, the fieldless `gh api` call
+    stays exempt, and the five shipped composite sites stay green (issue #1676 pins their
+    shapes so a later widening cannot sneak a silent pass back in)."""
+    check("a CONSISTENT `gh <cmd> --json … (-q|--jq) …` stays green (path inside the list)",
           contract.check_argv(["pr", "list", "--json", "number,headRefName", "--jq",
                                '[.[] | select(.headRefName | startswith("x"))]']) == [], "")
+    shipped_sites = [
+        ("openspec_archive_check.py:108",
+         ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]),
+        ("issue_verdict.py:417",
+         ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]),
+        ("issue_queue.py:194",
+         ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]),
+        ("bot_health.py:183",
+         ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]),
+        ("keeper_pr.py:161",
+         ["pr", "list", "--state", "open", "--json",
+          "number,headRefName,headRefOid,mergeStateStatus,statusCheckRollup",
+          "--jq", '[.[] | select(.headRefName | startswith("fix/"))]']),
+    ]
+    for site, argv in shipped_sites:
+        problems = contract.check_argv(argv)
+        check(f"the shipped composite site {site} stays GREEN", problems == [], problems)
     check("a `gh api` call carrying no field expression stays exempt",
           contract.check_argv(["api", "repos/o/r/issues/1/comments", "--paginate",
                                "--slurp"]) == [], "")
+
+
+def test_a_planted_json_projection_path_is_refused():
+    """Issue #1676: a `-q|--jq` beside `--json` must re-read a field the SAME argv lists.
+
+    RED-first: the base revision skips the whole projection half under `if "--json" not in
+    argv`, so this planted `gh pr list --json number -q .title` returned `[]` there. It fails
+    here as an ASSERTION, never a traceback (the old module still imports and runs).
+    """
+    planted = contract.check_argv(["pr", "list", "--json", "number", "-q", ".title"])
+    check("a planted `--json number -q .title` is REFUSED, naming `.title`",
+          len(planted) >= 1 and any(".title" in p for p in planted), planted)
+    long_flag = contract.check_argv(["pr", "list", "--json", "number", "--jq", ".title"])
+    check("the SAME plant through the long `--jq` flag is refused too",
+          len(long_flag) >= 1 and any(".title" in p for p in long_flag), long_flag)
+    check("the planted problem names the field list it was checked against",
+          any("number" in p for p in planted), planted)
+    check("a projection that DOES re-read a listed field stays green",
+          contract.check_argv(["pr", "list", "--json", "number", "-q", ".number"]) == [], "")
+    check("an expression `jq_paths` cannot read is tolerated (never a false red)",
+          contract.jq_paths(".title{") is None
+          and contract.check_argv(["pr", "list", "--json", "number", "-q", ".title{"]) == [],
+          "")
 
 
 def test_the_scan_reads_the_real_tree_and_sees_the_api_calls():
@@ -513,6 +555,7 @@ def main() -> int:
     test_a_planted_jq_path_is_refused()
     test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding()
     test_the_json_projection_and_fieldless_api_calls_are_exempt()
+    test_a_planted_json_projection_path_is_refused()
     test_the_scan_reads_the_real_tree_and_sees_the_api_calls()
     test_the_scan_is_wired_where_ci_runs_it()
     print(f"\n{PASSED} passed, {FAILED} failed")
