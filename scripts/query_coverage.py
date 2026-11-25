@@ -57,6 +57,25 @@ def _load_store() -> dict:
     return UT.load_store()
 
 
+def prompt_queries(store: dict, top_n: int = UT.QUERY_TOP_N,
+                   aged_n: int = UT.QUERY_AGED_N) -> list[str]:
+    """Every derived query a search leg appends, in order (issue #1678).
+
+    ONE implementation behind both consumers — this CLI's `--queries` and the
+    prompt-wiring test — so they cannot disagree. The set is the union of the
+    TOP-N trending pair and the QUERY_AGED_N most-aged pair, and it is non-empty
+    whenever the store has any searchable row, INCLUDING a store whose trending
+    band has aged out between weekly refreshes (the AGED sample still yields its
+    pair). A wiring assertion keyed on this union is therefore never vacuous and
+    never reds on the 7-day clock edge — measured pre-fix: run 45511338595 green
+    at 2026-11-24T23:36Z and run 45514736549 red at 00:01Z on the SAME store,
+    because the old check required the live top-N trending band to be non-empty.
+    """
+    return (UT.derived_queries(store, top_n) + UT.footprint_queries(store, top_n)
+            + UT.aged_derived_queries(store, aged_n)
+            + UT.aged_footprint_queries(store, aged_n))
+
+
 def report(store: dict, top_n: int, aged_n: int) -> str:
     """What the searches ask for, and what they would miss."""
     models = UT.trending_models(store)[:max(0, top_n)]
@@ -139,10 +158,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.queries:
-        print(",".join(UT.derived_queries(store, args.top)
-                       + UT.footprint_queries(store, args.top)
-                       + UT.aged_derived_queries(store, args.aged)
-                       + UT.aged_footprint_queries(store, args.aged)))
+        print(",".join(prompt_queries(store, args.top, args.aged)))
         return 0
 
     missing = UT.uncovered_models(store, args.top, args.aged)
