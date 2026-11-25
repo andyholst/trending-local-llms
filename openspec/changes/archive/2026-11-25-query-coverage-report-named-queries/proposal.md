@@ -1,6 +1,7 @@
 # Proposal: query-coverage-report-named-queries
 
 Issue: #1693
+PR: #1698
 
 ## Why
 
