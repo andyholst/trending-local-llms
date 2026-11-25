@@ -518,6 +518,42 @@ def test_timeout_family_recognises_gateway_and_read_timeouts():
     check("ordinary error is not a timeout", not UT.is_upstream_timeout(RuntimeError("connection refused")))
 
 
+def test_a_gateway_code_needs_an_http_status_shape():
+    """issue #1714: bare digits in a reason string are NOT a gateway failure.
+
+    Since #1707 the timeout prong's `timeouts > 0` is the sole discriminator of
+    the non-blocking outage verdict. A reason that merely CONTAINS a gateway
+    status number used to flip a genuine blocking quiet search to outage/0,
+    removing the `live-smoke` gate on auto-merge. The real HTTP status SHAPES
+    must still count (measured run 45526182085)."""
+    incidental = "parsed 502 bytes from the page"
+    check("an incidental 502 is NOT a gateway timeout",
+          not UT.is_upstream_timeout(RuntimeError(incidental)))
+    for code in (503, 504, 522):
+        text = f"parsed {code} bytes from the page"
+        check(f"an incidental {code} is NOT a gateway timeout",
+              not UT.is_upstream_timeout(RuntimeError(text)))
+
+    check("the measured HTTP Error 502 shape is still recognised",
+          UT.is_upstream_timeout(RuntimeError("HTTP Error 502: Bad Gateway")))
+    check("an HTTP 522 status shape is recognised",
+          UT.is_upstream_timeout(RuntimeError("target answered HTTP 522")))
+    check("a statusCode: 502 shape is recognised",
+          UT.is_upstream_timeout(RuntimeError("metadata statusCode: 502")))
+    check("a 502 Bad Gateway shape is recognised",
+          UT.is_upstream_timeout(RuntimeError("upstream returned 502 Bad Gateway")))
+
+    reasons = [incidental] * 35
+    stats = {"queries": len(reasons), "with_hits": 0, "outage": 0, "refused": 0,
+             "failed": len(reasons),
+             "timeouts": sum(1 for r in reasons if UT.is_upstream_timeout(RuntimeError(r))),
+             "reasons": reasons}
+    check("no incidental digit is counted as a timeout", stats["timeouts"] == 0, stats["timeouts"])
+    kind, code, _ = UT.zero_hit_verdict(stats)
+    check("a run with only incidental gateway digits stays quiet/exit 1",
+          kind == "quiet" and code == 1, (kind, code))
+
+
 def test_a_single_gateway_error_among_timeouts_is_an_outage():
     """THE MEASURED FAILURE (issue #1699): run 45526182085 had 34 read timeouts and ONE
     `HTTP Error 502: Bad Gateway`. `is_upstream_timeout` missed the 502, so
@@ -584,6 +620,7 @@ def main() -> int:
     test_a_timeout_mixed_with_a_neutral_failed_query_is_an_outage()
     test_the_timeout_and_error_page_prongs_share_a_discriminator()
     test_timeout_family_recognises_gateway_and_read_timeouts()
+    test_a_gateway_code_needs_an_http_status_shape()
     test_a_single_gateway_error_among_timeouts_is_an_outage()
     test_fetch_timeout_seam_is_wired_to_urlopen()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
