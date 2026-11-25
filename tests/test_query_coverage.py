@@ -28,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import update_trending as UT  # noqa: E402
+import query_coverage as QC  # noqa: E402  (the ONE `--queries` seam, issue #1678)
 
 SCRIPT = ROOT / "scripts" / "query_coverage.py"
 # The FLATTENED store (inline engines[]), exactly what the CLI reads via
@@ -324,38 +325,73 @@ def test_the_prompts_and_the_guard_are_wired():
           "python3 scripts/query_coverage.py" in
           mk.split("_validate-search:", 1)[1].split("self_correct_raw", 1)[0])
 
-    # ... and the prompts really carry the ranked models once expanded. The expected query is
-    # DERIVED from the live store (issue #1077): the top-N trend band is data that moves with
-    # every weekly refresh — pinning one model id here reds the whole suite (and with it
-    # auto-merge repo-wide) the moment the refresh re-ranks, measured on push runs 43775050919
-    # and 43777818475 after keeper merge bfcff45. What this check locks is the WIRING — the
-    # first derived query of the real store must reach the expanded prompt; the anti-tautology
-    # half (a broken derivation, a model the queries miss) stays locked by the synthetic-store
-    # tests and the exit-1 guard above.
+    # ... and the prompts really carry the ranked models once expanded. The expected
+    # queries are DERIVED from the live store through the SAME seam the Makefile uses
+    # (`query_coverage.py --queries`) — issue #1077 wanted no pinned model id, because
+    # the ranked set moves with every weekly refresh; issue #1678 fixed the other half:
+    # the set is the UNION of the top-N trending pair and the QUERY_AGED_N aged pair,
+    # so a store whose trending band has AGED OUT (every last_seen older than
+    # TRENDING_WINDOW_DAYS — the legitimate state between refreshes) still yields the
+    # aged queries. The old check keyed on `bool(live_top) and bool(live_fp)` over the
+    # top-N band alone and red'd repo-wide on a clock edge: run 45511338595 green at
+    # 2026-11-24T23:36Z vs run 45514736549 red at 00:01Z, same store, same code.
+    # The anti-tautology half stays: the set must be non-empty and EVERY query in it
+    # must reach the expanded prompt; a broken derivation or a dropped prompt line is
+    # still caught here, and the exit-1 guard is untouched.
     out = subprocess.run(["make", "-n", "_search-amd"], cwd=str(ROOT), capture_output=True,
                          text=True, timeout=60).stdout
-    live_top = UT.derived_queries(REAL_STORE)
-    live_fp = UT.footprint_queries(REAL_STORE)
+    sent = QC.prompt_queries(REAL_STORE)
     check("wiring: the live derivation names a ranked model (the check is never vacuous)",
-          bool(live_top) and bool(live_fp), (len(live_top), len(live_fp)))
-    check("wiring: the expanded prompt names the ranked models",
-          bool(live_top) and live_top[0] in out, out[:120])
+          bool(sent), sent[:3])
+    check("wiring: the expanded prompt carries every derived query",
+          bool(sent) and all(q in out for q in sent), (len(sent), out[:200]))
     # ... including a FOOTPRINT query per ranked model (the dimension gaps), and a sentence
     # that tells the agent what they ask for — a bare list would read as more throughput
     # queries and the footprint figure would stay unrecorded.
+    foot_sent = [q for q in sent if UT.MODEL_FOOTPRINT_SUFFIX in q]
     check("wiring: the expanded prompt carries a footprint query",
-          bool(live_fp) and live_fp[0] in out, out[:200])
+          bool(foot_sent) and all(q in out for q in foot_sent), out[:200])
     # The wording that tells the agent what the footprint queries ASK for lives in the leg's
     # PRELOADED skill, not in the prompt (issue #638: a prompt is a pointer plus this run's
     # parameters, so a rule duplicated there would drift from the one reviewed file).
     check("wiring: the leg is pointed at its preloaded skill",
           "-s data-search" in out, out[:200])
-    # ... and the expanded prompt ALSO carries an aged model's query — a row that left the
-    # trending window must be re-queried on the same legs (this change).
-    aged = UT.aged_derived_queries(REAL_STORE)
-    if aged:
-        check("wiring: the expanded prompt names at least one aged model",
-              aged[0] in out, (aged[0], out[:200]))
+    # ... and the top-N trending half specifically, WHEN the store has one (it is empty
+    # on an aged-out store, which is exactly why the union above carries the assertion).
+    live_top = UT.derived_queries(REAL_STORE)
+    if live_top:
+        check("wiring: the expanded prompt names the trending models",
+              all(q in out for q in live_top), (live_top[:2], out[:200]))
+
+
+def test_the_prompt_derivation_survives_an_aged_out_trending_band():
+    """A store whose trending band has aged out is LEGITIMATE — every `last_seen`
+    older than TRENDING_WINDOW_DAYS is the state between weekly refreshes, not a
+    defect — and it must still yield a non-empty prompt derivation. Keying the
+    wiring assertion on the top-N trending band alone red'd the whole suite on a
+    clock edge and blocked every PR on master e93bc67d (issue #1678)."""
+    aged_out = {"models": [
+        {"id": "aged-model", "name": "aged-model", "last_seen": "2020-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "9", "hardware": "CPU",
+                      "date": "2020-06-01"}]}]}
+
+    # Given a store with NO trending model at all
+    check("aged-out: the trending band is empty",
+          UT.trending_models(aged_out) == [], UT.trending_models(aged_out))
+
+    # When  the prompt derivation is built through the ONE seam
+    sent = QC.prompt_queries(aged_out)
+
+    # Then  it is non-empty (the AGED pair carried it) and names the row on BOTH halves
+    check("aged-out: the prompt derivation is still non-empty", bool(sent), sent)
+    check("aged-out: the throughput half names the aged row",
+          UT.model_query(aged_out["models"][0]) in sent, sent)
+    check("aged-out: the footprint half names the aged row",
+          UT.footprint_query(aged_out["models"][0]) in sent, sent)
+    check("aged-out: the trending half is empty, so the aged half carried it",
+          UT.derived_queries(aged_out) == [] and UT.footprint_queries(aged_out) == [],
+          (UT.derived_queries(aged_out), UT.footprint_queries(aged_out)))
 
 
 def test_the_real_store_is_covered():
@@ -452,6 +488,7 @@ def main() -> int:
     test_a_footprint_query_names_each_ranked_model()
     test_every_ranked_gap_dimension_is_asked()
     test_the_prompts_and_the_guard_are_wired()
+    test_the_prompt_derivation_survives_an_aged_out_trending_band()
     test_the_rule_is_documented()
     test_the_real_store_is_covered()
     test_a_silenced_guard_is_refused()
