@@ -273,11 +273,22 @@ jobs:
         # reused — BEFORE any run pulls it. A legacy amd64-only tag for this
         # revision goes red here, not silently forever (issue #958).
         run: make image-manifest-check TAG="${{ steps.decide.outputs.base_tag }}" LABEL=base
+      - name: Register arm64 emulation for the QEMU smoke (issue #1739)
+        # The runner is amd64. buildx ran the arm64 build under its own
+        # emulation, but the host-side `docker run --platform linux/arm64`
+        # below needs a binfmt_misc handler registered ON THE RUNNER. Without
+        # this step the arm64 child dies with `exec format error` (exit 255,
+        # issue #1739) even though the published layer is a sound AArch64
+        # image. This is emulation setup, not a second arch-selection contract:
+        # the only platform set for publishing stays REQUIRED_PLATFORMS.
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1
+        with:
+          platforms: linux/arm64
       - name: Prove the arm64 base runs, not just exists (QEMU smoke)
         # Done-when for #958: "published multi-arch … and proven to install and
         # run under both". --platform linux/arm64 forces the arm64 variant of
-        # the tag just verified; the build already ran the Hermes install seam
-        # under arm64 QEMU, this proves the published artifact starts.
+        # the tag just verified; the handler registered above lets the runner
+        # execute that arm64 child, proving the published artifact starts.
         run: |
           docker run --rm --platform linux/arm64 "${{ steps.decide.outputs.base_tag }}" hermes --version
           docker run --rm --platform linux/arm64 "${{ steps.decide.outputs.base_tag }}" cat /opt/hermes-version.txt
