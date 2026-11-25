@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **542**
+Active changes: **1** · archived: **543**
 
 ## Active changes
 
@@ -384,6 +384,7 @@ Active changes: **1** · archived: **542**
 | `os-agnostic-make-pr-body-batch-seam` | archived | #1399 | #1417 | [os-agnostic-make-pr-body-batch-seam](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/specs/os-agnostic-make-pr-body-batch-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/proposal.md) |
 | `os-agnostic-make-self-archive-seam` | archived | #1495 | #1556 | [python-env-self-archive-seam](openspec/changes/archive/os-agnostic-make-self-archive-seam/specs/python-env-self-archive-seam/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/os-agnostic-make-self-archive-seam/proposal.md) |
 | `owed-row-close-quote` | archived | #766 | #922 | [agents-guard-registry](openspec/changes/archive/owed-row-close-quote/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-row-close-quote/proposal.md) |
+| `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |

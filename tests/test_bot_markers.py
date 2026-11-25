@@ -230,6 +230,129 @@ def test_agents_md_table_names_the_same_markers() -> None:
         check(f"AGENTS.md 6j names {name!r}", name in (section.group(0) if section else ""), name)
 
 
+#: The recorded #1685 thread (issue #1690's measured defect), captured from GitHub's own API
+#: the way `owed_rows_check.read_thread` composes it: body first, every comment oldest-first.
+#: It is a FIXTURE on purpose — the module's suite runs inside the TEST image with no network,
+#: so the real thread text is recorded rather than fetched. Its genuine declaration lives on the
+#: issue BODY (`- **Owed-row:** …`), and its comments QUOTE that marker in prose: one inline code
+#: span naming the same needle, one block quote of #1581's malformed `section=6r` marker.
+THREAD_1685 = (ROOT / "tests" / "fixtures" / "thread_1685_quoted_markers.txt").read_text(
+    encoding="utf-8")
+
+#: The recorded #1581 thread: the ledger's OTHER live problem. Its issue BODY declares
+#: `- **Owed-row: <!-- owed-row: section=6r … -->` UNQUOTED (the malformed item this change must
+#: NOT delete), and its design comment shows two FURTHER markers inside a fenced EXAMPLE of a
+#: proposed edit — which are quotations, not declarations.
+THREAD_1581 = (ROOT / "tests" / "fixtures" / "thread_1581_quoted_markers.txt").read_text(
+    encoding="utf-8")
+
+def _load_real_finding_marker_line() -> str:
+    """The `- **Owed-row:** …` line of the real findings fixture in `tests/test_file_findings.py`."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "file_findings_fixture", ROOT / "tests" / "test_file_findings.py")
+    assert spec and spec.loader, "cannot load tests/test_file_findings.py"
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return next(ln for ln in mod._OWED_ROW_FINDING.splitlines() if "Owed-row:" in ln) + "\n"
+
+
+REAL_OWED_ROW_FINDING_MARKER_LINE = _load_real_finding_marker_line()
+
+#: A findings-style body: the SHAPE the ledger's real declarations live in (findings/*.md files
+#: carry `- **Owed-row:** <marker>` on their own line, never quoted). Its marker line is read from
+#: `tests/test_file_findings.py`'s OWN `_OWED_ROW_FINDING` fixture rather than re-spelled here, so
+#: the positive control cannot keep passing while the shipped field drifts.
+FINDINGS_BODY = (
+    "# Findings\n\n"
+    "## The §8 guard row for the new check is owed to a protected AGENTS.md\n\n"
+    "- **Signature:** owed-row-protected-rulebook\n"
+    "- **Evidence:** a new guard check ships under `make lint`, rule 6c owes the `AGENTS.md` §8 row,\n"
+    "  and the headless implement leg is REFUSED the write (protected agent-instruction file,\n"
+    "  measured on #654–657: the change died on the bare `- [ ]` the refusal left behind)\n"
+    "- **Why:** an undeclared owed row vanishes — the PR goes red on the unticked box, or the rulebook\n"
+    "  silently describes the pre-guard behaviour (rule 3c starvation)\n"
+    "- **Done when:** an attended run lands the row from the ledger issue\n"
+    + REAL_OWED_ROW_FINDING_MARKER_LINE)
+
+
+def _thread1690() -> dict:
+    """The #1685 thread's parsed rows, straight through the product's parser."""
+    return bm.parse_owed_rows(THREAD_1685)
+
+
+def test_a_marker_quoted_in_prose_is_not_a_declaration():
+    """Issue #1690: `OWED_ROW_RE` matched the literal substring ANYWHERE, so a marker QUOTED in a
+    comment was read as that comment's OWN declaration.
+
+    Measured on the recorded #1685 thread: the parser returned FOUR rows — three `section=8`
+    (one real body declaration plus two prose quotations) and a phantom `section=6r` that exists
+    nowhere as a declaration (it is #1581's malformed marker, quoted inside a design comment) —
+    and `make owed-rows-check REPO=andyholst/trending-local-llms` reported `problems=2`.
+
+    The discriminator: strip fenced code blocks, inline code spans and block-quoted lines BEFORE
+    `OWED_ROW_RE` runs, then apply the unchanged grammar. Chosen over "only read `findings/<id>.md`
+    bodies" because the ledger reads THREADS, not files — a declaration written by hand on an
+    issue body (`- **Owed-row:** …`, the shape `scripts/file_findings.py` stamps) must still
+    register, and only the quotation is prose.
+    """
+    # Given the recorded #1685 thread, whose ONLY genuine declaration is the body marker
+    parsed = _thread1690()
+    sections = [row["section"] for row in parsed["rows"]]
+
+    # Then  NO phantom `section=6r` row survives — it was a quotation of #1581's malformed marker
+    check("owed-row: no phantom section=6r row from a prose quotation",
+          "6r" not in sections, sections)
+    # And   exactly ONE row remains: the genuine `section=8` declaration on the body
+    check("owed-row: exactly one genuine section=8 row registers",
+          parsed["rows"] == [{"section": "8",
+                             "needle": "test_a_planted_json_projection_path_is_refused"}],
+          parsed["rows"])
+    # And   nothing is left MALFORMED by the filtering (the quoted shape is dropped, not reported)
+    check("owed-row: a quoted marker is not reported as malformed",
+          parsed["malformed"] == [], parsed["malformed"])
+
+    # And   the same discrimination holds for each quotation device on its own
+    quoted_only = (
+        "prose quoting `<!-- owed-row: section=8 needle=quoted_inline -->` inline\n"
+        "```\n<!-- owed-row: section=9 needle=fenced_block -->\n```\n"
+        "> <!-- owed-row: section=10 needle=block_quote -->\n")
+    check("owed-row: an all-quotation thread declares nothing",
+          bm.parse_owed_rows(quoted_only)["rows"] == [],
+          bm.parse_owed_rows(quoted_only)["rows"])
+
+
+def test_a_genuine_findings_style_declaration_still_registers():
+    """The discriminator must not stop reading REAL declarations (rule 3c's owed rows live in
+    `findings/*.md` bodies and on issue bodies, both unquoted)."""
+    parsed = bm.parse_owed_rows(FINDINGS_BODY)
+    check("owed-row: a findings-style body still registers its row",
+          parsed["rows"] == [{"section": "8", "needle": "owed rulebook row"}]
+          and parsed["malformed"] == [], parsed)
+
+
+def test_the_pre_existing_1581_section_6r_item_is_still_reported():
+    """#1581 owns its malformed `section=6r` marker; this change must not delete or launder it.
+
+    The recorded #1581 issue BODY carries that marker UNQUOTED (`- **Owed-row:** …`), so the
+    parser still reports it as a declared row. `make owed-rows-check` therefore still answers
+    `NO SUCH SECTION` for #1581 and still counts it in `problems` — the repair stays #1581's
+    (a body edit), not #1690's (a parser fix).
+
+    The same thread also shows WHY the discriminator is right for a fenced EXAMPLE: its design
+    comment illustrates a proposed re-declaration with two markers inside a code block. Those
+    are proposals about what to write, not declarations on the thread, so they drop.
+    """
+    parsed = bm.parse_owed_rows(THREAD_1581)
+    check("owed-row: #1581's own declaration is still REPORTED (not deleted)",
+          parsed["rows"] == [{"section": "6r", "needle": "make pipeline-failure-issue"}],
+          parsed["rows"])
+    check("owed-row: #1581's fenced PROPOSAL markers are quotations, not declarations",
+          all(r["section"] != "2" for r in parsed["rows"]), parsed["rows"])
+    check("owed-row: #1581's row parses as well-formed (its defect is the SECTION id)",
+          parsed["malformed"] == [], parsed["malformed"])
+
+
 def main() -> int:
     """Run every test in this file — a test defined but never called passes CI silently."""
     test_every_registered_marker_round_trips()
@@ -238,6 +361,9 @@ def main() -> int:
     test_every_written_marker_has_a_writer()
     test_every_marker_the_tree_writes_is_registered()
     test_agents_md_table_names_the_same_markers()
+    test_a_marker_quoted_in_prose_is_not_a_declaration()
+    test_a_genuine_findings_style_declaration_still_registers()
+    test_the_pre_existing_1581_section_6r_item_is_still_reported()
     print(f"\nPASSED {PASSED} | FAILED {FAILED}")
     return 1 if FAILED else 0
 
