@@ -3381,10 +3381,67 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
 
 
 
+def test_arm64_smoke_declares_qemu_handler_before_it():
+    """Issue #1739: the arm64 smoke needs a pinned QEMU handler on the amd64 runner."""
+    job = load("refresh-bot.yml")["jobs"]["build"]
+    names = [s.get("name", "") for s in steps(job)]
+    smoke_i = next((i for i, n in enumerate(names) if "Prove the arm64 base runs" in n), None)
+    check("ci: the arm64 base QEMU smoke step exists", smoke_i is not None, names)
+    qemu = [s for s in steps(job) if "setup-qemu-action" in s.get("uses", "")]
+    check("ci: build declares exactly one setup-qemu-action", len(qemu) == 1,
+          [s.get("uses") for s in qemu])
+    if qemu and smoke_i is not None:
+        qi = names.index(qemu[0].get("name", ""))
+        check("ci: the QEMU step runs before the arm64 smoke", qi < smoke_i,
+              f"qemu@{qi} smoke@{smoke_i}")
+        ref = qemu[0]["uses"].split("@")[-1]
+        check("ci: the QEMU action ref is a 40-hex SHA",
+              bool(re.fullmatch(r"[0-9a-f]{40}", ref)), ref)
+        check("ci: QEMU platforms is exactly linux/arm64",
+              qemu[0].get("with", {}).get("platforms") == "linux/arm64", qemu[0].get("with"))
+        selectors = [s.get("run", "") for s in steps(job)
+                     if "uname" in s.get("run", "") or "platform.machine" in s.get("run", "")]
+        check("ci: no uname/arch selector in the build job", not selectors, selectors)
+
+
+def test_arm64_smoke_keeps_one_platform_verdict():
+    """Issue #1739: registering emulation adds no second publish-platform contract."""
+    job = load("refresh-bot.yml")["jobs"]["build"]
+    qemu = [s for s in steps(job) if "setup-qemu-action" in s.get("uses", "")]
+    check("ci: QEMU emulation is registered once (no second platform list)",
+          len(qemu) == 1, len(qemu))
+    if qemu:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import image_manifest_check as imc
+        required = {f"{os}/{arch}" for os, arch in imc.REQUIRED_PLATFORMS}
+        declared = set(qemu[0].get("with", {}).get("platforms", "").split(","))
+        check("ci: emulated platform is within REQUIRED_PLATFORMS",
+              declared <= required, f"declared={declared} required={required}")
+        check("ci: QEMU registers no amd64 emulation", "linux/amd64" not in declared, declared)
+    src = (ROOT / "scripts" / "ensure_image.py").read_text()
+    check("ci: publisher still derives --platform from REQUIRED_PLATFORMS",
+          "REQUIRED_PLATFORMS" in src and "--platform" in src, "")
+
+
+def test_arm64_smoke_execs_aarch64_child():
+    """Issue #1739: the smoke execs the arm64 child and reads its version file."""
+    smoke = next((s for s in steps(load("refresh-bot.yml")["jobs"]["build"])
+                  if "Prove the arm64 base runs" in s.get("name", "")), {})
+    run = smoke.get("run", "")
+    check("ci: smoke execs arm64 hermes --version",
+          "docker run --rm --platform linux/arm64" in run and "hermes --version" in run, run)
+    check("ci: smoke reads the arm64 version file", "cat /opt/hermes-version.txt" in run, run)
+    check("ci: smoke selects no arch via uname/platform.machine",
+          "uname" not in run and "platform.machine" not in run, run)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> auto-merge (fix-bot retired, #814)")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
     test_refresh_bot()
+    test_arm64_smoke_declares_qemu_handler_before_it()
+    test_arm64_smoke_keeps_one_platform_verdict()
+    test_arm64_smoke_execs_aarch64_child()
     test_the_refresh_search_job_forwards_every_credential_its_leg_uses()
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
