@@ -61,6 +61,16 @@ identity `--jq .[]` sites whose Python side still picks fields; 2 name no field
 `-X POST -f` writes). Re-derive: `grep -rn '"api"' scripts/ | grep -v gh_json_fields.py` plus
 the `GH_API` splat form.
 
+SLICE 1 (issue #1683) now closes a RECORDED subset of that boundary: 13 no-projection
+`gh api` sites — 12 found by token-list discovery plus the invisible `GH_API = ("gh",
+"api")` tuple splat at `refresh_run_block.py:105` — are listed in `API_PYTHON_READ_SITES`
+with their read scopes, and `API_PYTHON_FIELDS` records each family's REST answer fields.
+`scan_file` runs `api_python_read_problems(tree)` as one extra pass, so a `.get("created_at")`
+renamed to `.get("createdAt")` or a `r["ref"]` subscript renamed on those sites is a finding
+with file:line at BUILD time. Registration is explicit, not inferred: the 5 identity
+`--jq .[]` sites, the 2 genuine no-field sites and the general `.get()` surface stay OUT OF
+SCOPE for their own later slices.
+
 Exit codes: 0 = no problem, 1 = a field or path gh cannot answer (or an unreadable
 expression), 2 = the scan itself could not read the tree (never a silent clean).
 """
@@ -339,6 +349,111 @@ API_SHAPES: dict[str, ApiShape] = {
         {".actor.login", ".actor.type", ".triggering_actor.login"})),
 }
 
+
+# --------------------------------------------------------------------------- gh api Python reads
+class ApiPythonReadSite(NamedTuple):
+    """One recorded no-projection `gh api` read (issue #1683, slice 1).
+
+    `caller` holds the request (or the endpoint literal), `root` names the local receiving
+    the parsed answer, `elements` names loop vars bound to its items, and `readers` are the
+    helper functions that pick fields from those names. `fields` is the field set re-derived
+    by `api_python_read_problems`; `exclude` names keys read off an ALREADY-PROJECTED shape
+    (`gh run view --json jobs`, already validated by `FIELD_SETS`), and `blocked` names a
+    local carrying a PROJECTED row (the `run` built by `_project_run` in
+    `pipeline_failure_issue.py`) so a pick from it is not attributed to this REST answer.
+    Attribution is REGISTRY + ROOT, never "every `.get()` in the file".
+    """
+
+    file: str
+    caller: str
+    family: object
+    root: tuple[str, ...]
+    elements: tuple[str, ...]
+    readers: tuple[str, ...]
+    fields: frozenset[str]
+    exclude: frozenset[str] = frozenset()
+    blocked: frozenset[str] = frozenset()
+
+
+#: The REST answer fields THIS REPOSITORY actually reads, per recorded family (issue #1683).
+#: Same discipline as `API_SHAPES`: transcribe what the tree reads, not the whole recursive
+#: payload, so a renamed field is a finding while GitHub adding an unused field is not.
+#: Keys are endpoint path tails, or a tuple for a site whose endpoint is built dynamically.
+API_PYTHON_FIELDS: dict[object, frozenset[str]] = {
+    "branches/{}": frozenset({"required_status_checks", "strict", "contexts",
+                              "enforce_admins", "enabled"}),
+    "issues/comments": frozenset({"created_at", "user", "login", "id"}),
+    "issues/{}/comments": frozenset({"body", "id", "comment_id", "created_at", "createdAt"}),
+    "releases/latest": frozenset({"tag_name"}),
+    "git/matching-refs/heads/{}": frozenset({"ref"}),
+    "issues/{}": frozenset({"title", "body"}),
+    "actions/runs?{}": frozenset({"workflow_runs", "id", "workflow_name", "name",
+                                   "head_branch", "head_sha", "event", "created_at",
+                                   "conclusion", "status", "html_url"}),
+    "actions/jobs/{}": frozenset({"labels", "runnerName", "runner_name", "name",
+                                   "id", "status", "started_at", "conclusion"}),
+    ("issues", "pulls", "actions/runs", "commits"): frozenset({
+        "workflow_runs", "head_branch", "event", "pull_requests", "number", "id",
+        "status", "conclusion", "name", "sha", "body"}),
+    ("actions/runs/{}", "actions/runs/{}/jobs"): frozenset({
+        "html_url", "run_started_at", "jobs", "name", "started_at"}),
+}
+
+#: The 13 no-projection sites that name a REST field in Python (issue #1683, slice 1):
+#: 12 found by `_api_token_lists`, plus the `GH_API = ("gh", "api")` tuple splat in
+#: `refresh_run_block.py:105` that discovery cannot see. The 5 identity `--jq .[]` sites,
+#: the full analyzer and the 2 genuine no-field sites are deliberately LATER slices.
+API_PYTHON_READ_SITES: tuple[ApiPythonReadSite, ...] = (
+    ApiPythonReadSite("check_branch_protection.py", "main", "branches/{}",
+                      ("protection",), (), ("verdict", "main"),
+                      frozenset({"required_status_checks", "strict", "contexts",
+                                 "enforce_admins", "enabled"})),
+    ApiPythonReadSite("comment_monitor.py", "comment_ids", "issues/comments",
+                      ("batch",), ("c",), (),
+                      frozenset({"created_at", "user", "login", "id"})),
+    ApiPythonReadSite("comment_watch.py", "gh_comments", "issues/comments",
+                      ("payload", "comments"), ("c",), ("unseen",),
+                      frozenset({"created_at", "user", "login"})),
+    ApiPythonReadSite("dispatch_guard.py", "issue_comments", "issues/{}/comments",
+                      ("payload",), ("page", "item", "raw"), ("normalize_comments",),
+                      frozenset({"body", "id", "comment_id", "created_at", "createdAt"})),
+    ApiPythonReadSite("hermes_pin_freshness.py", "read_channel", "releases/latest",
+                      ("payload",), (), ("channel_tag",), frozenset({"tag_name"})),
+    ApiPythonReadSite("issue_queue.py", "_branches", "git/matching-refs/heads/{}",
+                      ("refs",), ("r",), (), frozenset({"ref"})),
+    ApiPythonReadSite("issue_thread.py", "main", "issues/{}",
+                      ("issue",), (), ("render",), frozenset({"title", "body"})),
+    ApiPythonReadSite("owed_rows_check.py", "read_thread", "issues/{}",
+                      ("issue", "issue_json"), (), ("thread",), frozenset({"body"})),
+    ApiPythonReadSite("pipeline_failure_issue.py", "window_runs", "actions/runs?{}",
+                      ("payload",), ("rows", "r", "row"), ("_project_run",),
+                      frozenset({"workflow_runs", "id", "workflow_name", "name",
+                                 "head_branch", "head_sha", "event", "created_at",
+                                 "conclusion", "status", "html_url"}),
+                      blocked=frozenset({"run", "projected"})),
+    ApiPythonReadSite("queued_run_alarm.py", "stuck_jobs", "actions/jobs/{}",
+                      ("detail", "job"), (), ("stuck_jobs",),
+                      frozenset({"labels", "runnerName", "runner_name", "name"}),
+                      exclude=frozenset({"status", "startedAt", "databaseId", "url",
+                                         "minutes", "jobs"}),
+                      blocked=frozenset({"run", "jobs"})),
+    ApiPythonReadSite("queued_run_alarm.py", "comment_run", "issues/{}/comments",
+                      ("existing",), ("c",), (), frozenset({"body"})),
+    ApiPythonReadSite("watch_monitor.py", "fetch_payload",
+                      ("issues", "pulls", "actions/runs", "commits"),
+                      ("payload", "runs_payload", "run"), ("rows", "r"),
+                      ("marker_state", "pull_token", "inject_run_prs"),
+                      frozenset({"workflow_runs", "head_branch", "event", "pull_requests",
+                                 "number", "id", "status", "conclusion", "name", "sha"}),
+                      exclude=frozenset({"comments", "runs", "master", "run_prs",
+                                         "COMMENTS_V2_KEY"})),
+    ApiPythonReadSite("refresh_run_block.py", "fetch",
+                      ("actions/runs/{}", "actions/runs/{}/jobs"),
+                      ("meta", "jobs"), ("job",), ("legs_and_aggregate",),
+                      frozenset({"html_url", "run_started_at", "jobs", "name",
+                                 "started_at"})),
+)
+
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _JQ_STRING = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 
@@ -441,6 +556,192 @@ def api_jq_problems(endpoint: str, expr: str) -> list[str]:
             problems.append(f"`gh api {family} --jq {expr}` asks for {path}, which the recorded "
                             f"answer shape of that endpoint does not carry (recorded: "
                             f"{', '.join(sorted(shape.paths)) or 'none'})")
+    return problems
+
+
+# --------------------------------------------------------------------------- Python-side read extractor
+_PYTHON_ANSWER_WRAPPERS = frozenset({"_gh_json", "_gh", "_run", "json.loads", "as_list"})
+
+
+def _py_unwrap(node):
+    """Peel a guarded/defaulted expression to the value it actually reads from."""
+    for _ in range(8):
+        if isinstance(node, ast.BoolOp) and node.values:
+            node = node.values[0]
+        elif isinstance(node, ast.IfExp):
+            node = node.body
+        elif isinstance(node, ast.NamedExpr):
+            node = node.value
+        elif isinstance(node, ast.Starred):
+            node = node.value
+        else:
+            return node
+    return node
+
+
+def _py_const(node) -> str | None:
+    node = _py_unwrap(node)
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+
+def _py_call_name(node) -> str | None:
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return getattr(func, "id", None)
+
+
+def _py_resolves(node, sources: set[str], loop_pairs: dict[str, frozenset[str]]) -> bool:
+    """True when an expression is rooted at a registered answer/root/element name.
+
+    `(x or {}).get("login")`, `if`/`else` defaults, `rows[0]`, `as_list(payload.get(...))`
+    and the known answer wrappers (`_gh_json`, `_gh`, `_run`, `json.loads`) all resolve;
+    an unrelated local (`os.environ.get("ISSUE")`, `raw.get(...)`) does not.
+    """
+    node = _py_unwrap(node)
+    if isinstance(node, ast.Name):
+        return node.id in sources
+    if isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "get" and node.args:
+            return _py_resolves(node.func.value, sources, loop_pairs)
+        if _py_call_name(node) in _PYTHON_ANSWER_WRAPPERS:
+            return True
+        return any(_py_resolves(arg, sources, loop_pairs) for arg in node.args)
+    if isinstance(node, ast.Subscript):
+        return _py_resolves(node.value, sources, loop_pairs)
+    if isinstance(node, (ast.ListComp, ast.GeneratorExp)):
+        return any(_py_resolves(g.iter, sources, loop_pairs) for g in node.generators)
+    return False
+
+
+def _py_pair_fields(tree: ast.Module) -> dict[str, frozenset[str]]:
+    """Module-level `NAME = (("camel", "snake"), …)` tables -> their second column.
+
+    `pipeline_failure_issue._RUN_ROW_FIELDS` holds the REST names the tree reads off an
+    `actions/runs` row through a loop variable, so the extractor derives those literal
+    names from the tree instead of hard-coding them here.
+    """
+    pairs: dict[str, frozenset[str]] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or not isinstance(node.targets[0], ast.Name):
+            continue
+        value = node.value
+        if not isinstance(value, (ast.Tuple, ast.List)):
+            continue
+        fields = []
+        for elt in value.elts:
+            if not isinstance(elt, (ast.Tuple, ast.List)) or len(elt.elts) != 2:
+                fields = []
+                break
+            first, second = _py_const(elt.elts[0]), _py_const(elt.elts[1])
+            if first is None or second is None:
+                fields = []
+                break
+            fields.append(second)
+        if fields:
+            pairs[node.targets[0].id] = frozenset(fields)
+    return pairs
+
+
+def api_python_read_problems(tree: ast.Module, file: str | None = None) -> list[str]:
+    """Bare `line: problem` messages for the registered Python-side `gh api` reads.
+
+    Each record is re-derived from the tree: walk `caller` plus its `readers`, collect
+    literal keys whose receiver is `root`, an `elements` var, or a value derived from
+    them by a recorded `.get()` chain, then require extracted == recorded and every
+    extracted name to be a field of that answer's recorded family. An unknown name OR
+    a set mismatch is a finding — a renamed REST field can no longer hide behind
+    `.get()`'s `None`. With `file` set only that script's records are checked; bare,
+    each applicable record is checked against whatever tree is handed in.
+    """
+    functions: dict[str, list] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            functions.setdefault(node.name, []).append(node)
+    loop_pairs: dict[str, frozenset[str]] = {}
+    pair_fields = _py_pair_fields(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.For, ast.comprehension)) and isinstance(node.target, ast.Tuple):
+            iterator = node.iter
+            if isinstance(iterator, ast.Name) and iterator.id in pair_fields:
+                for elt in node.target.elts:
+                    if isinstance(elt, ast.Name):
+                        loop_pairs[elt.id] = pair_fields[iterator.id]
+
+    problems: list[str] = []
+    for site in API_PYTHON_READ_SITES:
+        if file is not None and site.file != file:
+            continue
+        anchor = functions.get(site.caller, [])
+        at = getattr(anchor[0], "lineno", 0) if anchor else 0
+        scopes = [node for name in (site.caller, *site.readers)
+                  for node in functions.get(name, [])]
+        if not scopes:
+            problems.append(f"{at}: registered Python read scope {site.caller} "
+                            f"({site.file}) is missing — the site cannot be checked")
+            continue
+        sources = (set(site.root) | set(site.elements)) - set(site.blocked)
+        for _ in range(5):                      # fixed point over locals derived from root
+            added: set[str] = set()
+            for scope in scopes:
+                for node in ast.walk(scope):
+                    if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+                        if _py_resolves(node.value, sources, loop_pairs):
+                            added.add(node.targets[0].id)
+                    elif isinstance(node, (ast.For, ast.comprehension)):
+                        targets = ([node.target.id] if isinstance(node.target, ast.Name)
+                                   else [e.id for e in node.target.elts
+                                         if isinstance(e, ast.Name)]
+                                   if isinstance(node.target, ast.Tuple) else [])
+                        if _py_resolves(node.iter, sources, loop_pairs):
+                            added.update(targets)
+            added -= set(site.blocked)
+            if added <= sources:
+                break
+            sources |= added
+
+        found: dict[str, int] = {}
+        for scope in scopes:
+            for node in ast.walk(scope):
+                if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and node.func.attr == "get" and node.args):
+                    if not _py_resolves(node.func.value, sources, loop_pairs):
+                        continue
+                    arg = _py_unwrap(node.args[0])
+                    keys = []
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        keys = [arg.value]
+                    elif isinstance(arg, ast.Name) and arg.id in loop_pairs:
+                        keys = sorted(loop_pairs[arg.id])
+                    for key in keys:
+                        if key not in site.exclude:
+                            found.setdefault(key, node.lineno)
+                elif isinstance(node, ast.Subscript):
+                    key = _py_const(node.slice)
+                    if (key is not None and key not in site.exclude
+                            and _py_resolves(node.value, sources, loop_pairs)):
+                        found.setdefault(key, node.lineno)
+
+        recorded = set(site.fields)
+        for key in sorted(set(found) - recorded):
+            problems.append(
+                f"{found[key]}: Python read of {key!r} off the recorded `gh api "
+                f"{site.family}` answer is not recorded — a renamed REST field fails "
+                "only at RUN time (issue #1683)")
+        for key in sorted(recorded - set(found)):
+            problems.append(f"{at}: recorded Python read field {key!r} at "
+                            f"{site.file}:{site.caller} is no longer read by the tree "
+                            "— re-record the site")
+        expected = API_PYTHON_FIELDS.get(site.family)
+        if expected is None:
+            problems.append(f"{at}: `gh api {site.family}` Python read family is not "
+                            "recorded in API_PYTHON_FIELDS")
+        else:
+            for key in sorted(set(found) - set(expected)):
+                problems.append(f"{found[key]}: Python pick {key!r} is not a recorded "
+                                f"field of the `gh api {site.family}` answer")
     return problems
 
 
@@ -779,6 +1080,11 @@ def scan_file(path: Path) -> list[str]:
             continue
         for problem in api_jq_problems(endpoint, expression):
             problems.append(f"{path}:{lineno}: {problem}")
+    # issue #1683 slice 1: one extra pass over the REGISTERED no-projection Python reads.
+    # The `--jq` path above is untouched, so a green tree stays green; a planted rename
+    # on any of the 13 sites is now a finding with file:line (bare messages get the path).
+    for problem in api_python_read_problems(tree, path.name):
+        problems.append(f"{path}:{problem}")
     return problems
 
 

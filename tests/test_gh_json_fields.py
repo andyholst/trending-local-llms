@@ -678,6 +678,209 @@ def test_the_scan_is_wired_where_ci_runs_it():
               if "scripts/gh_json_fields.py" in p.read_text()) == 0, "")
 
 
+#: --------------------------------------------------------------------------- issue #1683, slice 1
+#: The base module is PINNED by a recorded blob, never read from the moving `origin/master`
+#: ref. #1675 proved an unconditional `git show origin/master:` assertion goes RED after its
+#: own PR merges (`101 passed, 2 failed`); the fixture below is the `stale_claim_sweep` shape —
+#: an authentic pre-change module committed into the tree, so a linked worktree inside the
+#: container (where `git show` can go empty) still reads it. Recorded from origin/master
+#: 9faaa4695bbc707ea11f658093a1acbb84369b34, blob 9e96236b2aaa20005b9d8fa1be8d91489218c284.
+BASE_MODULE_BLOB = "9e96236b2aaa20005b9d8fa1be8d91489218c284"
+BASE_MODULE_COMMIT = "9faaa4695bbc707ea11f658093a1acbb84369b34"
+BASE_FIXTURE = "tests/fixtures/gh_json_fields_base_1683.py"
+
+
+def _import_fixture_module(name: str, source: str):
+    """Import a recorded module source as a throwaway module (never a moving ref)."""
+    handle = tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8")
+    try:
+        handle.write(source)
+        handle.close()
+        spec = importlib.util.spec_from_file_location(name, handle.name)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        os.unlink(handle.name)
+
+
+def _pinned_base_module():
+    source = (ROOT / BASE_FIXTURE).read_text(encoding="utf-8")
+    check("the pinned base fixture is the recorded pre-#1683 module (non-empty)",
+          bool(source.strip()) and "API_PYTHON_READ_SITES" not in source
+          and "PYTHON_GET_FIELDS_OUT_OF_SCOPE" in source, len(source))
+    return _import_fixture_module("gh_json_fields_base_1683", source)
+
+
+def _planted_python_tree(filename: str, old: str, new: str):
+    """Copy the REAL scripts/ tree and plant one field rename in one registered site."""
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    shutil.copytree(ROOT / "scripts", td / "scripts", dirs_exist_ok=True)
+    path = td / "scripts" / filename
+    source = path.read_text(encoding="utf-8")
+    count = source.count(old)
+    if count:
+        path.write_text(source.replace(old, new), encoding="utf-8")
+    return td, count
+
+
+def test_python_pick_rename_is_caught():
+    """A renamed REST field is RED on the pinned base and GREEN on the head, in BOTH forms.
+
+    The planted tree is a real copy of scripts/; only the field spelling changes. The head
+    assertion is made through `contract`, so this file overlaid onto the pin (base module)
+    FAILS here as an assertion — never a traceback — which is the RED proof.
+    """
+    base = _pinned_base_module()
+
+    td, count = _planted_python_tree("comment_watch.py", 'c.get("created_at")',
+                                     'c.get("createdAt")')
+    check("the `.get()` plant lands on the real comment_watch.py", count == 2, count)
+    head = [p for p in contract.scan_scripts(td)
+            if "comment_watch.py" in p and "createdAt" in p]
+    check("a planted `.get(\"createdAt\")` is a finding naming file:line and the field",
+          bool(head) and any(re.search(r"comment_watch\.py:\d+:", p) for p in head), head[:3])
+    blind = base.scan_scripts(td) if base is not None else []
+    check("RED on the pinned base: the SAME plant produces no finding there",
+          not any("createdAt" in p for p in blind), blind[:3])
+    shutil.rmtree(td, ignore_errors=True)
+
+    td, count = _planted_python_tree("issue_queue.py", 'r["ref"]', 'r["refX"]')
+    check("the subscript plant lands on the real issue_queue.py", count == 1, count)
+    head = [p for p in contract.scan_scripts(td)
+            if "issue_queue.py" in p and "refX" in p]
+    check("a planted `r[\"refX\"]` is a finding naming file:line and the field",
+          bool(head) and any(re.search(r"issue_queue\.py:\d+:", p) for p in head), head[:3])
+    blind = base.scan_scripts(td) if base is not None else []
+    check("RED on the pinned base: the SAME subscript rename produces no finding there",
+          not any("refX" in p for p in blind), blind[:3])
+    shutil.rmtree(td, ignore_errors=True)
+
+
+def test_registered_reads_match_tree():
+    """All 13 sites re-derive their recorded fields from the real tree — including the splat.
+
+    `getattr` reads the new surface defensively so the pin makes this FAIL as assertions, not
+    crash mid-module. The root filter is proved non-vacuously: `os.environ.get("ISSUE")` and
+    the comment picks in the same function are NOT attributed to the whole-issue answer.
+    """
+    sites = getattr(contract, "API_PYTHON_READ_SITES", None)
+    fields = getattr(contract, "API_PYTHON_FIELDS", None)
+    derive = getattr(contract, "api_python_read_problems", None)
+    check("the registry records 13 no-projection read sites (absent on the base)",
+          sites is not None and len(sites) == 13,
+          len(sites) if sites is not None else "absent on the base")
+    if sites is None or fields is None or derive is None:
+        return
+    check("the invisible refresh_run_block.py GH_API splat is site 13",
+          any(s.file == "refresh_run_block.py" and s.caller == "fetch"
+              and "jobs" in s.fields and "run_started_at" in s.fields for s in sites), "")
+    check("every registered family has a recorded REST answer field set",
+          all(s.family in fields for s in sites),
+          [str(s.family) for s in sites if s.family not in fields])
+    check("each site's recorded fields are a subset of its family's recorded answer",
+          all(set(s.fields) <= set(fields[s.family]) for s in sites
+              if s.family in fields), "")
+    for site in sites:
+        tree = ast.parse((ROOT / "scripts" / site.file).read_text(encoding="utf-8"))
+        problems = derive(tree, site.file)
+        check(f"{site.file}:{site.caller} re-derives exactly its recorded fields",
+              problems == [], problems[:3])
+    src = (ROOT / "scripts" / "issue_thread.py").read_text(encoding="utf-8")
+    check("root filter ignores `os.environ.get(\"ISSUE\", \"\")` in the same function",
+          'os.environ.get("ISSUE", "")' in src
+          and derive(ast.parse(src), "issue_thread.py") == [], "")
+    check("root filter does not attribute the identity `.[]` comment picks to the issue root",
+          'c.get("created_at", "")' in src
+          and derive(ast.parse(src), "issue_thread.py") == [])
+
+
+def _fixed_origin_master_module():
+    """Simulate the post-merge state: a temp repo whose origin/master IS the fixed module."""
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    shutil.copy2(ROOT / "scripts" / "gh_json_fields.py",
+                 td / "scripts" / "gh_json_fields.py")
+    env = {**os.environ,
+           "GIT_AUTHOR_NAME": "TLL", "GIT_AUTHOR_EMAIL": "tll@example.invalid",
+           "GIT_COMMITTER_NAME": "TLL", "GIT_COMMITTER_EMAIL": "tll@example.invalid"}
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(td), "-c", "safe.directory=*", *args],
+                              capture_output=True, text=True, env=env)
+
+    git("init", "-q")
+    git("add", "scripts/gh_json_fields.py")
+    git("commit", "-qm", "fixed head")
+    git("update-ref", "refs/remotes/origin/master", "HEAD")
+    proc = git("show", "origin/master:scripts/gh_json_fields.py")
+    check("a simulated origin/master that IS the fixed head is readable",
+          proc.returncode == 0 and bool(proc.stdout.strip()), proc.stderr[:120])
+    return _import_fixture_module("gh_json_fields_fixed_head", proc.stdout)
+
+
+def test_fixed_origin_master_arm_is_green():
+    """The #1675 post-merge instability cannot recur: both refs are read by PIN, not assert.
+
+    With origin/master simulated to the FIXED module, every arm stays GREEN; the pinned base
+    stays the RED arm. No guard asserts unconditionally that a moving ref lacks the seam.
+    """
+    base = _pinned_base_module()
+    fixed = _fixed_origin_master_module()
+    fixed_sites = getattr(fixed, "API_PYTHON_READ_SITES", None) if fixed is not None else None
+    check("the pinned fixture stays the pre-change BASE after the simulated merge",
+          base is not None and getattr(base, "API_PYTHON_READ_SITES", None) is None
+          and fixed_sites is not None and len(fixed_sites) == 13, "")
+    if base is None or fixed is None or fixed_sites is None:
+        return
+    for site in fixed_sites:
+        tree = ast.parse((ROOT / "scripts" / site.file).read_text(encoding="utf-8"))
+        check(f"fixed-head arm: {site.file}:{site.caller} still re-derives clean",
+              fixed.api_python_read_problems(tree, site.file) == [], "")
+    td, count = _planted_python_tree("comment_watch.py", 'c.get("created_at")',
+                                     'c.get("createdAt")')
+    check("the fixed-head arm plants the same real rename", count == 2, count)
+    caught = [p for p in fixed.scan_scripts(td)
+              if "comment_watch.py" in p and "createdAt" in p]
+    check("fixed-head arm: the planted rename is STILL caught (GREEN after merge)",
+          bool(caught), caught[:2])
+    shutil.rmtree(td, ignore_errors=True)
+
+
+def test_shipped_jq_shapes_still_green():
+    """Non-breaking proof: `--scan` is exit 0 / 0 findings, the 17 `--jq` reads keep their
+    verdicts, and discovery stays 31 token-lists / 17 projecting / 14 not."""
+    proc = _run_cli("--scan")
+    check("`--scan` on the shipped tree exits 0 with 0 findings",
+          proc.returncode == 0 and "FAIL" not in proc.stdout, proc.stdout[:300])
+    projected, without, expressions = [], [], []
+    for path in sorted((ROOT / "scripts").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        consts = contract._string_bindings(tree)
+        expressions.extend(e for _, _, e in contract.api_jq_requests(tree, consts))
+        for node, tokens in contract._api_token_lists(tree):
+            if "--json" in tokens or "api" not in tokens:
+                continue
+            key = (path.name, getattr(node, "lineno", 0))
+            bucket = projected if any(t in ("--jq", "-q") for t in tokens) else without
+            if key not in bucket:
+                bucket.append(key)
+    check("discovery unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
+          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+          f"{len(projected) + len(without)} / {len(projected)} / {len(without)}")
+    bad = [e for e in expressions if e and
+           contract.api_jq_problems("repos/o/r/pulls/1", e) is None]
+    check("all discovered `--jq` expressions still parse (no new unreadable expression)",
+          bad == [], bad[:3])
+    check("the recorded `--jq` endpoint families are unchanged (7)",
+          len(contract.API_SHAPES) == 7, len(contract.API_SHAPES))
+    check("the new Python pass did not change the `--json` field sets",
+          len(contract.FIELD_SETS) == 10, len(contract.FIELD_SETS))
+
+
 def main() -> int:
     test_the_field_set_is_the_real_cli_answer()
     test_every_recorded_field_set_is_the_real_cli_answer()
@@ -695,6 +898,10 @@ def main() -> int:
     test_the_scope_claim_matches_the_tree()
     test_the_scan_reads_the_real_tree_and_sees_the_api_calls()
     test_the_scan_is_wired_where_ci_runs_it()
+    test_python_pick_rename_is_caught()
+    test_registered_reads_match_tree()
+    test_fixed_origin_master_arm_is_green()
+    test_shipped_jq_shapes_still_green()
     print(f"\n{PASSED} passed, {FAILED} failed")
     return 1 if FAILED else 0
 
