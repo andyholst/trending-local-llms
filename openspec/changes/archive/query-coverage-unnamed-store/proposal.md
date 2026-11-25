@@ -1,6 +1,7 @@
 # Proposal: query-coverage-unnamed-store
 
 Issue: #1688
+PR: #1692
 
 ## Why
 

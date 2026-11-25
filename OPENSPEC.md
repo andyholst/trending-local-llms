@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **539**
+Active changes: **1** · archived: **541**
 
 ## Active changes
 
@@ -426,6 +426,7 @@ Active changes: **1** · archived: **539**
 | `python-env-seam-in-container` | archived | #1411 | #1451 | [python-env-seam](openspec/changes/archive/python-env-seam-in-container/specs/python-env-seam/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/python-env-seam-in-container/proposal.md) |
 | `qa-validate-carries-the-guard` | archived | #279 | — | [qa-validate-carries-the-guard](openspec/changes/archive/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/qa-validate-carries-the-guard/proposal.md) |
 | `query-coverage-guard` | archived | #264 | — | [query-coverage](openspec/changes/archive/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/query-coverage-guard/proposal.md) |
+| `query-coverage-unnamed-store` | archived | #1688 | #1692 | [query-coverage-unnamed-store](openspec/changes/archive/query-coverage-unnamed-store/specs/query-coverage-unnamed-store/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/query-coverage-unnamed-store/proposal.md) |
 | `query-coverage-window-independent-wiring` | archived | #1678 | #1684 | [query-coverage-prompt-wiring](openspec/changes/archive/query-coverage-window-independent-wiring/specs/query-coverage-prompt-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/query-coverage-window-independent-wiring/proposal.md) |
 | `query-coverage-wiring-derives-live-models` | archived | #1077 | #1078 | [query-coverage-wiring](openspec/changes/archive/query-coverage-wiring-derives-live-models/specs/query-coverage-wiring/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/query-coverage-wiring-derives-live-models/proposal.md) |
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
