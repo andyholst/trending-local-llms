@@ -1321,6 +1321,86 @@ def test_auto_merge_holds_a_do_not_merge_labeled_pr():
           "auto-merge allowed" in out, out[-200:])
 
 
+def _run_message_hold(make_rc: int) -> tuple[int, str, str]:
+    """Execute the REAL message-hold step's shell with a stub `make` on PATH.
+
+    The stub stands in for the product call (`make pr-message-check`) and answers with the
+    refusal text the seam prints, so both hold paths run against the workflow's OWN `run:`
+    block (issue #1704), never a replica (rule 6m — an external stand-in only).
+    """
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    hold = step(load("qa-validate.yml")["jobs"]["auto-merge"], "message pattern (#1704)")
+    td = Path(tempfile.mkdtemp())
+    try:
+        make = td / "make"
+        make.write_text(
+            "#!/usr/bin/env bash\n"
+            "cat <<'EOF'\n"
+            "[pr-message-check] REFUSED: missing required section(s): ## Why, ## What, ## How\n"
+            "EOF\n"
+            f"exit {make_rc}\n")
+        make.chmod(0o755)
+        out = td / "out"
+        env = dict(os.environ, PATH=f"{td}:{os.environ['PATH']}", GH_TOKEN="x",
+                   REPO="andyholst/trending-local-llms", PR_NUM="1704",
+                   PR_EVENT=str(td / "event.json"), GITHUB_OUTPUT=str(out))
+        p = subprocess.run(["bash", "-e", "-c", hold.get("run", "")], env=env,
+                           capture_output=True, text=True)
+        ghout = out.read_text() if out.exists() else ""
+        return (p.returncode, p.stdout + p.stderr,
+                ghout.split("=", 1)[1].strip() if "=" in ghout else ghout.strip())
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_auto_merge_holds_a_non_conforming_body():
+    """Issue #1704: a body that fails `make pr-message-check` must NOT be squashed.
+
+    Measured: run 45539207073 (push head 8184e59d / PR #1696) — the squash copied a body with
+    no five sections onto master, and the push-to-master `closure` job then refused the landed
+    commit, because `closure` is not a required check (rule 1 names validate + live-smoke). The
+    hold runs the real gate against this run's event payload and SKIPS the merge instead of
+    failing it."""
+    am = load("qa-validate.yml")["jobs"]["auto-merge"]
+    names = [s.get("name", "") for s in steps(am)]
+    hold_at = next((i for i, n in enumerate(names) if "message pattern (#1704)" in n), -1)
+    merge_at = next((i for i, n in enumerate(names) if "Squash-merge" in n), -1)
+    check("auto-merge-message: a message-pattern hold step exists", hold_at >= 0, names)
+    check("auto-merge-message: the hold runs BEFORE the squash-merge (a mid-run edit is caught by if)",
+          0 <= hold_at < merge_at, (hold_at, merge_at))
+    hold = step(am, "message pattern (#1704)")
+    hrun = hold.get("run", "")
+    check("auto-merge-message: the hold reaches the product through make (rule 6m)",
+          "make pr-message-check" in hrun, hrun[:200])
+    check("auto-merge-message: the hold reads THIS run's PR event payload",
+          hold.get("env", {}).get("PR_EVENT") == "${{ github.event_path }}"
+          and 'PR_EVENT="$PR_EVENT"' in hrun, hrun[:200])
+    check("auto-merge-message: only the allowlisted hold= key reaches $GITHUB_OUTPUT (rule 3f)",
+          hrun.count('>> "$GITHUB_OUTPUT"') == 2 and "OUT=$(make" in hrun, hrun[:300])
+    st = next(s for s in steps(am) if "gh pr merge" in s.get("run", ""))
+    check("auto-merge-message: the merge step is skipped while the hold fires",
+          "steps.message-check.outputs.hold != 'true'" in str(st.get("if", "")), st.get("if"))
+    check("auto-merge-message: every other merge-path step is gated too",
+          all("steps.message-check.outputs.hold != 'true'" in str(s.get("if", ""))
+              for s in steps(am) if s.get("id") in {"auto-merge-rebase", "head-check"}),
+          [(s.get("id"), s.get("if")) for s in steps(am)])
+    rc, out, holdval = _run_message_hold(1)
+    check("auto-merge-message: a non-conforming body exits 0 (a hold, not a failure)",
+          rc == 0, f"rc={rc} {out[-200:]}")
+    check("auto-merge-message: the non-conforming body reports hold=true", holdval == "true", holdval)
+    check("auto-merge-message: the seam's refusal text reaches the log",
+          "missing required section(s)" in out, out[-200:])
+    check("auto-merge-message: the holding step makes no merge call",
+          "gh pr merge" not in hrun, hrun[:200])
+    rc, out, holdval = _run_message_hold(0)
+    check("auto-merge-message: a conforming body exits 0", rc == 0, f"rc={rc} {out[-200:]}")
+    check("auto-merge-message: a conforming body reports hold=false (merge allowed)",
+          holdval == "false", holdval)
+
+
 def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
     """#351 → #629: the implement step's agent stream IS the step's console log, and it is
     redacted LIVE by the target itself (`implement-issue` pipes the whole stream through
@@ -3333,6 +3413,7 @@ def main() -> int:
     test_nothing_pushes_master()
     test_auto_merge()
     test_auto_merge_holds_a_do_not_merge_labeled_pr()
+    test_auto_merge_holds_a_non_conforming_body()
     test_images_follow_their_inputs()
     test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()
