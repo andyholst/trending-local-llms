@@ -25,6 +25,7 @@ import threading
 from pathlib import Path
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
+import fleet_chain_fixtures as F  # noqa: E402  (issues #1744/#1745: derive, never freeze)
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "free_model_refresh.py"
@@ -83,13 +84,11 @@ def _models(free: list[tuple[str, int]], paid: tuple[str, ...] = ("deepseek/deep
     return {"object": "list", "data": data}
 
 
-SHIPPED_FREE = [
-    ("meituan/longcat-2.5:free", 1048576),
-    ("tencent/hy4-flash:free", 1048576),
-    ("qwen/qwen4-max:free", 1000000),
-    ("upstage/solar-mini4:free", 524288),
-    ("stepfun/step-3.7-flash:free", 262144),
-]
+# Issues #1744/#1745: the fixture is DERIVED from the shipped chain at test time. A frozen
+# catalogue literal here is exactly what reddened three keeper PRs on every live refresh.
+SHIPPED = F.read_chain(CHAIN)
+SHIPPED_FREE = F.free_steps(SHIPPED)
+SHIPPED_PRIMARY = F.primary_step(SHIPPED)
 
 
 def _scratch(td: Path, base_url: str) -> Path:
@@ -157,7 +156,11 @@ def test_a_new_free_model_is_appended_with_its_live_context_and_the_non_free_tie
 
 def test_a_retired_free_model_drops_and_a_retired_primary_hands_over():
     with tempfile.TemporaryDirectory() as td:
-        srv, url = _server(_models(SHIPPED_FREE[1:]))  # the primary (longcat) is gone
+        # Derive both the dropped step and the successor from the shipped chain, so the
+        # case follows the live catalogue instead of a frozen id/alias/context snapshot.
+        retired_model = SHIPPED_PRIMARY["model"]
+        successor_model = SHIPPED_FREE[1][0]
+        srv, url = _server(_models(SHIPPED_FREE[1:]))  # the shipped primary is gone
         try:
             root = _scratch(Path(td), url)
             proc = run_refresh("--write", root=root)
@@ -166,12 +169,12 @@ def test_a_retired_free_model_drops_and_a_retired_primary_hands_over():
             data = chain_of(root)
             free = [e for e in data["chain"] if e["role"] in ("primary", "fallback")]
             check("the retired id is gone from the chain",
-                  all(e["model"] != "meituan/longcat-2.5:free" for e in data["chain"]), str(free))
+                  all(e["model"] != retired_model for e in data["chain"]), str(free))
             check("the first survivor becomes the primary",
-                  free[0]["model"] == "tencent/hy4-flash:free" and free[0]["role"] == "primary", str(free[0]))
+                  free[0]["model"] == successor_model and free[0]["role"] == "primary", str(free[0]))
             check("the retirement is announced and recorded",
-                  "retired free-longcat" in out
-                  and data["measured"]["refresh_history"][-1]["retired"] == ["meituan/longcat-2.5:free"],
+                  f"retired {SHIPPED_PRIMARY['alias']}" in out
+                  and data["measured"]["refresh_history"][-1]["retired"] == [retired_model],
                   out[-200:])
             check("the paid pin stays LAST", data["chain"][-1]["role"] == "last_resort", str(data["chain"][-1]))
         finally:
@@ -195,15 +198,18 @@ def test_an_unchanged_live_set_writes_nothing():
 
 def test_a_context_drift_follows_the_live_read():
     with tempfile.TemporaryDirectory() as td:
-        drifted = [(mid, 999999 if mid == "qwen/qwen4-max:free" else ctx) for mid, ctx in SHIPPED_FREE]
+        # Drift a survivor, never a frozen id: whichever free model the chain currently ships
+        # last is the one whose context this case proves follows the live read.
+        drift_model = SHIPPED_FREE[-1][0]
+        drifted = [(mid, 999999 if mid == drift_model else ctx) for mid, ctx in SHIPPED_FREE]
         srv, url = _server(_models(drifted))
         try:
             root = _scratch(Path(td), url)
             proc = run_refresh("--write", root=root)
             check("a context drift refreshes green", proc.returncode == 0, proc.stderr[-200:])
-            qwen = next(e for e in chain_of(root)["chain"] if e["model"] == "qwen/qwen4-max:free")
+            survivor = next(e for e in chain_of(root)["chain"] if e["model"] == drift_model)
             check("the surviving model's context_window follows the live read",
-                  qwen["context_window"] == 999999, str(qwen))
+                  survivor["context_window"] == 999999, str(survivor))
         finally:
             srv.shutdown()
 
@@ -348,6 +354,33 @@ def test_the_seam_is_wired_where_it_bites():
     check("this suite is discovered by `make test`", wired(__file__), "")
 
 
+def test_fixtures_follow_the_chain_not_a_frozen_catalogue():
+    """Issues #1744/#1745: the fixtures must follow the shipped data, not a snapshot of it.
+
+    A synthetic chain whose free ids/aliases are absent from every frozen literal REDs the old
+    hardcoded shape (no derivation existed) and GREENs this one. It also proves the shipped
+    fixture is derived from the shipped chain on THIS revision — the exact assertion the
+    keeper head failed when the live catalogue retired two models.
+    """
+    synthetic = {"chain": [
+        {"model": "synthetic-zeta/alpha:free", "alias": "free-zeta", "role": "primary", "context_window": 11111},
+        {"model": "synthetic-eta/beta:free", "alias": "free-eta", "role": "fallback", "context_window": 22222},
+        {"model": "local-model", "alias": "local-x", "role": "local_fallback", "context_window": 4096},
+        {"model": "paid/model", "alias": "paid-x", "role": "last_resort", "context_window": 8192},
+    ]}
+    check("free-step fixture follows a synthetic chain",
+          F.free_steps(synthetic) == [("synthetic-zeta/alpha:free", 11111),
+                                      ("synthetic-eta/beta:free", 22222)])
+    check("primary fixture follows a synthetic chain",
+          F.primary_step(synthetic)["model"] == "synthetic-zeta/alpha:free")
+    check("alias order follows a synthetic chain",
+          F.alias_order(synthetic) == ["free-zeta", "free-eta", "local-x", "paid-x"])
+    check("fallback model order follows a synthetic chain",
+          F.fallback_models(synthetic) == ["synthetic-eta/beta:free", "local-model", "paid/model"])
+    check("the shipped fixture is derived from the shipped chain, not frozen",
+          SHIPPED_FREE == F.free_steps(SHIPPED), str(SHIPPED_FREE))
+
+
 def main() -> int:
     print("free_model_refresh (issue #1195): the weekly live free-tier refresh")
     test_a_new_free_model_is_appended_with_its_live_context_and_the_non_free_tiers_survive()
@@ -359,6 +392,7 @@ def main() -> int:
     test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real_gate()
     test_the_pr_body_is_a_keeper_with_no_closing_keyword()
     test_the_seam_is_wired_where_it_bites()
+    test_fixtures_follow_the_chain_not_a_frozen_catalogue()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
