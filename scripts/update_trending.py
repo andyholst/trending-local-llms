@@ -592,23 +592,43 @@ def extract_models_seen(html: str) -> list[str]:
     return [m for m in known if m.strip()]
 
 
+#: A gateway status counts as a transport failure only when it is written as an
+#: HTTP status SHAPE, never as a bare digit sequence in prose (issue #1714).
+_GATEWAY_STATUS_RE = re.compile(
+    r"(?:http(?:\s+(?:error|status))?\s+|(?:status|error)\s*code\s*[:=]?\s*)"
+    r"(?:502|503|504|522)\b"
+    r"|\b(?:502|503|504|522)\s+"
+    r"(?:bad\s+gateway|server\s+error|service\s+unavailable|gateway\s+(?:timeout|error))\b",
+    re.I,
+)
+_TIMEOUT_WORD_TOKENS = (
+    "timed out", "timeout", "gateway timeout", "bad gateway",
+    "service unavailable", "gateway error",
+)
+
+
 def is_upstream_timeout(exc: BaseException) -> bool:
     """True for a transport-level timeout / gateway failure from the mirror.
 
     Not an apparently healthy answer and not a credential refusal — the same
     unreachable-mirror class the outage exception covers (issues #291/#1279).
 
-    The gateway family (`502`/`503`, `Bad Gateway`, `Service Unavailable`,
-    `gateway error`) is included because it is the SAME failure seen from the
+    The gateway family is included because it is the SAME failure seen from the
     transport instead of from Firecrawl's JSON envelope: measured on run
     45526182085, 34 read timeouts plus ONE `HTTP Error 502: Bad Gateway` left
     `timeouts=34 != 35`, the total-outage prong never fired and a dead mirror was
     reported as a QUIET SEARCH — red on every PR's auto-merge (issue #1699).
+
+    The status digits must appear in an HTTP status SHAPE (`HTTP Error 502`,
+    `HTTP 522`, `statusCode: 502`, `502 Bad Gateway`, `502 Server Error`), never
+    as a bare number in an unrelated reason (`parsed 502 bytes from the page`):
+    since #1707 `timeouts > 0` is the sole discriminator of the non-blocking
+    outage prong, and a false positive there would remove the `live-smoke` gate
+    on auto-merge (issue #1714).
     """
     text = str(exc).lower()
-    return any(token in text for token in (
-        "timed out", "timeout", "522", "504", "gateway timeout",
-        "502", "503", "bad gateway", "service unavailable", "gateway error",
+    return bool(_GATEWAY_STATUS_RE.search(text) or any(
+        token in text for token in _TIMEOUT_WORD_TOKENS
     ))
 
 
