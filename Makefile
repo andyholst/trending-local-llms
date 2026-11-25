@@ -839,7 +839,7 @@ _check-gh-json-fields:
 	python3 scripts/gh_json_fields.py --scan
 
 .PHONY: check-gh-json-fields
-check-gh-json-fields: ## Fail when a `gh … --json` request asks for a field gh cannot answer (issue #1158)
+check-gh-json-fields: ## Fail when a `gh … --json` request asks for a field gh cannot answer, or a `gh api … --jq` path is one the recorded endpoint shape does not carry (issues #1158/#1160/#1668)
 	@$(MAKE) --no-print-directory _check-gh-json-fields
 
 # The bot's working files, in ONE list (issue #543). They are gitignored, but both bots unstage

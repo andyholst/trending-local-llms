@@ -14,9 +14,14 @@ Four halves, all required by rule 6c:
   * the ghost alarm's own stub gh now REFUSES a request the real gh refuses, and the
     scan is bundled into `make lint` — the gate CI actually runs (rules 6d/6m).
 
+Issue #1668 adds the same contract for `gh api <path> --jq <expr>`: a second recorded family
+(`API_SHAPES`) keyed by the endpoint path tail, the same `--scan`, and guards that FAIL on the
+base revision (which has no API_SHAPES at all).
+
 Plain-script harness (the test image runs these as scripts, not pytest — the same
 command CI runs must be the command you can run locally, rule 6m).
 """
+import ast
 import json
 import os
 import re
@@ -334,6 +339,130 @@ def test_the_ghost_stub_cannot_answer_a_query_the_real_gh_refuses():
               jobs.returncode == 0, jobs.stderr[:200])
 
 
+#: --------------------------------------------------------------------------- issue #1668
+#: `gh api <path> --jq <expr>` names REST fields gh refuses only at RUN time — the same
+#: build-time-vs-run-time hole #1158/#1160 closed for `--json`. The read surface below was
+#: transcribed from live `gh api` reads on 2026-11-24; every family must stay recorded or the
+#: tree scan reds, and an unrecorded path is a finding rather than a silent pass.
+RECORDED_API_FAMILIES: dict[str, tuple[bool, set]] = {
+    "issues/{}": (False, {".body", ".state"}),
+    "pulls/{}": (False, {".merged", ".title", ".body", ".head.ref"}),
+    "issues/{}/comments": (True, {".createdAt", ".body"}),
+    "commits/{}": (False, {".commit.committer.date"}),
+    "contents/{}": (False, {".content"}),
+    "actions/workflows/{}/runs": (False, {".total_count"}),
+    "actions/runs/{}": (False, {".actor.login", ".actor.type", ".triggering_actor.login"}),
+}
+
+#: The exact expression `scripts/pr_health.py::read_run_identity` sends (issue #1646) — the
+#: residual this change exists to bring inside the contract.
+PR_HEALTH_IDENTITY_EXPR = ('.actor.login + "|" + (.actor.type // "") + "|" + '
+                           '(.triggering_actor.login // "")')
+
+
+def _planted_api_caller(endpoint: str, expr: str) -> str:
+    return ("import subprocess\n"
+            f"subprocess.run([\"gh\", \"api\", {json.dumps(endpoint)}, \"--jq\", "
+            f"{json.dumps(expr)}], capture_output=True)\n")
+
+
+def _planted_api_tree(body: str) -> Path:
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    (td / "scripts" / "caller.py").write_text(body)
+    return td
+
+
+def test_the_api_read_surface_is_recorded():
+    """The base revision has no API_SHAPES at all, so this whole half is RED there."""
+    shapes = getattr(contract, "API_SHAPES", None)
+    check("API_SHAPES records exactly the endpoint families the tree reads",
+          shapes is not None and set(shapes) == set(RECORDED_API_FAMILIES),
+          sorted(shapes) if shapes is not None else "absent on the base revision")
+    if shapes is None:
+        return
+    for family, (is_array, paths) in sorted(RECORDED_API_FAMILIES.items()):
+        shape = shapes[family]
+        check(f"{family}: array={is_array} with exactly the recorded read paths",
+              bool(shape.array) == is_array and set(shape.paths) == paths,
+              (shape.array, sorted(shape.paths)))
+    check("a concrete slug, `{repo}` and `{owner}/{repo}` resolve to ONE family",
+          contract.match_api_family("repos/andyholst/trending-local-llms/pulls/7")
+          == contract.match_api_family("repos/{repo}/pulls/7")
+          == contract.match_api_family("repos/{owner}/{repo}/pulls/{}") == "pulls/{}", "")
+    check("a query string and a leading slash do not change the family",
+          contract.match_api_family("/repos/{o}/{r}/actions/workflows/x.yml/runs?per_page=1")
+          == "actions/workflows/{}/runs", "")
+    check("the pr_health identity expression reads only recorded paths",
+          contract.api_jq_problems("repos/{repo}/actions/runs/1", PR_HEALTH_IDENTITY_EXPR) == [],
+          contract.api_jq_problems("repos/{repo}/actions/runs/1", PR_HEALTH_IDENTITY_EXPR))
+
+
+def test_a_planted_jq_path_is_refused():
+    """The measured gap: a `--jq` naming a renamed field must fail at BUILD time."""
+    red = contract.scan_scripts(_planted_api_tree(
+        _planted_api_caller("repos/o/r/actions/runs/1", '.actor.loginr + "|"')))
+    check("a planted `--jq` typo goes RED, naming the file, line and path",
+          len(red) == 1 and "caller.py" in red[0] and ".actor.loginr" in red[0]
+          and re.search(r"caller\.py:\d+:", red[0]) is not None, red)
+    check("the SAME expression with the real field name is green (not a blanket red)",
+          contract.scan_scripts(_planted_api_tree(
+              _planted_api_caller("repos/o/r/actions/runs/1", '.actor.login + "|"'))) == [], "")
+    check("check_argv REFUSES a whole `gh api … --jq` argv naming an unknown path",
+          any(".mergedAtX" in p for p in
+              contract.check_argv(["api", "repos/o/r/pulls/1", "--jq", ".mergedAtX"])), "")
+    check("check_argv admits the same argv naming a recorded path",
+          contract.check_argv(["api", "repos/o/r/pulls/1", "--jq", ".merged"]) == [], "")
+
+
+def test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding():
+    """Never a silent pass: an endpoint outside the contract, or a value the AST cannot read."""
+    unrecorded = contract.scan_scripts(_planted_api_tree(
+        _planted_api_caller("repos/o/r/unknown/thing", ".x")))
+    check("an endpoint family this contract does not record is a finding",
+          len(unrecorded) == 1 and "does not record" in unrecorded[0], unrecorded)
+    dynamic_endpoint = contract.scan_scripts(_planted_api_tree(
+        'import os\nsubprocess.run(["gh", "api", os.environ["EP"], "--jq", ".x"],'
+        " capture_output=True)\n"))
+    check("an ENDPOINT the scan cannot read is a finding, never a silent pass",
+          len(dynamic_endpoint) == 1 and "ENDPOINT" in dynamic_endpoint[0], dynamic_endpoint)
+    dynamic_expr = contract.scan_scripts(_planted_api_tree(
+        'import os\nsubprocess.run(["gh", "api", "repos/o/r/pulls/1", "--jq",'
+        ' os.environ["JQ"]], capture_output=True)\n'))
+    check("an EXPRESSION the scan cannot read is a finding, never a silent pass",
+          len(dynamic_expr) == 1 and "EXPRESSION" in dynamic_expr[0], dynamic_expr)
+
+
+def test_the_json_projection_and_fieldless_api_calls_are_exempt():
+    """Two documented exemptions, pinned so a later widening cannot sneak them back in."""
+    check("`gh <cmd> --json … (-q|--jq) …` stays exempt (the --json half already refuses)",
+          contract.check_argv(["pr", "list", "--json", "number,headRefName", "--jq",
+                               '[.[] | select(.headRefName | startswith("x"))]']) == [], "")
+    check("a `gh api` call carrying no field expression stays exempt",
+          contract.check_argv(["api", "repos/o/r/issues/1/comments", "--paginate",
+                               "--slurp"]) == [], "")
+
+
+def test_the_scan_reads_the_real_tree_and_sees_the_api_calls():
+    """Green here AND non-vacuous: the scan really discovers the repository's `--jq` reads.
+
+    `api_jq_requests` does not exist on the base revision, so it is read DEFENSIVELY — the guard
+    must FAIL there, never crash mid-module and hide the later genuine failures.
+    """
+    problems = contract.scan_scripts(ROOT)
+    check("scan_scripts is GREEN on this repository (`--json` AND `gh api --jq`)",
+          problems == [], problems[:6])
+    discover = getattr(contract, "api_jq_requests", None)
+    bindings = getattr(contract, "_string_bindings", None)
+    seen = 0
+    if discover is not None and bindings is not None:
+        for path in sorted((ROOT / "scripts").glob("*.py")):
+            tree = ast.parse(path.read_text())
+            seen += len(discover(tree, bindings(tree)))
+    check("the scan DISCOVERS the repository's `gh api … --jq` calls (not a vacuous green)",
+          seen >= 15, seen)
+
+
 def test_the_scan_is_wired_where_ci_runs_it():
     """Rules 6d/6m: a check nothing runs is a defect — the target must exist, run the script,
     and be bundled into `make lint`, which qa-validate's `validate` job runs first."""
@@ -380,6 +509,11 @@ def main() -> int:
     test_the_scan_reads_every_subcommand_not_only_run_list()
     test_the_cli_modes_decide_loudly()
     test_the_ghost_stub_cannot_answer_a_query_the_real_gh_refuses()
+    test_the_api_read_surface_is_recorded()
+    test_a_planted_jq_path_is_refused()
+    test_an_unrecorded_endpoint_or_unreadable_expression_is_a_finding()
+    test_the_json_projection_and_fieldless_api_calls_are_exempt()
+    test_the_scan_reads_the_real_tree_and_sees_the_api_calls()
     test_the_scan_is_wired_where_ci_runs_it()
     print(f"\n{PASSED} passed, {FAILED} failed")
     return 1 if FAILED else 0

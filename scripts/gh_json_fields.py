@@ -29,20 +29,32 @@ ways:
     left 50 other reads failing at RUN time — the exact shape that hid for the whole life of
     the ghost alarm (issue #1160).
 
-Every set below is transcribed from the real CLI's own `Available fields:` answer for that
-subcommand (recorded 2026-11-20); none is invented. A command with no recorded set gets NO
-opinion (`unknown_fields` returns `[]`) — adding one means recording the CLI's answer first.
+`gh api <path> --jq '<expr>'` names fields the SAME way (issue #1668): the REST answer is not
+a `--json` field list, so `--scan` also reads every `gh api … --jq …` call in `scripts/`
+through a SECOND recorded family (`API_SHAPES`, keyed by the endpoint path tail) and refuses
+a path the recorded answer shape does not carry. `scripts/pr_health.py::read_run_identity`
+reads `.actor.login + "|" + (.actor.type // "") + "|" + (.triggering_actor.login // "")` with
+nothing validating it — the same build-time-vs-run-time hole #1158/#1160 closed for `--json`,
+now closed for `--jq`.
 
-Exit codes: 0 = no problem, 1 = a field gh cannot answer (or an unreadable `--json`
+Every set below is transcribed from the real CLI's own `Available fields:` answer for that
+subcommand (recorded 2026-11-20), and every `API_SHAPES` entry from a live `gh api` read
+(recorded 2026-11-24); none is invented. A command or endpoint family with no recorded set
+gets NO opinion at request-BUILD time — but the TREE SCAN treats an unrecorded one as a
+finding, so a call site can never sit outside the contract silently.
+
+Exit codes: 0 = no problem, 1 = a field or path gh cannot answer (or an unreadable
 expression), 2 = the scan itself could not read the tree (never a silent clean).
 """
 from __future__ import annotations
 
 import argparse
 import ast
+import re
 import shlex
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # --------------------------------------------------------------------------- recorded sets
 # `gh run list` — `url` is gh's field for a run's HTML link; `htmlUrl` has NEVER existed.
@@ -263,6 +275,152 @@ FIELD_SETS: dict[str, frozenset[str]] = {
 SUPPORTED_BY_COMMAND = FIELD_SETS
 
 
+# --------------------------------------------------------------------------- gh api shapes
+class ApiShape(NamedTuple):
+    """The recorded read surface of one `gh api` endpoint family (issue #1668).
+
+    `array` says whether the answer is a JSON ARRAY (then `paths` belong to each ELEMENT) or an
+    OBJECT (then they belong to the root). A path is a dotted `--jq` reference such as
+    `.actor.login`; a depth-0 path against an array answer is itself a finding.
+    """
+
+    array: bool
+    paths: frozenset[str]
+
+
+#: `gh api <path> --jq <expr>` names REST fields the same way `gh <cmd> --json <field>` does,
+#: and gh refuses an unknown `--jq` path only at RUN time. Each family is keyed by the endpoint
+#: path TAIL — everything after `repos/<owner>/<repo>/` — matched as a suffix, so `{repo}`,
+#: `{owner}/{repo}` and a concrete `andyholst/trending-local-llms` all resolve to ONE family.
+#: Every entry records the paths THIS REPOSITORY reads from that answer, transcribed from a live
+#: `gh api` read (2026-11-24); an unrecorded path is a finding, exactly as an unrecorded
+#: `--json` field is. Recording the whole recursive payload instead (~1000 paths across these
+#: seven endpoints) would record fields no reader touches and rot silently when GitHub adds one.
+API_SHAPES: dict[str, ApiShape] = {
+    # `repos/{o}/{r}/issues/{n}` — `.body` (issue_review), `.state` (openspec_archive_check).
+    "issues/{}": ApiShape(array=False, paths=frozenset({".body", ".state"})),
+    # `repos/{o}/{r}/pulls/{n}` — what the closure check reads off a PR.
+    "pulls/{}": ApiShape(array=False, paths=frozenset(
+        {".merged", ".title", ".body", ".head.ref"})),
+    # `repos/{o}/{r}/issues/{n}/comments` — a paginated ARRAY of comment objects; issue_queue
+    # projects `[.[] | {createdAt, body}]`, the other readers take `.[]` whole.
+    "issues/{}/comments": ApiShape(array=True, paths=frozenset({".createdAt", ".body"})),
+    # `repos/{o}/{r}/commits/{ref}` — the commit's own committer date (issue_queue).
+    "commits/{}": ApiShape(array=False, paths=frozenset({".commit.committer.date"})),
+    # `repos/{o}/{r}/contents/{path}` — the base64 file content (keeper_pr).
+    "contents/{}": ApiShape(array=False, paths=frozenset({".content"})),
+    # `repos/{o}/{r}/actions/workflows/{file}/runs` — the page total (code_review).
+    "actions/workflows/{}/runs": ApiShape(array=False, paths=frozenset({".total_count"})),
+    # `repos/{o}/{r}/actions/runs/{run}` — WHO started a run (pr_health, issue #1646).
+    "actions/runs/{}": ApiShape(array=False, paths=frozenset(
+        {".actor.login", ".actor.type", ".triggering_actor.login"})),
+}
+
+_IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_JQ_STRING = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+
+
+def _api_template(path) -> str:
+    """Normalize an endpoint literal: drop the query string and leading `/`, collapse every
+    `{...}` placeholder to `{}`."""
+    text = str(path).split("?", 1)[0].strip().lstrip("/")
+    return re.sub(r"\{[^}]*\}", "{}", text)
+
+
+def match_api_family(path) -> str | None:
+    """The recorded `gh api` family an endpoint names, or None when it names none.
+
+    Matched as a path-TAIL suffix, longest family first, so the owner/repo prefix never decides
+    the family and two spellings of the same endpoint cannot drift apart. A `{}` segment in the
+    FAMILY is a wildcard for one path segment (`contents/{}` covers `contents/OPENSPEC.md` and
+    `contents/anything`); a concrete segment must match exactly.
+    """
+    segments = [s for s in _api_template(path).split("/") if s]
+    for family in sorted(API_SHAPES, key=lambda f: -len(f.split("/"))):
+        head = family.split("/")
+        if len(head) > len(segments):
+            continue
+        tail = segments[-len(head):]
+        if all(key == "{}" or key == seg for key, seg in zip(head, tail)):
+            return family
+    return None
+
+
+def jq_paths(expr: str):
+    """`(depth, dotted-path)` pairs a `--jq` expression READS, or None when unreadable.
+
+    `depth` counts the `.[]`/`[]` iterations the path sits under: depth 0 is the response root,
+    depth >= 1 is the array element. String literals are skipped, a `.a.b` chain is one path,
+    `{a, b}` object construction contributes its shorthand identifiers. Anything the scan cannot
+    confidently read returns None — the caller reports it, never silently passes.
+    """
+    text = _JQ_STRING.sub(" ", str(expr))
+    found: list[tuple[int, str]] = []
+    depth = 0
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "[" and text[i:i + 2] == "[]":
+            depth += 1
+            i += 2
+            continue
+        if ch == ".":
+            m = _IDENT.match(text, i + 1)
+            if not m:
+                i += 1
+                continue
+            parts = [m.group(0)]
+            j = m.end()
+            while j < len(text) and text[j] == ".":
+                m2 = _IDENT.match(text, j + 1)
+                if not m2:
+                    break
+                parts.append(m2.group(0))
+                j = m2.end()
+            found.append((depth, "." + ".".join(parts)))
+            i = j
+            continue
+        if ch == "{":
+            end = text.find("}", i)
+            if end < 0:
+                return None
+            for item in text[i + 1:end].split(","):
+                item = item.strip()
+                m = _IDENT.match(item, 0)
+                if m and m.end() == len(item):       # shorthand `{createdAt, body}`
+                    found.append((depth, "." + m.group(0)))
+            i = end + 1
+            continue
+        i += 1
+    return found
+
+
+def api_jq_problems(endpoint: str, expr: str) -> list[str]:
+    """Problems with one `gh api <endpoint> --jq <expr>` request ([] when it reads only
+    recorded paths). Bare messages — the caller prefixes `file:line` / the argv context."""
+    family = match_api_family(endpoint)
+    if family is None:
+        return [f"`gh api {endpoint} --jq` names an endpoint family this contract does not "
+                "record — record the endpoint's read fields first"]
+    shape = API_SHAPES[family]
+    paths = jq_paths(expr)
+    if paths is None:
+        return [f"`gh api {family} --jq {expr}` is an expression this scan cannot read — "
+                "build it as a literal or a module constant"]
+    problems = []
+    for depth, path in paths:
+        if (depth == 0) == shape.array:
+            where = "from the array element" if depth else "from the root"
+            what = "an array" if shape.array else "an object"
+            problems.append(f"`gh api {family} --jq {expr}` reads {path} {where}, but the "
+                            f"recorded answer is {what}")
+        elif path not in shape.paths:
+            problems.append(f"`gh api {family} --jq {expr}` asks for {path}, which the recorded "
+                            f"answer shape of that endpoint does not carry (recorded: "
+                            f"{', '.join(sorted(shape.paths)) or 'none'})")
+    return problems
+
+
 def parse_fields(text: str) -> list[str]:
     """Split a `--json` argument into field names, preserving order."""
     return [part.strip() for part in str(text).split(",") if part.strip()]
@@ -331,6 +489,20 @@ def check_argv(argv) -> list[str]:
             continue
         problems.extend(f"--json {cmd}: unknown field {field!r}"
                         for field in unknown_fields(cmd, [argv[i + 1]]))
+    # `gh api <endpoint> --jq <expr>` (issue #1668) — a field gh refuses only at RUN time.
+    # Exempt when the SAME argv carries `--json`: that half already validated the field this
+    # projection re-reads (a second path grammar over projected output is out of scope).
+    if "--json" not in argv:
+        for i, token in enumerate(argv):
+            if token != "api":
+                continue
+            endpoint = next((argv[k] for k in range(i + 1, len(argv))
+                             if not argv[k].startswith("-") and "/" in argv[k]), None)
+            expression = next((argv[j + 1] for j in range(i + 1, len(argv))
+                               if argv[j] in ("--jq", "-q") and j + 1 < len(argv)), None)
+            if endpoint is None or expression is None:
+                continue
+            problems.extend(api_jq_problems(endpoint, expression))
     return problems
 
 
@@ -338,6 +510,104 @@ def _literal_string(node) -> str | None:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     return None
+
+
+def _template_string(node) -> str | None:
+    """A string literal, or an f-string rendered with `{}` placeholders for its expressions."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for value in node.values:
+            parts.append(str(value.value) if isinstance(value, ast.Constant) else "{}")
+        return "".join(parts)
+    return None
+
+
+def _string_bindings(tree: ast.Module) -> dict[str, str]:
+    """Every `NAME = "<literal or f-string>"` binding in the module, at ANY scope.
+
+    A name bound to two DIFFERENT values is dropped (unresolved) rather than guessed — the same
+    discipline `_module_constants` applies to module-level `--json` field lists.
+    """
+    bindings: dict[str, str] = {}
+    ambiguous: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        value = _template_string(node.value)
+        if value is None:
+            continue
+        name = target.id
+        if name in bindings and bindings[name] != value:
+            ambiguous.add(name)
+        else:
+            bindings[name] = value
+    for name in ambiguous:
+        bindings.pop(name, None)
+    return bindings
+
+
+def _api_token_lists(tree: ast.Module):
+    """Every list literal and call-argument list as (node, [template-string or Name-id or None]).
+
+    Unlike `_token_lists` (which keeps only plain literals so a DYNAMIC `--json` list stays
+    UNRESOLVED), an f-string here becomes its `{}` TEMPLATE — an endpoint built as
+    `f"repos/{repo}/issues/{n}"` still names its family.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.List):
+            seq = node.elts
+        elif isinstance(node, ast.Call):
+            seq = node.args
+        else:
+            continue
+        tokens = []
+        for elt in seq:
+            text = _template_string(elt)
+            tokens.append(elt.id if text is None and isinstance(elt, ast.Name) else text)
+        yield node, tokens
+
+
+def _resolve_token(token, constants: dict[str, str]) -> str | None:
+    """A token list entry as text: a literal stays itself, a Name resolves through the bindings."""
+    if token is None:
+        return None
+    return constants.get(token, token)
+
+
+def api_jq_requests(tree: ast.Module, constants: dict[str, str]):
+    """(lineno, endpoint-or-None, expression-or-None) for every `gh api <path> --jq <expr>`.
+
+    Two documented exemptions (issue #1668): a call carrying `--json` (that half already
+    validates every field the command answers, and the projection re-reads it), and a call with
+    NO field expression (`--slurp`, `-f`, `-X POST`) — it names no field to refuse.
+    """
+    found = []
+    for node, tokens in _api_token_lists(tree):
+        if "--json" in tokens:
+            continue
+        for i, token in enumerate(tokens):
+            if token != "api":
+                continue
+            endpoint = None
+            for candidate in tokens[i + 1:]:
+                value = _resolve_token(candidate, constants)
+                if value is None or value.startswith("-") or "/" not in value:
+                    continue
+                endpoint = value
+                break
+            expression = None
+            jq_at = next((j for j in range(i + 1, len(tokens)) if tokens[j] in ("--jq", "-q")), None)
+            if jq_at is None:
+                continue                 # no field expression: exempt (names no field)
+            if jq_at + 1 < len(tokens):
+                expression = _resolve_token(tokens[jq_at + 1], constants)
+            found.append((getattr(node, "lineno", 0), endpoint, expression))
+    return found
 
 
 def _request_call_literal(node) -> str | None:
@@ -445,6 +715,19 @@ def scan_file(path: Path) -> list[str]:
             problems.append(f"{path}:{lineno}: `gh {cmd} --json` asks for {field!r}, "
                             f"which gh cannot answer (supported: "
                             f"{', '.join(sorted(FIELD_SETS[cmd]))})")
+    constants = _string_bindings(tree)
+    for lineno, endpoint, expression in api_jq_requests(tree, constants):
+        if endpoint is None:
+            problems.append(f"{path}:{lineno}: a `gh api … --jq` request whose ENDPOINT this "
+                            "scan cannot read — build it as a literal or a module constant")
+            continue
+        if expression is None:
+            problems.append(f"{path}:{lineno}: a `gh api {endpoint} --jq` request whose "
+                            "EXPRESSION this scan cannot read — build it as a literal or a "
+                            "module constant")
+            continue
+        for problem in api_jq_problems(endpoint, expression):
+            problems.append(f"{path}:{lineno}: {problem}")
     return problems
 
 
@@ -504,7 +787,9 @@ def main(argv=None) -> int:
                 print(f"  {problem}")
             return 1
         print(f"[gh-json-fields] OK every `gh … --json` request in scripts/ asks only "
-              f"for fields gh can answer ({len(FIELD_SETS)} commands recorded)")
+              f"for fields gh can answer, and every `gh api … --jq` path is one the recorded "
+              f"endpoint shape carries ({len(FIELD_SETS)} commands, {len(API_SHAPES)} api "
+              f"families recorded)")
         return 0
     ap.print_help()
     return 2
