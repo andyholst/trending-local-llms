@@ -23,6 +23,7 @@ import tempfile
 from pathlib import Path
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
+import fleet_chain_fixtures as F  # noqa: E402  (issues #1744/#1745: derive, never freeze)
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "agent_model_chain.py"
@@ -102,7 +103,7 @@ def test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green():
     check("the OK line counts every fleet lane", f"{len(LANES)} lane config(s)" in out,
           f"lanes={LANES} out={out[-200:]}")
     check("the chain order is reported primary-first, local tier before the paid pin, last-resort last",
-          "in order free-longcat -> free-hy4 -> free-qwen4 -> free-solar -> free-step -> local-strata -> nous-deepseek" in out,
+          "in order " + " -> ".join(F.alias_order(_chain_json(ROOT))) in out,
           out[-200:])
 
 
@@ -213,9 +214,7 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
     fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
     models = re.findall(r"(?m)^    model: (\S+)", fb)
     check("fallback_providers lists every non-primary step in chain order",
-          models == ["tencent/hy4-flash:free", "qwen/qwen4-max:free", "upstage/solar-mini4:free",
-                     "stepfun/step-3.7-flash:free", "qwen3.8-flash-next-iq3_xxs",
-                     "deepseek/deepseek-v4-flash-0731"], str(models))
+          models == F.fallback_models(_chain_json(ROOT)), str(models))
     entries = re.split(r"(?m)^  - ", fb)[1:]
     local_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" in e]
     check("the local fallback entry is credential-less (no key_env) and names its own endpoint",
@@ -238,18 +237,20 @@ def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
         root = _scratch(Path(td))
         cfg = root / "agents" / "tll-tester" / "config.yaml"
         text = cfg.read_text(encoding="utf-8")
+        # Derive the shipped primary's `default:` needle instead of freezing one model id.
+        primary_needle = F.default_line(_chain_json(root))
         edited_line = next(i for i, line in enumerate(text.splitlines(), start=1)
-                           if "default: meituan/longcat-2.5:free" in line)
-        cfg.write_text(text.replace("default: meituan/longcat-2.5:free",
-                                    "default: deepseek/deepseek-v4-flash-0731"), encoding="utf-8")
+                           if primary_needle in line)
+        paid_needle = "default: deepseek/deepseek-v4-flash-0731"
+        cfg.write_text(text.replace(primary_needle, paid_needle), encoding="utf-8")
         res = run("--check", root=root)
         out = res.stdout + res.stderr
         check("a hand-edited lane config fails the gate", res.returncode == 1, out[-200:])
         check("the failure names the lane whose config drifted",
               "agents/tll-tester/config.yaml" in out, out[-300:])
         check("the failure names the line and both spellings",
-              f"line {edited_line}:" in out and "deepseek/deepseek-v4-flash-0731" in out
-              and "meituan/longcat-2.5:free" in out, out[-400:])
+              f"line {edited_line}:" in out and paid_needle.split("default: ")[1] in out
+              and primary_needle.split("default: ")[1] in out, out[-400:])
         check("the other lane is reported as clean (only the drifted one fails)",
               "tll-reviewer" not in out, out[-300:])
         check("the refusal tells the author to re-render rather than hand-edit",
