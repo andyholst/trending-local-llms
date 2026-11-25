@@ -1,6 +1,7 @@
 # Proposal: owed-row-prose-quote-discriminator
 
 Issue: #1690
+PR: #1696
 
 ## Why
 
