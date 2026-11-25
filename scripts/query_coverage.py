@@ -57,6 +57,17 @@ def _load_store() -> dict:
     return UT.load_store()
 
 
+def _named_queries(store: dict, queries: list[str]) -> list[str]:
+    # The ONE filtered seam behind both consumers of the derived composition —
+    # `prompt_queries()` (what `--queries` prints and the prompts append) and the
+    # default report below. Issue #1693: `report()` used to count the RAW
+    # compositions (`UT.derived_queries` / `all_search_queries`), so on a store
+    # carrying a ranked row with an empty `id` it still reported vacuous queries
+    # that no prompt sends. Same predicate as `prompt_queries` (rule 6d).
+    rows = store.get("models") or []
+    return [q for q in queries if any(UT.query_names_model(q, m) for m in rows)]
+
+
 def prompt_queries(store: dict, top_n: int = UT.QUERY_TOP_N,
                    aged_n: int = UT.QUERY_AGED_N) -> list[str]:
     """Every derived query a search leg appends, in order (issue #1678).
@@ -77,11 +88,10 @@ def prompt_queries(store: dict, top_n: int = UT.QUERY_TOP_N,
     non-empty while naming nothing — `[" tokens per second", ...]` — and the wiring
     assertion passed vacuously. A query built from an empty id reaches no prompt.
     """
-    rows = store.get("models") or []
     composed = (UT.derived_queries(store, top_n) + UT.footprint_queries(store, top_n)
                 + UT.aged_derived_queries(store, aged_n)
                 + UT.aged_footprint_queries(store, aged_n))
-    return [q for q in composed if any(UT.query_names_model(q, m) for m in rows)]
+    return _named_queries(store, composed)
 
 
 def report(store: dict, top_n: int, aged_n: int) -> str:
@@ -90,7 +100,18 @@ def report(store: dict, top_n: int, aged_n: int) -> str:
     aged = UT.aged_models(store, aged_n)
     curated = [q for group in UT.SEARCH_GROUPS.values() for q in group]
     full = UT.all_search_queries(store, top_n, aged_n)
-    full_queries = [q for queries in full.values() for q in queries]
+    # Issue #1693: count through the SAME filtered seam `--queries` uses, so the
+    # report cannot claim a leg sends a query no prompt carries. The hand-curated
+    # base names hardware, not models, so it is KEPT verbatim (rule 6o) and only
+    # the derived half is filtered.
+    curated_set = set(curated)
+    named_derived = _named_queries(store, UT.derived_queries(store, top_n))
+    named_footprint = _named_queries(store, UT.footprint_queries(store, top_n))
+    named_aged_derived = _named_queries(store, UT.aged_derived_queries(store, aged_n))
+    named_aged_footprint = _named_queries(store, UT.aged_footprint_queries(store, aged_n))
+    named_all = named_derived + named_footprint + named_aged_derived + named_aged_footprint
+    full_queries = [q for queries in full.values() for q in queries if q in curated_set]
+    full_queries += named_all * len(full)
 
     def rows(models):
         for m in models:
@@ -112,10 +133,10 @@ def report(store: dict, top_n: int, aged_n: int) -> str:
     lines += [
         "",
         f"  queries: {len(curated)} curated across the {len(full)} legs + "
-        f"{len(UT.derived_queries(store, top_n))} derived (throughput) + "
-        f"{len(UT.footprint_queries(store, top_n))} footprint + "
-        f"{len(UT.aged_derived_queries(store, aged_n))} aged (throughput) + "
-        f"{len(UT.aged_footprint_queries(store, aged_n))} aged footprint, added to EACH leg "
+        f"{len(named_derived)} derived (throughput) + "
+        f"{len(named_footprint)} footprint + "
+        f"{len(named_aged_derived)} aged (throughput) + "
+        f"{len(named_aged_footprint)} aged footprint, added to EACH leg "
         f"= {len(full_queries)} sent in total",
         f"  the hand-curated queries alone name {len(reachable_by_curated)}/{len(models + aged)} of "
         f"the {len(models)} trending + {len(aged)} aged",
@@ -177,8 +198,8 @@ def main(argv: list[str] | None = None) -> int:
             "aged": args.aged,
             "trending": [m.get("id") for m in UT.trending_models(store)[:max(0, args.top)]],
             "aged_models": [m.get("id") for m in UT.aged_models(store, args.aged)],
-            "derived": UT.derived_queries(store, args.top),
-            "footprint": UT.footprint_queries(store, args.top),
+            "derived": _named_queries(store, UT.derived_queries(store, args.top)),
+            "footprint": _named_queries(store, UT.footprint_queries(store, args.top)),
             "missing": [m.get("id") for m in missing],
             "dimensions_missing": not_asked,
         }, indent=2))

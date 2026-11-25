@@ -426,6 +426,55 @@ def test_an_all_nameless_store_yields_no_vacuous_query():
     check("nameless: the seam emits no query at all", sent == [], sent)
 
 
+def test_the_report_counts_only_queries_that_name_a_row():
+    """Issue #1693: the default report and `--queries` are two surfaces of the SAME
+    composition and must agree. Before, `report()` counted the RAW compositions
+    (`UT.derived_queries` / `UT.all_search_queries`), so a store carrying a ranked row
+    with an empty `id` still reported vacuous queries no prompt sends — measured on
+    PR #1692's branch as `2 derived ... + 2 footprint ...` while `--queries` emitted
+    only the named model's pair."""
+    store = {"models": [
+        {"id": "named-model", "name": "named-model", "last_seen": "2999-01-01",
+         "engagement": {"trend_score": 2.0, "posts_7d": 2},
+         "engines": [{"engine": "llama.cpp", "tps": "10", "hardware": "CPU",
+                      "date": "2999-01-01"}]},
+        {"id": "", "name": "", "last_seen": "2999-01-01",
+         "engagement": {"trend_score": 1.0, "posts_7d": 1},
+         "engines": [{"engine": "llama.cpp", "tps": "9", "hardware": "CPU",
+                      "date": "2999-01-01"}]},
+    ]}
+    top, aged = UT.QUERY_TOP_N, UT.QUERY_AGED_N
+
+    # Given the RAW composition (what report() used to count): four queries, one
+    # model's worth of them vacuous.
+    raw = UT.derived_queries(store, top) + UT.footprint_queries(store, top)
+    check("report: the raw composition WAS vacuous (a query naming no model)",
+          len(raw) == 4 and not all(UT.query_names_model(q, m)
+                                    for q in raw for m in store["models"]), raw)
+
+    # When  both surfaces of the module are rendered
+    text = QC.report(store, top, aged)
+    sent = QC.prompt_queries(store, top, aged)
+
+    # Then  `--queries` carries only the usable row's pair ...
+    check("report: --queries names only the usable row",
+          sent == ["named-model tokens per second",
+                   f"named-model {UT.MODEL_FOOTPRINT_SUFFIX}"], sent)
+
+    # ... and the report's counts and total are computed through the SAME seam.
+    curated = [q for group in UT.SEARCH_GROUPS.values() for q in group]
+    # Each leg carries its OWN curated group (35 across the four) plus the derived
+    # pair per ranked model, so the filtered total is curated + legs * filtered.
+    expected_total = len(curated) + len(UT.SEARCH_GROUPS) * len(sent)
+    total_line = next(ln for ln in text.splitlines() if " sent in total" in ln)
+    reported_total = int(total_line.rsplit("= ", 1)[1].split(" sent in total", 1)[0])
+    check("report: 'sent in total' is the filtered per-leg total",
+          reported_total == expected_total, (reported_total, expected_total, total_line))
+    check("report: the derived/footprint counts are the filtered sizes",
+          f"{len(sent) // 2} derived (throughput) + {len(sent) // 2} footprint" in total_line,
+          total_line)
+
+
 def test_the_real_store_is_covered():
     # Given the repo's own store
     # When  the coverage is evaluated over it
@@ -522,6 +571,7 @@ def main() -> int:
     test_the_prompts_and_the_guard_are_wired()
     test_the_prompt_derivation_survives_an_aged_out_trending_band()
     test_an_all_nameless_store_yields_no_vacuous_query()
+    test_the_report_counts_only_queries_that_name_a_row()
     test_the_rule_is_documented()
     test_the_real_store_is_covered()
     test_a_silenced_guard_is_refused()
