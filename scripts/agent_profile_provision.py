@@ -90,6 +90,25 @@ def utc_stamp() -> str:
     return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
+def backup_before_overwrite(dest: Path, stamp: str) -> Path | None:
+    """Rule 3b: keep byte-identical host bytes before a re-provision replaces them (issue #1754).
+
+    ``config.yaml`` already had this; SOUL.md and skills/** did not, so a legitimate M-sync
+    silently destroyed host-ahead forward work while the sync gate read the loss as parity.
+    A same-second re-run gets ``-2``/``-3`` so an earlier backup is never itself overwritten.
+    """
+    if not dest.is_file():
+        return None
+    candidate = dest.with_name(f"{dest.name}{BACKUP_SUFFIX}{stamp}")
+    suffix = 2
+    while candidate.exists():
+        candidate = dest.with_name(f"{dest.name}{BACKUP_SUFFIX}{stamp}-{suffix}")
+        suffix += 1
+    shutil.copy2(dest, candidate)
+    print(f"[profile-provision] backup {dest} -> {candidate}")
+    return candidate
+
+
 def required_key_names(chain: AMC.Chain) -> list[str]:
     """Every credential NAME the chain's steps name — deduped, order-stable, VALUES never touched."""
     names: list[str] = []
@@ -221,10 +240,15 @@ def provision_one(root: Path, lane: str, home: Path, chain_or_rendered: AMC.Chai
     # never reaches this function), so CI's freshly provisioned homes carry prompts.
     src_lane = src.parent
     soul = src_lane / "SOUL.md"
+    stamp = utc_stamp()
     if soul.is_file():
+        backup_before_overwrite(lane_home / "SOUL.md", stamp)
         shutil.copy2(soul, lane_home / "SOUL.md")
     src_skills = src_lane / "skills"
     if src_skills.is_dir():
+        for src_file in sorted(src_skills.rglob("*")):
+            if src_file.is_file():
+                backup_before_overwrite(lane_home / "skills" / src_file.relative_to(src_skills), stamp)
         shutil.copytree(src_skills, lane_home / "skills", dirs_exist_ok=True)
     return EXIT_OK, backup
 
