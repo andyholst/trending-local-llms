@@ -117,7 +117,7 @@ HERMES_PACKAGE     ?= hermes-agent
 # --version` equals it and bakes the verified version into the image. Raise it
 # TOGETHER with the Dockerfile's ARG HERMES_VERSION default; an upgrade is then
 # an explicit, reviewable change instead of whatever the channel serves.
-HERMES_VERSION     ?= 0.23.3
+HERMES_VERSION     ?= 0.23.4
 # The upstream release CHANNEL the pin-freshness check queries (issue #1094, rule
 # 6d): `scripts/hermes_pin_freshness.py` READS this line — the channel repo has
 # no other spelling in scripts/, so an upstream move is a one-line edit HERE,
