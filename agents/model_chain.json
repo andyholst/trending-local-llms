@@ -4,9 +4,9 @@
   "amended_by_issue": 1192,
   "comment": "The fleet model chain's ONE source (issue #1140; local tier #1192; provider `nous` #1203). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, an optional credential-less role=local_fallback tier after the free steps and before the paid pin (issue #1192), exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. The provider is the built-in `nous` provider \u2014 the Nous Portal session, the same https://inference-api.nousresearch.com/v1 endpoint \u2014 so the remote steps carry NO base_url/key_env (measured #1203: adding them re-routes the alias to `custom` and answers HTTP 401 on inference). A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value; the local tier carries none \u2014 its box needs none.",
   "measured": {
-    "at": "2026-11-21",
+    "at": "2026-11-25",
     "endpoint": "https://inference-api.nousresearch.com/v1",
-    "how": "GET /v1/models with the Nous bearer credential passed by NAME in the environment (read 2026-11-21T12:26:21Z): 415 models, exactly 5 carrying the `:free` pricing suffix, and every remote `model` id below is present in that payload with the `context_length` quoted below. The free set is unchanged from the 2026-11-19 read. Issue #1203 then proved the PROVIDER end to end on this host: `hermes -p <lane> -m free-longcat` on the old `custom` + `NOUS_API_KEY` shape answers HTTP 401 on /v1/chat/completions (the key is model-list-only \u2014 GET /v1/models answers 200), while a scratch profile on the built-in `nous` provider answered a real turn.",
+    "how": "GET /v1/models with the credential passed by NAME in the environment (refreshed 2026-11-25T10:52:31Z): 3 models carrying the `:free` pricing suffix, every free `model` id below present in that payload with the `context_length` quoted below.",
     "issue": "filed by the owner directive of 2026-11-19 (free model first, the paid DeepSeek last); the local strata tier between them by the owner directive of 2026-11-21 (issue #1192); the live read was re-run when this file was amended",
     "previous_read": {
       "at": "2026-11-19",
@@ -36,27 +36,26 @@
           "error": "URLError: <urlopen error [Errno 111] Connection refused>"
         }
       ]
-    }
+    },
+    "refresh_history": [
+      {
+        "at": "2026-11-25T10:52:31Z",
+        "added": [],
+        "retired": [
+          "meituan/longcat-2.5:free",
+          "qwen/qwen4-max:free"
+        ],
+        "free_count": 3
+      }
+    ]
   },
   "provider": "nous",
   "chain": [
     {
-      "alias": "free-longcat",
-      "model": "meituan/longcat-2.5:free",
-      "role": "primary",
-      "context_window": 1048576
-    },
-    {
       "alias": "free-hy4",
       "model": "tencent/hy4-flash:free",
-      "role": "fallback",
+      "role": "primary",
       "context_window": 1048576
-    },
-    {
-      "alias": "free-qwen4",
-      "model": "qwen/qwen4-max:free",
-      "role": "fallback",
-      "context_window": 1000000
     },
     {
       "alias": "free-solar",
@@ -68,7 +67,7 @@
       "alias": "free-step",
       "model": "stepfun/step-3.7-flash:free",
       "role": "fallback",
-      "context_window": 262144
+      "context_window": 256000
     },
     {
       "alias": "local-strata",
