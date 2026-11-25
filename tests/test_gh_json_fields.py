@@ -895,7 +895,7 @@ IDENTITY_SITES_1711 = (
     ("announce_image_fallback.py", 'comment.get("body")', 'comment.get("bodyX")', 74, "bodyX"),
     ("issue_thread.py", 'c.get("created_at", "")', 'c.get("createdAtX", "")', 85, "createdAtX"),
     ("owed_rows_check.py", 'c.get("body")', 'c.get("bodyX")', 58, "bodyX"),
-    ("pipeline_failure_issue.py", 'c.get("body")', 'c.get("bodyX")', 1377, "bodyX"),
+    ("pipeline_failure_issue.py", 'c.get("body")', 'c.get("bodyX")', 1408, "bodyX"),
     ("sweep_outcome.py", 'comment.get("createdAt")', 'comment.get("createdAtX")', 132,
      "createdAtX"),
 )
