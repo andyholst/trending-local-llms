@@ -526,6 +526,51 @@ def test_the_image_installs_uv_before_the_seam_runs():
           problems(DOCKERFILE.read_text()))
 
 
+def test_the_image_carries_the_cua_driver_runtime_libs():
+    """#1727: the channel's default tool cua-driver is staged by the external
+    installer, whose entry check runs `cua-driver --version` — a dynamic-load
+    smoke test needing no display. Its arm64 binary links libX11.so.6,
+    libXi.so.6 and libxkbcommon.so.0, which the image's single apt layer did
+    not declare, so the check failed with exit 127 and the image shipped a
+    default tool that cannot run. Declare the three packages BEFORE the seam;
+    keep the check real (no headless-tolerant skip, no installer fork)."""
+    x_libs_line = "        libx11-6 libxi6 libxkbcommon0 \\\n"
+    required = ("libx11-6", "libxi6", "libxkbcommon0")
+
+    def problems(docker: str) -> list[str]:
+        seam = docker.find("/usr/local/bin/install_hermes_ci.sh")
+        if seam < 0:
+            return ["Dockerfile runs no seam at all"]
+        start = docker.find("apt-get update && apt-get install")
+        if start < 0:
+            return ["Dockerfile has no apt install layer"]
+        end = docker.find("rm -rf /var/lib/apt/lists/*", start)
+        if end < 0:
+            return ["apt layer has no cleanup terminator"]
+        apt = docker[start:end]
+        bad = []
+        for pkg in required:
+            if not re.search(r"(?<![\w-])" + re.escape(pkg) + r"(?![\w-])", apt):
+                bad.append(f"apt layer does not declare {pkg}")
+        if start > seam:
+            bad.append("the apt layer is after the seam RUN")
+        # entry verification must stay intact: no opt-out baked into the image
+        for marker in ("|| true", "--without cua-driver", 'HERMES_VERSION=""'):
+            if marker in docker:
+                bad.append(f"verification opt-out baked in: {marker}")
+        return bad
+
+    # Given the pinned base shape (the three packages removed from the image)
+    base = DOCKERFILE.read_text().replace(x_libs_line, "")
+    # When  the image apt layer is read the way CI builds it
+    # Then  the base shape is refused and the shipped image declares all three
+    check("image: base without cua-driver X libs is refused",
+          problems(base) != [], problems(base))
+    check("image: apt layer declares the three cua-driver runtime libs before the seam",
+          problems(DOCKERFILE.read_text()) == [],
+          problems(DOCKERFILE.read_text()))
+
+
 def main() -> int:
     print("install_hermes_ci.sh: one seam, one pin, a build that proves the alias")
     test_a_present_cli_is_used_and_nothing_is_downloaded()
@@ -536,6 +581,7 @@ def main() -> int:
     test_the_seam_never_handles_a_credential()
     test_the_dockerfile_installs_through_the_seam()
     test_the_image_installs_uv_before_the_seam_runs()
+    test_the_image_carries_the_cua_driver_runtime_libs()
     test_the_dockerfile_asserts_the_alias_at_build_time()
     test_no_credential_value_is_baked_into_the_image()
     test_the_install_pin_has_one_definition_across_the_two_files()

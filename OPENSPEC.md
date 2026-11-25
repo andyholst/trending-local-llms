@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **557**
+Active changes: **1** · archived: **559**
 
 ## Active changes
 
@@ -198,6 +198,7 @@ Active changes: **1** · archived: **557**
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |
+| `cua-driver-x11-runtime-libs` | archived | #1727 | #1729 | [hermes-cli-image](openspec/changes/archive/cua-driver-x11-runtime-libs/specs/hermes-cli-image/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/cua-driver-x11-runtime-libs/proposal.md) |
 | `data-gap-acquired-footprint-capture` | archived | #395 — `data-gap: storage_offload (40 models)` | — | [data-gap-backfill](openspec/changes/archive/data-gap-acquired-footprint-capture/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-acquired-footprint-capture/proposal.md) |
 | `data-gap-baseline` | archived | #174 | — | [data-gap-baseline](openspec/changes/archive/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-baseline/proposal.md) |
 | `data-gap-context-tokens-capture` | archived | #994 — `data-gap: context_tokens (69 models)` | #1004 | [data-backfill](openspec/changes/archive/data-gap-context-tokens-capture/specs/data-backfill/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/data-gap-context-tokens-capture/proposal.md) |
