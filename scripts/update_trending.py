@@ -705,15 +705,23 @@ def zero_hit_verdict(stats: dict) -> tuple[str, int, list[str]]:
         ]
     # A TOTAL timeout/522 is the same unreachable mirror as an all-error-page
     # outage: nothing of ours is wrong, and live-smoke gates auto-merge (#291).
-    # A PARTIAL timeout is NOT excused — answered > 0 keeps the quiet verdict red.
-    if queries and timeouts and not with_hits and not answered and not refused \
-            and (timeouts + outage == queries):
+    # The discriminator is the SAME as the error-page prong below: at least one
+    # recognised transport failure, no answered query, no hit and no refusal.
+    # Unclassifiable `failed` queries (Connection refused, DNS, TLS) are NEUTRAL —
+    # they prove nothing about the mirror either way, so they must not turn a
+    # proven transport outage back into a blocking quiet search (issues #296,
+    # #1707). They are still reported in the verdict lines. A PARTIAL timeout is
+    # NOT excused — answered > 0 keeps the quiet verdict red.
+    if queries and timeouts and not with_hits and not answered and not refused:
         return "outage", 0, [
             f"[outage] the lightbrd mirror is UNREACHABLE: {timeouts}/{queries} queries "
             f"timed out or returned a gateway timeout ({first_reason})",
             "[outage] 0 model hits is EXPECTED here — this is a transport outage, not a quiet "
             "search or a broken key",
             *([f"[outage] {outage} further querie(s) came back as the target's own error page"] if outage else []),
+            *([f"[outage] {failed - timeouts} further querie(s) failed for another reason — "
+               "not counted against the mirror, but reported (issue #1707)"]
+              if failed > timeouts else []),
             "[outage] NOT blocking: bounded by --fetch-timeout so it cannot cancel live-smoke "
             "(issues #291, #296, #1279). Re-run when the mirror recovers.",
         ]

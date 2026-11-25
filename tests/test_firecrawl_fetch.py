@@ -453,6 +453,55 @@ def test_a_partial_timeout_stays_red():
     check("a partial timeout is not excused", kind == "quiet" and code == 1, kind)
 
 
+def test_a_timeout_mixed_with_a_neutral_failed_query_is_an_outage():
+    """issue #1707: the timeout prong used a STRICTER discriminator than the
+    error-page prong. 34 read timeouts + ONE `Connection refused` (35 queries,
+    all failed, 34 recognised) was reported as QUIET SEARCH (exit 1) and red
+    `live-smoke` on every open PR, while the identical shape expressed as error
+    pages was a non-blocking OUTAGE (exit 0). A `failed` query proves nothing
+    about the mirror either way (issue #296)."""
+    reasons = ["The read operation timed out"] * 34 + ["<urlopen error [Errno 111] Connection refused>"]
+    stats = {"queries": len(reasons), "with_hits": 0, "outage": 0, "refused": 0,
+             "failed": len(reasons),
+             "timeouts": sum(1 for r in reasons if UT.is_upstream_timeout(RuntimeError(r))),
+             "reasons": reasons}
+    check("the unclassifiable failure is NOT counted as a recognised timeout",
+          stats["timeouts"] == 34 and stats["failed"] == 35, stats["timeouts"])
+    kind, code, lines = UT.zero_hit_verdict(stats)
+    check("34 timeouts + 1 neutral failure is an OUTAGE, not a quiet search",
+          kind == "outage" and code == 0, (kind, code))
+    check("the lines still name the unreachable mirror",
+          any("UNREACHABLE" in ln for ln in lines), lines[:1])
+    check("the neutral failure is REPORTED, not hidden",
+          any("1 further querie" in ln and "another reason" in ln for ln in lines), lines)
+
+
+def test_the_timeout_and_error_page_prongs_share_a_discriminator():
+    """Both prongs must classify the same unreachable-mirror shape the same way.
+    The #1699 timeout prong carried an extra `timeouts + outage == queries` sum
+    equality the error-page prong lacked; #1707 removes it. Keep the two prongs
+    on ONE discriminator so a future edit cannot silently re-introduce the
+    stricter one."""
+    import inspect
+    src = inspect.getsource(UT.zero_hit_verdict)
+    check("neither prong carries a sum-equality discriminator",
+          "outage == queries" not in src and "timeouts + outage" not in src, src)
+    check("both prongs require not-answered and not-with-hits",
+          src.count("not with_hits") >= 2 and src.count("not answered") >= 2,
+          (src.count("not with_hits"), src.count("not answered")))
+    # The neutral-failure shape and its error-page twin must agree.
+    transport = {"queries": 24, "with_hits": 0, "outage": 0, "refused": 0,
+                 "failed": 24, "timeouts": 23, "reasons": ["The read operation timed out"]}
+    pages = {"queries": 24, "with_hits": 0, "outage": 23, "refused": 0,
+             "failed": 1, "timeouts": 0,
+             "outage_status": ["the target answered HTTP 502 (lightbrd.com | 502: Bad gateway)"],
+             "reasons": ["<urlopen error [Errno 111] Connection refused>"]}
+    for label, stats in (("transport", transport), ("error-page", pages)):
+        kind, code, _ = UT.zero_hit_verdict(stats)
+        check(f"the {label} shape is a non-blocking outage", kind == "outage" and code == 0,
+              (label, kind, code))
+
+
 def test_timeout_family_recognises_gateway_and_read_timeouts():
     check("read timeout recognised", UT.is_upstream_timeout(RuntimeError("The read operation timed out")))
     check("HTTP 522 recognised", UT.is_upstream_timeout(RuntimeError("target answered HTTP 522")))
@@ -532,6 +581,8 @@ def main() -> int:
     test_the_endpoint_seam_defaults_to_firecrawl()
     test_a_total_transport_timeout_is_a_non_blocking_outage()
     test_a_partial_timeout_stays_red()
+    test_a_timeout_mixed_with_a_neutral_failed_query_is_an_outage()
+    test_the_timeout_and_error_page_prongs_share_a_discriminator()
     test_timeout_family_recognises_gateway_and_read_timeouts()
     test_a_single_gateway_error_among_timeouts_is_an_outage()
     test_fetch_timeout_seam_is_wired_to_urlopen()
