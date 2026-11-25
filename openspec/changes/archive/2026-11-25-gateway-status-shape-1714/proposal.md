@@ -1,6 +1,7 @@
 # Proposal: gateway-status-shape-1714
 
 Issue: #1714
+PR: #1717
 
 ## Why
 
