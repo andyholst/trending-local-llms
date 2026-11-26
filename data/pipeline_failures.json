@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-11-23T20:44:08Z",
+  "updated_utc": "2026-11-26T12:44:48Z",
   "failures": [
     {
       "run_id": 43088760321,
@@ -1917,8 +1917,8 @@
       "targets": [],
       "issue_number": "1732",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1732",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": "1741",
+      "guard": "tests/test_pipeline_failure_issue.py",
       "undiagnosed": null,
       "failing_steps": [
         "Prepare runner images (published for this revision, else build)"
@@ -1942,8 +1942,8 @@
       "targets": [],
       "issue_number": "1733",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1733",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": "1725",
+      "guard": "tests/test_hermes_pin_freshness.py",
       "undiagnosed": null,
       "failing_steps": [
         "Build + push image (missing, Dockerfile changed, Sunday, or forced)"
@@ -1967,8 +1967,8 @@
       "targets": [],
       "issue_number": "1734",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1734",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": "1741",
+      "guard": "tests/test_pipeline_failure_issue.py",
       "undiagnosed": null,
       "failing_steps": [
         "Prepare runner images (published for this revision, else build)"
@@ -1992,8 +1992,8 @@
       "targets": [],
       "issue_number": "1735",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1735",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": "1742",
+      "guard": "tests/test_workflows.py",
       "undiagnosed": null,
       "failing_steps": [
         "Prove the arm64 base runs, not just exists (QEMU smoke)"
@@ -2005,6 +2005,30 @@
         45599082315
       ],
       "workflowName": "refresh-bot"
+    },
+    {
+      "run_id": 45657191852,
+      "workflow": "refresh-bot",
+      "job": "aggregate",
+      "head_sha": "03987d9ed2d2fc706e0c2df6d2dc338f3fd4c9fc",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45657191852",
+      "created_utc": "2026-11-25T16:44:55Z",
+      "filed_utc": "2026-11-26T12:44:48.696906+00:00",
+      "targets": [],
+      "issue_number": "1747",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1747",
+      "fix_pr": "1762",
+      "guard": "tests/test_workflows.py",
+      "undiagnosed": null,
+      "failing_steps": [
+        "Merge + validate + test (in container)"
+      ],
+      "error_region": "Run make hermes-pin-channel-record",
+      "error_excerpt": "gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable (rc=4) -> make: *** [Makefile:2120: hermes-pin-channel-record] Error 2",
+      "failure_class": "goal-judge-aggregate-token",
+      "class_runs": [
+        45657191852
+      ]
     }
   ]
 }
