@@ -1,7 +1,7 @@
 # Proposal: wiki-rulebook-1773
 
 Issue: #1773
-PR: fix/wiki-rulebook-1773
+PR: #1774
 
 ## Why
 
