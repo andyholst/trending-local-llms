@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **581**
+Active changes: **1** · archived: **582**
 
 ## Active changes
 
@@ -147,6 +147,7 @@ Active changes: **1** · archived: **581**
 | `announce-corrupt-tag-fallback-1120` | archived | #1120 | #1134 | [image-fallback-announcement](openspec/changes/archive/announce-corrupt-tag-fallback-1120/specs/image-fallback-announcement/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/announce-corrupt-tag-fallback-1120/proposal.md) |
 | `announce-the-decided-hold` | archived | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/archive/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/announce-the-decided-hold/proposal.md) |
 | `arch-calls-from-a-script` | archived | #482 | — | [architecture-inventory](openspec/changes/archive/arch-calls-from-a-script/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/arch-calls-from-a-script/proposal.md) |
+| `architect-wiki-role` | archived | #1773 (tll-architect wiki freshness; the daily CI job, weekly cron and rulebook rows are sibling slices of the same issue) | #1776 | [architect-wiki-role](openspec/changes/archive/architect-wiki-role/specs/architect-wiki-role/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architect-wiki-role/proposal.md) |
 | `architecture-block-repair-keeper` | archived | #861 | #868 | [architecture-inventory](openspec/changes/archive/architecture-block-repair-keeper/specs/architecture-inventory/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/architecture-block-repair-keeper/proposal.md) |
 | `architecture-bot-write-path` | archived | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/archive/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/architecture-bot-write-path/proposal.md) |
 | `architecture-check-presence-boundary` | archived | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/archive/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/architecture-check-presence-boundary/proposal.md) |
