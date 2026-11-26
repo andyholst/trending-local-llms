@@ -436,9 +436,10 @@ openspec-validate: openspec-image ## openspec validate <NAME> (fail-closed gate)
 openspec-status: openspec-image ## openspec status (every change and its progress)
 	docker run $(OS_OPTS) openspec status
 
-openspec-archive: openspec-image ## Move a completed change to openspec/changes/archive/<NAME>
+openspec-archive: openspec-image python-env-image ## Move a completed change to openspec/changes/archive/<NAME>
 	@test -n "$(NAME)" || { echo "Usage: make openspec-archive NAME=<change>"; exit 1; }
 	docker run $(OS_OPTS) openspec archive $(NAME) -y
+	$(PYTHON_RUN) python3 scripts/openspec_archive_newline.py --name "$(NAME)"
 
 openspec-shell: openspec-image ## Interactive shell into the repo with the openspec CLI
 	docker run --rm -it -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE) /bin/sh
