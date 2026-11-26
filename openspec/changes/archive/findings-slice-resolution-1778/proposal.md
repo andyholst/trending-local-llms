@@ -1,6 +1,7 @@
 # Parallel lanes may satisfy the findings gate with one slice file
 
 Issue: #1778
+PR: #1794
 
 ## Why
 
