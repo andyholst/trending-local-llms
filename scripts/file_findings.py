@@ -274,7 +274,13 @@ def ensure_label_on(issue: str) -> None:
     number = issue.rstrip("/").split("/")[-1]
     if LABEL in _labels_of(number):
         return
-    _gh("issue", "edit", number, "--add-label", LABEL, check=False)
+    # REST, not `gh issue edit --add-label`: the latter calls GraphQL
+    # `addLabelsToLabelable`, which a host authenticated with the owner PAT cannot
+    # call (issues #1764/#1766) — the finding is filed, then left unlabelled and
+    # invisible to the queue that keys on `tech-debt`. `repos/:owner/:repo` is gh's
+    # current-repo shorthand, so no explicit repo argument is needed.
+    _gh("api", "-X", "POST", f"repos/:owner/:repo/issues/{number}/labels",
+        "-f", f"labels[]={LABEL}", check=False)
     if LABEL not in _labels_of(number):
         raise SystemExit(
             f"[findings] {issue} does not carry `{LABEL}` after re-applying it — the bot "

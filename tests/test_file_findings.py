@@ -89,6 +89,16 @@ elif args[:2] == ["label", "list"]:
     sys.stdout.write(read(os.environ["FAKE_GH_LABELS"], "[]"))
 elif args[:2] == ["issue", "view"]:
     sys.stdout.write(read(os.environ["FAKE_GH_LABELS_ON"], "{}"))
+elif args[:1] == ["api"] and "/labels" in " ".join(args):
+    # REST label write (issues #1764/#1766): the token can call this even though
+    # the GraphQL mutation below is refused. Make the label observable to the
+    # next `issue view` so the product's post-write verification sees it land.
+    with open(os.environ["FAKE_GH_LABELS_ON"], "w", encoding="utf-8") as fh:
+        fh.write('{"labels":[{"name":"tech-debt"}]}')
+elif args[:2] == ["issue", "edit"]:
+    # GraphQL `addLabelsToLabelable`, refused for an owner-PAT host (#1764/#1766).
+    sys.stderr.write("addLabelsToLabelable is not available to this token\\n")
+    sys.exit(1)
 '''
 
 _ONE_FINDING = """# Findings
@@ -455,6 +465,32 @@ def test_a_create_that_never_becomes_discoverable_fails_loudly():
           len([c for c in calls if c.startswith("issue create")]) == 1, str(calls))
 
 
+def test_a_dropped_label_is_reapplied_via_rest_not_graphql():
+    """Issues #1764/#1766: a host authenticated with the owner PAT can create an
+    issue but cannot call GraphQL `addLabelsToLabelable`. When a create drops the
+    `tech-debt` label, the filer must re-apply it through the REST endpoint.
+
+    The stub refuses `issue edit --add-label` outright and answers only the REST
+    path, so a regression to the GraphQL mutation is RED, not a silent pass.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        path = td / "findings.md"
+        path.write_text(_ONE_FINDING, encoding="utf-8")
+        env, log, _ = _stub_env(td, label_on='{"labels":[]}')
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--file", "--path", str(path), "--issue", "1766"],
+            cwd=ROOT, capture_output=True, text=True, env=env,
+        )
+        calls = [ln for ln in log.read_text().splitlines() if ln.strip()]
+
+    check("rest-reapply: the run exits 0", proc.returncode == 0, proc.stderr)
+    check("rest-reapply: the label is applied via REST",
+          any(c.startswith("api -X POST") and "/labels" in c for c in calls), str(calls))
+    check("rest-reapply: no GraphQL add-label mutation",
+          not any("--add-label" in c for c in calls), str(calls))
+
+
 def test_parse_helpers_are_the_scripts_own():
     """The parse keeps every field and defaults the signature to the title slug."""
 
@@ -703,6 +739,7 @@ def main() -> int:
     test_already_filed_finding_is_skipped()
     test_two_immediate_invocations_file_exactly_one_issue()
     test_a_create_that_never_becomes_discoverable_fails_loudly()
+    test_a_dropped_label_is_reapplied_via_rest_not_graphql()
     test_parse_helpers_are_the_scripts_own()
     test_an_owed_row_finding_files_the_registered_marker()
     test_an_owed_row_field_that_declares_nothing_fails_loudly()

@@ -1028,6 +1028,8 @@ def _one_issue_per_changed_gap_set(tmp_path):
         check("first run exits 0", first == 0)
         check("first run files an issue", "issue" in args and "create" in args)
         check("issue carries the analysis label", G.LABEL in args)
+        check("label applied via REST, never the GraphQL add-label mutation",
+              "--add-label" not in args and "issue edit" not in args, args[:200])
         check("issue body names the ranked gap", "system_ram_min" in args, args[:200])
         check("baseline written", baseline.exists())
 
@@ -1605,15 +1607,20 @@ case "$1 $2" in
     else
       printf '{"labels":[]}\\n'
     fi ;;
-  "issue edit")
+  "api -X")
+    # REST label write (issues #1764/#1766): the PAT-hostile `issue edit
+    # --add-label` GraphQL mutation below is refused; this path must work.
     if [ "${FAKE_GH_EDIT_LABEL_FAILS:-0}" = "1" ]; then
       echo "could not add label: 'data-gap-analysis' not found" >&2
       exit 1
     fi
-    n=""
-    for a in "$@"; do case "$a" in [0-9]*) [ -z "$n" ] && n="$a";; esac; done
+    n=$(printf '%s' "$4" | sed 's|.*/issues/||; s|/labels.*||')
     awk -F'|' -v n="$n" 'BEGIN{OFS="|"} $2==n {$4="data-gap-analysis"} 1' \\
       "$FAKE_GH_STORE" > "$FAKE_GH_STORE.tmp" && mv "$FAKE_GH_STORE.tmp" "$FAKE_GH_STORE" ;;
+  "issue edit")
+    # GraphQL `addLabelsToLabelable`, refused for an owner-PAT host (#1764/#1766).
+    echo "Resource not accessible: addLabelsToLabelable is not available to this token" >&2
+    exit 1 ;;
   "label list")
     # The repo's label set is a FILE the test creates (or does not): a missing
     # label is exactly what GitHub silently ignores on `issue create`.
@@ -1674,9 +1681,11 @@ def test_a_filed_issue_carries_the_label_the_bots_trigger_on():
         check("label dropped: the issue ends up labelled",
               "data-gap-analysis" in (td / "issues.txt").read_text().splitlines()[0],
               (td / "issues.txt").read_text()[:80])
-        check("label dropped: it re-applied the label with gh issue edit",
-              any(l.startswith("issue edit") for l in (td / "gh.log").read_text().splitlines()),
-              (td / "gh.log").read_text())
+        calls = (td / "gh.log").read_text().splitlines()
+        check("label dropped: it re-applied the label via REST",
+              any(l.startswith("api -X POST") and "/labels" in l for l in calls), str(calls))
+        check("label dropped: it never used the GraphQL add-label mutation",
+              not any("--add-label" in l or l.startswith("issue edit") for l in calls), str(calls))
 
         # Given a create that drops the label AND an edit that cannot apply it
         (td / "issues.txt").write_text("")

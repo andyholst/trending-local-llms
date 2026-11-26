@@ -70,8 +70,13 @@ case "$1 $2" in
   "api /repos/o/r/issues/42") cat "$d/issue.json" ;;
   "api /repos/o/r/issues/42/comments") cat "$d/comments.jsonl" ;;
   "issue view") case "$*" in *"--json state"*) cat "$d/state.json" ;; *) cat "$d/labels.json" ;; esac ;;
-  "issue edit")  # --add-label L
-    for a in "$@"; do case "$prev" in --add-label) echo "{\\"labels\\":[{\\"name\\":\\"$a\\"}]}" > "$d/labels.json";; esac; prev="$a"; done ;;
+  "api -X")  # REST label write (issues #1764/#1766), not GraphQL addLabelsToLabelable
+    lbl=""
+    for a in "$@"; do case "$a" in labels[]=*) lbl="${a#labels[]=}";; esac; done
+    printf '{"labels":[{"name":"%s"}]}\n' "$lbl" > "$d/labels.json" ;;
+  "issue edit")  # GraphQL addLabelsToLabelable: refused for an owner-PAT host (#1764/#1766)
+    echo "addLabelsToLabelable is not available to this token" >&2
+    exit 1 ;;
   "label create") : ;;
 esac
 exit ${FAKE_GH_RC:-0}
@@ -193,6 +198,8 @@ def test_refine_posts_one_restatement_and_labels_the_issue():
     check("refine: the verdict marker is in the comment",
           "issue-bot-verdict: refine" in out or True, "")
     check("refine: it applies agent:refined", "agent:refined" in calls, calls)
+    check("refine: the label is applied via REST, never GraphQL add-label",
+          "--add-label" not in calls and "api -X POST" in calls, calls)
     check("refine: it never closes", "issue close" not in calls, calls)
 
 
@@ -374,7 +381,7 @@ def test_the_label_is_verified_not_assumed():
 
     # And the negative: a gh that never applies it
     stub = td / "bin" / "gh"
-    stub.write_text(_GH.replace("@D@", str(td)).replace('"issue edit"', '"issue edit-never"'))
+    stub.write_text(_GH.replace("@D@", str(td)).replace('"api -X"', '"api -X-never"'))
     stub.chmod(0o755)
     (td / "calls.log").write_text("")
     # the positive control above APPLIED the label; a stale control file would make

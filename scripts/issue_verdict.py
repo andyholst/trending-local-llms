@@ -331,7 +331,13 @@ def ensure_label(repo: str, number: str, label: str) -> None:
     _gh("label", "create", label, "--repo", repo, "--color", LABEL_COLORS.get(label, "ededed"),
         "--description", "The implementer triaged this issue (scripts/issue_verdict.py, #210)",
         check=False)
-    _gh("issue", "edit", number, "--repo", repo, "--add-label", label, check=False)
+    # REST, not `gh issue edit --add-label`: the latter calls GraphQL
+    # `addLabelsToLabelable`, which a host authenticated with the owner PAT cannot
+    # call (issues #1764/#1766) — a decided issue would be left unlabelled and the
+    # sweep would re-implement it. `repos/:owner/:repo` is gh's current-repo
+    # shorthand, so the REST path works with either token.
+    _gh("api", "-X", "POST", f"repos/:owner/:repo/issues/{number}/labels",
+        "-f", f"labels[]={label}", check=False)
     if label not in _labels_of(number):
         raise SystemExit(f"[verdict] FAIL: could not apply the {label} label to #{number} "
                          "— the sweep would re-implement a decided issue")
