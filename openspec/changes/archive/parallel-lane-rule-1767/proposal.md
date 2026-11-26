@@ -1,7 +1,7 @@
 # Proposal: parallel-lane-rule-1767
 
 Issue: #1767
-PR: fix/parallel-lane-rule-1767
+PR: #1768
 
 ## Why
 

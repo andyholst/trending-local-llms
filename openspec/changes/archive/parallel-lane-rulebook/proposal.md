@@ -1,7 +1,7 @@
 # Proposal: parallel-lane-rulebook
 
 Issue: #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs)
-PR: pending
+PR: #1768
 
 ## Why
 

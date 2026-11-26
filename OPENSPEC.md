@@ -9,15 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **573**
+Active changes: **1** · archived: **576**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `parallel-lane-rule-1767` | active | #1767 | fix/parallel-lane-rule-1767 | [parallel-lane-rule-1767](openspec/changes/parallel-lane-rule-1767/specs/parallel-lane-rule-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/parallel-lane-rule-1767/proposal.md) |
-| `parallel-lane-rulebook` | active | #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs) | pending | [parallel-implementer-lanes](openspec/changes/parallel-lane-rulebook/specs/parallel-implementer-lanes/spec.md) | 7/7 | [proposal.md](openspec/changes/parallel-lane-rulebook/proposal.md) |
 
 ## Archived changes
 
@@ -416,6 +414,8 @@ Active changes: **3** · archived: **573**
 | `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
+| `parallel-lane-rule-1767` | archived | #1767 | #1768 | [parallel-lane-rule-1767](openspec/changes/archive/parallel-lane-rule-1767/specs/parallel-lane-rule-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/parallel-lane-rule-1767/proposal.md) |
+| `parallel-lane-rulebook` | archived | #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs) | #1768 | [parallel-implementer-lanes](openspec/changes/archive/parallel-lane-rulebook/specs/parallel-implementer-lanes/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/parallel-lane-rulebook/proposal.md) |
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pin-freshness-rides-the-scheduled-pipeline` | archived | #1093 | #1150 | [fleet-cadence](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/specs/fleet-cadence/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/proposal.md) |
@@ -566,6 +566,7 @@ Active changes: **3** · archived: **573**
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |
 | `timeout-prong-neutral-failed-1707` | archived | #1707 | #1713 | [fetch-outage-verdict](openspec/changes/archive/timeout-prong-neutral-failed-1707/specs/fetch-outage-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/timeout-prong-neutral-failed-1707/proposal.md) |
+| `tll-1767` | archived | #1767 | #1768 | [tll-1767](openspec/changes/archive/tll-1767/specs/tll-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/tll-1767/proposal.md) |
 | `tll-docs-lane` | archived | #1396 | #1420 | [fleet-docs](openspec/changes/archive/tll-docs-lane/specs/fleet-docs/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/tll-docs-lane/proposal.md) |
 | `tracker-sweep-failure-guard-1256` | archived | #1256 | #1257 | [tracker-sweep](openspec/changes/archive/tracker-sweep-failure-guard-1256/specs/tracker-sweep/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/tracker-sweep-failure-guard-1256/proposal.md) |
 | `trending-for-your-card` | archived | #349 — `feat(readme): the trending list for YOUR card — VRAM-tiered trending tables, low end (8–24 GB) first` | — | [readme-trending](openspec/changes/archive/trending-for-your-card/specs/readme-trending/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/trending-for-your-card/proposal.md) |
