@@ -895,8 +895,8 @@ IDENTITY_SITES_1711 = (
     ("announce_image_fallback.py", 'comment.get("body")', 'comment.get("bodyX")', 74, "bodyX"),
     ("issue_thread.py", 'c.get("created_at", "")', 'c.get("createdAtX", "")', 85, "createdAtX"),
     ("owed_rows_check.py", 'c.get("body")', 'c.get("bodyX")', 58, "bodyX"),
-    # #1757 added one comment line above this site, shifting the plant from 1408 to 1409.
-    ("pipeline_failure_issue.py", 'c.get("body")', 'c.get("bodyX")', 1409, "bodyX"),
+    # #1757 added one line above this site; this branch's own record-keeping adds five more.
+    ("pipeline_failure_issue.py", 'c.get("body")', 'c.get("bodyX")', 1415, "bodyX"),
     ("sweep_outcome.py", 'comment.get("createdAt")', 'comment.get("createdAtX")', 132,
      "createdAtX"),
 )
