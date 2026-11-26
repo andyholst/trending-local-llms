@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **569**
+Active changes: **4** · archived: **569**
 
 ## Active changes
 
@@ -18,6 +18,7 @@ Active changes: **3** · archived: **569**
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 | `refresh-bot-pin-token` | active | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-bot-pin-token/proposal.md) |
 | `search-leg-sigpipe-classify` | active | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/search-leg-sigpipe-classify/proposal.md) |
+| `test-image-qemu-handler` | active | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/test-image-qemu-handler/proposal.md) |
 
 ## Archived changes
 

@@ -3435,6 +3435,30 @@ def test_arm64_smoke_execs_aarch64_child():
           "uname" not in run and "platform.machine" not in run, run)
 
 
+def test_test_image_arm64_smoke_declares_qemu_handler() -> None:
+    """Issue #1747: the test-image job's arm64 smoke needs its OWN QEMU handler.
+
+    #1739 registered one in `build` only; run 45657191852 died at
+    `make test-image-smoke` with `exec /usr/local/bin/python3: exec format error`.
+    """
+    job = load("refresh-bot.yml")["jobs"]["test-image"]
+    names = [s.get("name", "") for s in steps(job)]
+    smoke_i = next((i for i, n in enumerate(names) if "Prove the arm64 test image runs" in n), None)
+    check("ci: the arm64 test-image QEMU smoke step exists", smoke_i is not None, names)
+    qemu = [s for s in steps(job) if "setup-qemu-action" in s.get("uses", "")]
+    check("ci: test-image declares exactly one setup-qemu-action", len(qemu) == 1,
+          [s.get("uses") for s in qemu])
+    if qemu and smoke_i is not None:
+        qi = names.index(qemu[0].get("name", ""))
+        check("ci: test-image QEMU step runs before the arm64 smoke", qi < smoke_i,
+              f"qemu@{qi} smoke@{smoke_i}")
+        ref = qemu[0]["uses"].split("@")[-1]
+        check("ci: test-image QEMU action ref is the pinned 40-hex SHA",
+              ref == "99012661954931238ded8c8b007157a8430204e1", ref)
+        check("ci: test-image QEMU platforms is exactly linux/arm64",
+              qemu[0].get("with", {}).get("platforms") == "linux/arm64", qemu[0].get("with"))
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> auto-merge (fix-bot retired, #814)")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -3442,6 +3466,7 @@ def main() -> int:
     test_arm64_smoke_declares_qemu_handler_before_it()
     test_arm64_smoke_keeps_one_platform_verdict()
     test_arm64_smoke_execs_aarch64_child()
+    test_test_image_arm64_smoke_declares_qemu_handler()
     test_the_refresh_search_job_forwards_every_credential_its_leg_uses()
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
