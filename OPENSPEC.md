@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **573**
+Active changes: **3** · archived: **573**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `parallel-lane-rule-1767` | active | #1767 | fix/parallel-lane-rule-1767 | [parallel-lane-rule-1767](openspec/changes/parallel-lane-rule-1767/specs/parallel-lane-rule-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/parallel-lane-rule-1767/proposal.md) |
 | `parallel-lane-rulebook` | active | #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs) | pending | [parallel-implementer-lanes](openspec/changes/parallel-lane-rulebook/specs/parallel-implementer-lanes/spec.md) | 7/7 | [proposal.md](openspec/changes/parallel-lane-rulebook/proposal.md) |
 
 ## Archived changes
