@@ -1330,7 +1330,13 @@ def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[
     labels = _gh_json(["issue", "view", number, "--repo", repo, "--json", "labels"])
     names = [l["name"] for l in labels.get("labels", [])]
     if LABEL not in names:
-        _gh("issue", "edit", number, "--repo", repo, "--add-label", LABEL)
+        # REST, not `gh issue edit --add-label`: the latter goes through GraphQL
+        # `addLabelsToLabelable`, which a host authenticated with the owner PAT cannot
+        # call (issue #1764) — it creates the issue, then crashes before the ledger append,
+        # leaving a queue-invisible unlabelled finding. REST works with the same token and
+        # with the CI default token, so the path is identical for both (rule 3f/6o).
+        _gh("api", "-X", "POST", f"repos/{repo}/issues/{number}/labels",
+            "-f", f"labels[]={LABEL}")
         labels = _gh_json(["issue", "view", number, "--repo", repo, "--json", "labels"])
         names = [l["name"] for l in labels.get("labels", [])]
         if LABEL not in names:

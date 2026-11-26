@@ -205,10 +205,25 @@ case "$1" in
         printf '%s' "$body" > "$d/comment-$number-$m.txt"
         echo "https://github.com/octo/repo/issues/$number#issuecomment-${m}" ;;
       view)
-        if [ -f "$d/issue-view-$3.json" ]; then cat "$d/issue-view-$3.json"
+        # A REST label write (issue #1764) takes effect immediately: once the filer has
+        # applied the label through `gh api …/labels`, `issue view` reports it. Falls back
+        # to the canned fixtures when no REST write happened, so every existing test is
+        # byte-identical.
+        if [ -f "$d/label-write-$3.txt" ]; then
+          printf '{"labels": [{"name": "%s"}]}' "$(cat "$d/label-write-$3.txt")"
+        elif [ -f "$d/issue-view-$3.json" ]; then cat "$d/issue-view-$3.json"
         elif [ -f "$d/issue-state.json" ]; then cat "$d/issue-state.json"
         else echo '{"labels": [{"name": "tech-debt"}]}'; fi ;;
-      edit) exit 0 ;;
+      edit)
+        # A host authenticated with the owner PAT cannot use the GraphQL label mutation
+        # (issue #1764). Model that refusal behind a fixture flag and record any attempt,
+        # so the guard can prove the filer never takes this path.
+        if [ -e "$d/graphql-label-refused" ] && [[ " $* " == *" --add-label "* ]]; then
+          bump graphql-edit-attempts >/dev/null
+          echo "GraphQL: Resource not accessible by personal access token (addLabelsToLabelable)" >&2
+          exit 1
+        fi
+        exit 0 ;;
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   pr)
@@ -226,6 +241,22 @@ case "$1" in
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   api)
+    # `gh api -X POST repos/<repo>/issues/<n>/labels -f 'labels[]=<label>'` — the REST label
+    # write (issue #1764) that works with the owner PAT which refuses the GraphQL mutation.
+    if [[ " $* " == *" -X POST "* && "$*" == *"/issues/"*"/labels"* ]]; then
+      url=""
+      for a in "$@"; do
+        case "$a" in *"/issues/"*"/labels") url="$a" ;; esac
+      done
+      num=""
+      [[ "$url" =~ /issues/([0-9]+)/labels ]] && num="${BASH_REMATCH[1]}"
+      lbl=""
+      for a in "$@"; do
+        if [ "${a:0:8}" = "labels[]" ]; then lbl="${a##*=}"; fi
+      done
+      printf '%s' "$lbl" > "$d/label-write-$num.txt"
+      exit 0
+    fi
     # `gh api repos/.../actions/runs?workflow_id=…&per_page=…&page=…[&event=…]` — the paginated
     # window walk (issue #1467). The fixture is the REAL REST shape (snake_case, `html_url`), so
     # the product's ONE projection is exercised rather than bypassed.
@@ -391,6 +422,40 @@ def test_filing_diagnoses_every_failure_with_the_log_error_block() -> None:
         check("no self-annotation comment was written for a freshly filed row",
               not list((tmp / "canned").glob("comment-*.txt")),
               str([q.name for q in (tmp / "canned").glob("comment-*.txt")]))
+
+
+def test_the_label_fallback_uses_rest_when_the_pat_refuses_graphql() -> None:
+    print("\nlabel fallback: the REST write survives the owner PAT's GraphQL refusal")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        # `gh issue create --label` exited 0 having applied nothing (issue #161), so
+        # `issue view` reports no label and the filer must take the fallback path.
+        canned["issue-view-4241.json"] = {"labels": []}
+        canned["issue-view-4242.json"] = {"labels": []}
+        canned["graphql-label-refused"] = ""
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0 — no GraphQL crash", proc.returncode == 0,
+              proc.stderr + "\n" + proc.stdout)
+        cdir = tmp / "canned"
+        check("both issues were filed", int((cdir / "create-count").read_text().strip()) == 2,
+              proc.stdout)
+        writes = sorted(q.name for q in cdir.glob("label-write-*.txt"))
+        check("both labels were applied through the REST seam",
+              writes == ["label-write-4241.txt", "label-write-4242.txt"], str(writes))
+        check("each REST write carries the tech-debt label",
+              all((cdir / q).read_text().strip() == "tech-debt" for q in writes), str(writes))
+        check("the GraphQL --add-label path was never attempted",
+              not (cdir / "graphql-edit-attempts").exists(),
+              "filer still calls gh issue edit --add-label")
+        if ledger.exists():
+            data = json.loads(ledger.read_text())
+            check("both runs still land in the ledger",
+                  {e["run_id"] for e in data["failures"]} == {100, 104}, str(data))
+        else:
+            check("both runs still land in the ledger", False, "no ledger was written")
 
 
 def test_ledger_and_marker_dedup_file_one_run_once_ever() -> None:
@@ -2552,6 +2617,7 @@ def main() -> int:
     test_window_filing_names_the_workflow_not_none()
     test_dispatch_only_run_tracked_with_projected_name()
     test_filing_diagnoses_every_failure_with_the_log_error_block()
+    test_the_label_fallback_uses_rest_when_the_pat_refuses_graphql()
     test_ledger_and_marker_dedup_file_one_run_once_ever()
     test_undiagnosed_filing_is_loud_never_a_skip()
     test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log()
