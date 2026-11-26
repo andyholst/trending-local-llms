@@ -1,0 +1,14 @@
+# Findings — #1773 (tll-architect wiki-freshness role slice)
+
+## The architect role mirrors carry no wiki-freshness duty at the fetched base
+
+- **Evidence:** at the freshly fetched `origin/master` sha `37c6d88150fdb73fd0583a59099aee0b418d7927`, the four owner-directed role texts — in-tree `agents/tll-architect/SOUL.md` and `agents/tll-architect/skills/tll-architect/SKILL.md`, plus the host copies `~/.hermes/profiles/tll-architect/SOUL.md` and `~/.hermes/profiles/tll-architect/skills/tll-architect/SKILL.md` — contain **zero** of the eight required behaviours: measure each wiki/doc claim against the fetched tree, UPDATE a false claim, ARCHIVE an obsolete doc into `docs/archive/` with a dated marker and pointer, one `enhancement` issue per change with measured evidence and sha, never invent a value, never hand-edit a generated artifact, amend the 'no cron / no workflow' prohibitions ONLY for this duty, and a weekly cron that reviews the daily CI findings. The new source-level guard `tests/test_architect_wiki_role.py` is RED on a pinned copy of that base (all nine needles absent, exit 1) and GREEN on this head (exit 0). The owner checkout was 11 commits behind and was never used for measurement.
+- **Why:** a duty that lives only in chat is invisible to the next session, so documentation can keep contradicting the fetched tree with no lane accountable; the owner directed that this duty be written into `AGENTS.md` and the architect role mirrors, and that false claims be updated and obsolete pages archived with evidence rather than silently edited.
+- **Done when:** all four role texts carry the duty with the measured sha named; `tests/test_architect_wiki_role.py` is wired into `main()` and proves RED on the pinned base and GREEN on the head; the sibling CI/cron lanes wire the daily check and weekly review onto these same findings; and an attended run lands the protected §8 rulebook row below (rule 3c — `AGENTS.md` is owned by another subagent on #1773, so this slice only declares it owed).
+- **Owed-row:** <!-- owed-row: section=8 needle=tests/test_architect_wiki_role.py -->
+
+## The root OpenSpec index is generated and must not be hand-edited
+
+- **Evidence:** `openspec/changes/architect-wiki-role/` was created with a proposal bound to `Issue: #1773`, a capability spec carrying resolvable `- **Test:**` lines, and a fully ticked `tasks.md`; `OPENSPEC.md` was rewritten by `python3 scripts/openspec_index.py --write` (not by hand) and `--check` reports it current.
+- **Why:** hand-editing the index hides a change from `make openspec-check`, the acceptance gate every PR must pass, and creates drift between the active changes on disk and the row a reviewer reads.
+- **Done when:** `make openspec-index-check` stays green with this change listed, and any later edit to the change set regenerates the index through the owning command.
