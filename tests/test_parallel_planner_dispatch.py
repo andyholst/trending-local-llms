@@ -52,7 +52,7 @@ SECTION = "### Parallel implementer dispatch (owner directive, issue #1767)"
 def _base_skill() -> str:
     """The real base blob, read with git — never the owner's checkout."""
     proc = subprocess.run(
-        ["git", "show", f"{BASE_SHA}:{SKILL_REL}"],
+        ["git", "-c", "safe.directory=*", "show", f"{BASE_SHA}:{SKILL_REL}"],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
     if proc.returncode != 0:
