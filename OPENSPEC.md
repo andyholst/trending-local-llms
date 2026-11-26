@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **575**
+Active changes: **1** · archived: **576**
 
 ## Active changes
 
@@ -415,6 +415,7 @@ Active changes: **1** · archived: **575**
 | `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
+| `parallel-planner-dispatch` | archived | #1767 | #1769 | [planner-dispatch](openspec/changes/archive/parallel-planner-dispatch/specs/planner-dispatch/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/parallel-planner-dispatch/proposal.md) |
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pin-freshness-rides-the-scheduled-pipeline` | archived | #1093 | #1150 | [fleet-cadence](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/specs/fleet-cadence/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/proposal.md) |
