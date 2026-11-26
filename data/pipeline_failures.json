@@ -2028,7 +2028,8 @@
       "failure_class": "goal-judge-aggregate-token",
       "class_runs": [
         45657191852
-      ]
+      ],
+      "workflowName": "refresh-bot"
     }
   ]
 }
