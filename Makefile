@@ -219,7 +219,7 @@ HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
 # containers and wrapping them again would be docker-in-docker. The capture contract is unchanged
 # (raw + redacted files, `--append` per round, streamed masked lines, the command's own status).
 define scrubbed_run
-	@bash -o pipefail -c 'eval "$$1" 2>&1 | $(PYTHON_RUN) python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
+	@bash -o pipefail -c 'eval "$$1" 2>&1 | $(PYTHON_RUN) python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"; st=$${PIPESTATUS[0]}; if [ "$$st" = 141 ]; then printf "%s\n" "[scrub-log] FAIL: the agent stream closed with SIGPIPE (exit 141) and NO redacted line was captured — classified as quiet/agent-failed, not a source outage (issue #1747)" >&2; fi; exit "$$st"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
 endef
 
 

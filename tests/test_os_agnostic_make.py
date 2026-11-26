@@ -417,6 +417,14 @@ def test_the_guard_is_wired_into_lint_and_reachable() -> None:
           (ROOT / "scripts" / "check_no_bare_host_python.py").is_file(), "")
 
 
+def test_the_redaction_seam_classifies_a_silent_agent_sigpipe() -> None:
+    """Issue #1747: a search leg that exits 141 with zero captured lines must be named."""
+    macro = MAKEFILE_TEXT.split("define scrubbed_run", 1)[1].split("endef", 1)[0]
+    check("seam: scrubbed_run classifies an agent SIGPIPE instead of hiding it",
+          "PIPESTATUS[0]" in macro and "141" in macro
+          and "quiet/agent-failed" in macro, macro[:400])
+
+
 def main() -> int:
     """Run every test in this file — a test defined but never called passes CI silently."""
     test_the_real_tree_has_no_bare_host_invocation_outside_the_exceptions()
@@ -426,6 +434,7 @@ def main() -> int:
     test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed()
     test_the_guard_follows_both_hop_spellings_into_private_recipes()
     test_the_guard_is_wired_into_lint_and_reachable()
+    test_the_redaction_seam_classifies_a_silent_agent_sigpipe()
     print(f"\nPASSED {PASSED} | FAILED {FAILED}")
     return 1 if FAILED else 0
 
