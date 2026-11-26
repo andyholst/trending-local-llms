@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **5** · archived: **570**
+Active changes: **4** · archived: **571**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `filer-label-rest-1764` | active | #1764 | fix/filer-label-rest-1764 | [openspec-binding](openspec/changes/filer-label-rest-1764/specs/openspec-binding/spec.md) | 1/1 | [proposal.md](openspec/changes/filer-label-rest-1764/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 | `refresh-bot-pin-token` | active | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-bot-pin-token/proposal.md) |
 | `search-leg-sigpipe-classify` | active | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/search-leg-sigpipe-classify/proposal.md) |
@@ -564,6 +563,7 @@ Active changes: **5** · archived: **570**
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |
 | `timeout-prong-neutral-failed-1707` | archived | #1707 | #1713 | [fetch-outage-verdict](openspec/changes/archive/timeout-prong-neutral-failed-1707/specs/fetch-outage-verdict/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/timeout-prong-neutral-failed-1707/proposal.md) |
+| `tll-1764` | archived | #1764 | #1765 | [tll-1764](openspec/changes/archive/tll-1764/specs/tll-1764/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/tll-1764/proposal.md) |
 | `tll-docs-lane` | archived | #1396 | #1420 | [fleet-docs](openspec/changes/archive/tll-docs-lane/specs/fleet-docs/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/tll-docs-lane/proposal.md) |
 | `tracker-sweep-failure-guard-1256` | archived | #1256 | #1257 | [tracker-sweep](openspec/changes/archive/tracker-sweep-failure-guard-1256/specs/tracker-sweep/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/tracker-sweep-failure-guard-1256/proposal.md) |
 | `trending-for-your-card` | archived | #349 — `feat(readme): the trending list for YOUR card — VRAM-tiered trending tables, low end (8–24 GB) first` | — | [readme-trending](openspec/changes/archive/trending-for-your-card/specs/readme-trending/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/trending-for-your-card/proposal.md) |

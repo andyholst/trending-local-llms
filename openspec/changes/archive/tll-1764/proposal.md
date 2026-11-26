@@ -1,7 +1,7 @@
 # Proposal: tll-1764
 
 Issue: #1764
-PR: fix/filer-label-rest-1764
+PR: #1765
 
 ## Why
 
