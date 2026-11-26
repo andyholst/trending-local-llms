@@ -1,4 +1,4 @@
-# Proposal: filer-label-rest-1764
+# Proposal: tll-1764
 
 Issue: #1764
 PR: fix/filer-label-rest-1764
@@ -13,8 +13,8 @@ archived change; the filer REST-label fix landed without that OpenSpec change.
 
 ## What Changes
 
-- Create a new active OpenSpec change `openspec/changes/filer-label-rest-1764/`
-  that binds `Issue: #1764` and declares `PR: fix/filer-label-rest-1764`.
+- Create a new active OpenSpec change `openspec/changes/tll-1764/` that binds
+  `Issue: #1764` and declares `PR: fix/filer-label-rest-1764`.
 - Add a capability spec and one completed task under the change.
 - Regenerate `OPENSPEC.md` from `openspec/changes/**` via
   `make openspec-index`; the index file is regenerated, never hand-edited.
