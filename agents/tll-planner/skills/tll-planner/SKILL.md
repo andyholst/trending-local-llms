@@ -33,6 +33,12 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 0. **Work the board (owner-mandated standing behavior).** Whenever active, refresh `origin/master` and pull
    the open fleet `enhancement` issues (~12 in the 690/600s scope) and the open pull request(s); drive them
    to done — do NOT stop after one issue closes. This replaces the "wait for an explicit dispatch" habit.
+   This owner's standing style this cycle: delegate without waiting for a human go-ahead, open every PR
+   ready (never draft), and keep the board moving — dispatch more lanes whose target files differ, and
+   keep the CI of red failures under monitoring (re-scan the open PRs, re-read the threads, dispatch the
+   reviewer/tester lanes for verdicts, hold/re-route as needed). Every dispatch, status, verdict and
+   closer is posted on the issue's OWN thread in the signed `BOT <name> · …` record; the chat carries only
+   the conclusion.
 1. Do not create a blind cron that starts lane work, and do not add or edit an Actions `schedule:`; the
    owner starts the fleet. The only permitted cron is the owner-authorized, marker-gated watcher pair
    documented in `references/watcher-trigger.md` — never create it without explicit authorization and
@@ -108,6 +114,25 @@ needed to move the board.
 - You do not add `tech-debt`, `data-gap-analysis`, `agent:implement`, or `agent:ready`.
 - You do not create `cron/jobs.json` and you do not edit a GitHub Actions `schedule:`.
 - You do not recreate `trending-local-llm-issue-implementer`.
+
+## User style (owner correction)
+
+The owner's messages are terse and demand results: implement the issue, create the PR, deliver it. The planner's chat output must be:
+
+- **Short and result-first:** the conclusion (delivered, what it changed, the one open item and its URL) before any background — the issue thread is the record, the chat carries the conclusion. No process narration (dispatch waits, status loops, lane detail).
+- **Links only, one line each:** PR URL, gate run URL, issue URL.
+- **Never re-report a closed issue** without re-reading the thread — state from chat is stale; a claim is valid only against the current head.
+- **Everything a lane comments appears on the issue's own thread** in the signed `BOT <name> · …` record format — dispatch, status, verdict, closer. A chat message is never a delivery.
+
+## PR gate diagnosis (pr-closure red)
+
+The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for the same class of defect: the gate binds every `#<id>` in the PR title/body as a closing reference, so prose mentioning another issue (`their own PRs closed #1747`) is parsed as closing that issue and rejects the branch; and the title must carry the closing keyword for THIS issue unmasked, or the branch cannot bind it. Diagnose and fix with this recipe:
+
+1. **Reproduce first.** Run the gate on the branch's PR metadata (`make pr-closure PR=<n>`) and read the job log for the failing step. A PR with **no checks reported** on the branch is never green (a never-started head) — name the run URL and head sha before re-pushing.
+2. **List the bindings.** Read the PR title and body; every `#<id>` that is NOT the PR's own `Closes #<n>` is a candidate defect.
+3. **Reword the mis-bound prose.** A cross-reference like `#1747` becomes inline code (`` `#1747` ``) — the gate strips inline-code spans, so masking hides the reference from its parser while keeping the record readable. Never remove it; never rewrite the record's meaning.
+4. **Unmask the issue's keyword in BOTH title and body.** `Closes #<id>` must appear in the title AND in the body content — title-only and body-only do not close the issue on merge.
+5. **Re-run the gate to green** on the final head, then re-trigger the full `validate`/`live-smoke` CI on a file change. File-filtered workflows do NOT fire on metadata-only commits; the pr-closure workflow fires. If `validate` stays red after the gate is green, fix the CODE (read the job log), not the trigger — do not add workflow edits to fix a CI-trigger artifact.
 
 ## Pitfalls
 
@@ -312,6 +337,14 @@ needed to move the board.
   lane was supposed to author — a rebase cannot fabricate it and must hand back. Measure whether the red is
   INHERITED (e.g. a seam moved from a root file to per-issue files after that branch's last green run) and
   dispatch `tll-implementer` to write the artifact on the existing branch; keep the rebase lane out of it.
+**Subclass — OpenSpec lifecycle red.** qa-validate's `validate` job runs `make openspec-archive-check`
+(the "OpenSpec lifecycle" step) on every PR head; `pr-closure` runs the same check on the PR head. A red
+here is almost always the same fault: a PR that closes an issue with no binding OpenSpec change in the
+head tree, or an existing change still unarchived. If the failing step label is `OpenSpec lifecycle`,
+read the failing log's step name first, then dispatch `tll-implementer` with the artifact and the two fix
+commands (`make openspec-new` + `Issue:`/`PR:` in proposal.md for a missing change; `make
+openspec-record-pr` for an unarchived change; both followed by `make openspec-index`), before the red
+lands — not after.
   **Require the artifact in the DISPATCH, not after the red.** When a PR body will say `Implements #<n>`,
   rule 6g binds, so name `findings/<issue>.md` as a delivery item up front; a missing findings file reddens
   `validate` in seconds and costs a whole CI cycle to discover.
@@ -491,6 +524,44 @@ subprocess, remote registry); and wherever the pipeline uses a mock, an end-to-e
 business call input-to-result. A PR whose tests only mock the logic, or which mocks the pipeline without an
 E2E real-call test, is not done. Tracked on #690.
 
+## OpenSpec lifecycle gate (make openspec-archive-check)
+
+`qa-validate`'s `validate` job runs `make openspec-archive-check` (its "OpenSpec lifecycle" step) on every
+PR head, and `pr-closure` runs the same check on the PR head. It REFUSES a PR whose head tree has no
+OpenSpec change binding the issue the PR closes, or whose change exists but sits unarchived.
+
+Diagnostic recipe for a PR red at `validate` on `OpenSpec lifecycle`:
+1. Reproduce at the exact head and read the failing step's log. Name the failing step label before
+   dispatching — a PR with no checks reported is a never-started head, not an OpenSpec defect.
+2. List the PR's `Closes #<n>` bindings in title and body. For every bound issue, confirm an ACTIVE
+   (not merely present) OpenSpec change exists in the head tree: `git ls-tree origin/master
+   openspec/changes/`, then `git show origin/master:openspec/changes/<slug>/proposal.md` to read its
+   `Issue:` line — absent, wrong, or unarchived, `make openspec-archive-check` exits 1 (`NO OpenSpec
+   change` when missing; an existing change only passes once it is ARCHIVED).
+3. Fix it with the two-command set, not a rebase: for a missing change, `make openspec-new NAME=<kebab>`
+   and bind `Issue:` + `PR:` in the proposal, then `make openspec-index` to rebuild `OPENSPEC.md`; for an
+   existing but unarchived change, `make openspec-record-pr ISSUE=<n> PR=<pr>` (records AND archives),
+   then `make openspec-index`.
+4. Verify locally before push: `make openspec-check` green, and the PR still carries its `Closes #<id>`
+   in BOTH title and body. Push and confirm CI registered on the new SHA: `gh pr checks <n>`,
+   `gh run view <id> --json jobs` — the `validate` job re-runs on the new head, so the gate must turn
+   green there. If `validate` stays red, fix the CODE from the job log, not the trigger.
+5. Re-read the issue thread after the dispatch — the comment is the record; a PR comment alone is not a
+   delivery. The implementer lane's work hands to `tll-reviewer` for the verdict.
+
+6. Verify the archive verdict against the REAL `origin/master` tree, not the PR head's report: `git
+   show origin/master:OPENSPEC.md` → the `## Active changes` table must no longer list the change, the
+   `## Archived changes` table must list it, AND the `active=`/`archived=` counts printed by
+   `make openspec-index` must match the disk (dir listing of `openspec/changes/archive/`). A padded
+   archive dir with wrong counts, or a change still listed in the active table, means the archive did
+   not land. The PR's commit message or issue comment saying "archived" does not satisfy this.
+Class outcome: a PR closing an issue with no binding OpenSpec change, or an existing OpenSpec change
+still unarchived, is the one root cause behind several red `validate` jobs this cycle. The implementer
+lanes applied the same two-command fix on the same `origin/master` base sha, and the reviewer verdicts
+then closed the issues on the corrected heads. This is the `missing-artifact` class, so the rebase lane
+must NOT fabricate the change — hand the defect to `tll-implementer` with the artifact in the dispatch,
+before the red lands, same as any other red named a missing product artifact.
+
 ## Docs lane scope (owner-mandated)
 
 The `tll-docs` lane (issue #691) owns documentation **as necessary**, wiki-agent style: schema⇄contract sync
@@ -616,6 +687,10 @@ Every lane hands over on the issue thread, so the board can be followed without 
   view (equal t/s rows per model) via `--render-only` byte-diff (guards #463/#525).
 - **#690** worktree-default fleet convention.
 - **#691** propose a `tll-docs` lane (schema⇄contract sync + architecture/how-it-works doc).
+- **#1775** (fleet-sync directive, delivered): planner's rulebook behaviour + all 8 lane `SOUL.md` + skills
+  re-synced to base blob `37c6d88150fdb73fd0583a59099aee0b418d7927` (`make fleet-host-sync-check BASE=origin/master`
+  prints OK, exit 0); the sync issue thread carries the start/dispatch/done confirmation (the owner's
+  "no human intervention needed" form). No further work remains.
 - Successors of this distribution: `tll-architect`, `tll-implementer`, `tll-reviewer`, `tll-security`, `tll-docs` (lane stood up by issue #1396; profile provisioning is an owner act).
 
 ## Measurement store (post-#689 split — landed)
