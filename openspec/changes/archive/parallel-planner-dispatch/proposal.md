@@ -1,6 +1,7 @@
 # Proposal: parallel-planner-dispatch
 
-Binding-exempt: this change does not implement and close #1767 — it is one of three independent PRs that document the owner's parallel-lane directive; #1767 stays open until all three land, and is linked with `Refs #1767` only.
+Issue: #1767
+PR: #1769
 
 ## Why
 
