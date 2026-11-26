@@ -119,11 +119,15 @@ def test_the_archive_recipe_wires_the_seam() -> None:
           and body.index("openspec archive $(NAME) -y") < body.index("scripts/openspec_archive_newline.py"), body)
 
 
-if __name__ == "__main__":
+def main() -> int:
     test_the_seam_repairs_a_planted_no_newline_archive()
     test_binary_empty_and_nested_files_are_untouched()
     test_a_date_prefixed_archive_dir_is_found()
     test_a_missing_archive_dir_is_refused()
     test_the_archive_recipe_wires_the_seam()
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
-    sys.exit(1 if _FAIL else 0)
+    return 1 if _FAIL else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
