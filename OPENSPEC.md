@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **576**
+Active changes: **2** · archived: **573**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `wiki-rulebook` | active | #1773 | — | [wiki-rulebook](openspec/changes/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/wiki-rulebook/proposal.md) |
 
 ## Archived changes
 
@@ -89,10 +90,8 @@ Active changes: **1** · archived: **576**
 | `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-profile-provision-backup-skills-1754` | archived | #1754 | #1755 | [profile-provision-backups](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/specs/profile-provision-backups/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
-| `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
-| `2026-11-26-planner-skill-ahead-1781` | archived | #1781 | #1786 | [planner-skill-forward-merge](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/specs/planner-skill-forward-merge/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/proposal.md) |
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
 | `2026-11-26-search-leg-sigpipe-classify` | archived | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/proposal.md) |
 | `2026-11-26-test-image-qemu-handler` | archived | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/archive/2026-11-26-test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-test-image-qemu-handler/proposal.md) |
@@ -415,7 +414,6 @@ Active changes: **1** · archived: **576**
 | `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
-| `parallel-planner-dispatch` | archived | #1767 | #1769 | [planner-dispatch](openspec/changes/archive/parallel-planner-dispatch/specs/planner-dispatch/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/parallel-planner-dispatch/proposal.md) |
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pin-freshness-rides-the-scheduled-pipeline` | archived | #1093 | #1150 | [fleet-cadence](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/specs/fleet-cadence/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pin-freshness-rides-the-scheduled-pipeline/proposal.md) |
