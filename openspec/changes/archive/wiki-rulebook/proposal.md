@@ -1,6 +1,7 @@
 # Proposal: wiki-rulebook
 
 Issue: #1773
+PR: #1774
 
 ## Why
 
