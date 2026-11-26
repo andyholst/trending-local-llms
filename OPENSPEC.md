@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **4** · archived: **570**
+Active changes: **5** · archived: **570**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `filers-label-rest-1766` | active | #1766 | fix/filers-label-rest-1766 | [filers-label-rest-1766](openspec/changes/filers-label-rest-1766/specs/filers-label-rest-1766/spec.md) | 1/1 | [proposal.md](openspec/changes/filers-label-rest-1766/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 | `refresh-bot-pin-token` | active | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-bot-pin-token/proposal.md) |
 | `search-leg-sigpipe-classify` | active | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/search-leg-sigpipe-classify/proposal.md) |
