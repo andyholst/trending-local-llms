@@ -434,7 +434,7 @@ API_PYTHON_READ_SITES: tuple[ApiPythonReadSite, ...] = (
                       ("issue", "issue_json"), (), ("thread",), frozenset({"body"})),
     ApiPythonReadSite("pipeline_failure_issue.py", "window_runs", "actions/runs?{}",
                       ("payload",), ("rows", "r", "row"), ("_project_run",),
-                      frozenset({"workflow_runs", "id", "workflow_name", "name",
+                      frozenset({"workflow_runs", "id", "name",
                                  "head_branch", "head_sha", "event", "created_at",
                                  "conclusion", "status", "html_url"}),
                       blocked=frozenset({"run", "projected"})),

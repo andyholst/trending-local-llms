@@ -72,9 +72,10 @@ RUNS_QA = [
 
 #: The REAL REST `actions/runs` row shape (snake_case, `html_url`) — the paginated window walk's
 #: feed (issue #1467). Fixtures are written in this shape so the product's ONE camelCase
-#: projection runs for real instead of being bypassed by a pre-projected fixture.
+#: projection runs for real instead of being bypassed by a pre-projected fixture. REST carries the
+#: workflow name in `name`; it has no `workflow_name` field (issue #1757).
 _REST_RUN_FIELDS = (
-    ("databaseId", "id"), ("workflowName", "workflow_name"), ("name", "name"),
+    ("databaseId", "id"), ("workflowName", "name"),
     ("headBranch", "head_branch"), ("headSha", "head_sha"), ("event", "event"),
     ("createdAt", "created_at"), ("conclusion", "conclusion"), ("status", "status"),
     ("url", "html_url"),
@@ -2479,8 +2480,51 @@ def test_a_cancelled_push_with_only_cancel_chatter_is_not_filed() -> None:
               f"create-count={created}\n{proc.stdout}")
 
 
+def test_window_rest_name_projects_workflow_name() -> None:
+    print("\n#1757: the window walk's REST row carries the workflow name in `name`")
+    rest = {"id": 100, "name": "qa-validate", "html_url": "https://github.com/o/r/actions/runs/100"}
+    projected = F._project_run(rest)
+    check("REST `name` projects to workflowName (never None)",
+          projected.get("workflowName") == "qa-validate", str(projected))
+    check("the projection needs no non-existent `workflow_name` key", "workflow_name" not in rest)
+
+
+def test_window_filing_names_the_workflow_not_none() -> None:
+    print("\n#1757: a window-walk filing names the workflow in its title and ledger row")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        titles = [p.read_text() for p in (tmp / "canned").glob("title-*.txt")]
+        check("filed titles name the workflow, never `None`",
+              bool(titles) and all("qa-validate.yml" in t and "None" not in t for t in titles),
+              str(titles))
+        rows = {e["run_id"]: e for e in json.loads(ledger.read_text())["failures"]}
+        check("ledger rows name the workflow, never null",
+              bool(rows) and all(r.get("workflow") == "qa-validate.yml" for r in rows.values()),
+              str([r.get("workflow") for r in rows.values()]))
+
+
+def test_dispatch_only_run_tracked_with_projected_name() -> None:
+    print("\n#1757: a dispatch-only failure stays tracked with its projected workflow name")
+    rest = {"id": 200, "name": "security-scan.yml", "event": "workflow_dispatch",
+            "head_branch": "x", "html_url": "https://github.com/o/r/actions/runs/200"}
+    run = F._project_run(rest)
+    check("the dispatch-only run keeps its projected workflow name",
+          run.get("workflowName") == "security-scan.yml", str(run))
+    check("the dispatch-only failure is tracked (rule 6r), not silently skipped",
+          F._is_tracked_failure(run, run.get("workflowName")) is True, str(run))
+    check("a None workflow (the old shape) would have been skipped",
+          F._is_tracked_failure({**run, "workflowName": None}, None) is False)
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
+    test_window_rest_name_projects_workflow_name()
+    test_window_filing_names_the_workflow_not_none()
+    test_dispatch_only_run_tracked_with_projected_name()
     test_filing_diagnoses_every_failure_with_the_log_error_block()
     test_ledger_and_marker_dedup_file_one_run_once_ever()
     test_undiagnosed_filing_is_loud_never_a_skip()
