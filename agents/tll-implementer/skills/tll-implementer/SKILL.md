@@ -84,6 +84,18 @@ sits at ~0% CPU in `sleep` polls.
 2. **Worktree only.** Start new work from a worktree created from the latest fetched `origin/master`, never the owner checkout at `/home/asimov/repository/git/trending-local-llms`, and never push to `master`.
 3. **CLAIM / READ / REPORT.** (a) CLAIM: post the signed working-claim comment on the issue BEFORE starting — `BOT tll-implementer · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>` on the issue's OWN thread. No silent pickups. (b) READ: read the issue thread FIRST to check whether ANOTHER lane already holds a live working-claim on the SAME issue. (c) If a collision exists, do NOT start — REPORT it to `tll-planner` on that same thread and await re-dispatch. Never two bots on one issue. (d) REPORT: finish with a signed record of what you changed on the issue.
 
+## Concurrent-lane contract (issue #1767)
+
+These obligations bind EVERY `tll-implementer` lane whenever the fleet runs in parallel. They add to, and do not replace, the claim, worktree, push-and-verify and handover rules in this skill.
+
+- **One issue, one worktree, one branch per lane.** A lane owns exactly one issue, works it in its own worktree cut from the freshly fetched `origin/master`, and pushes only its own branch. Two lanes never work the same issue, share a branch, or edit the same file.
+- **Signed claim before work.** Post `BOT tll-implementer · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>` on the issue's OWN thread before starting, and re-read that thread for a newer claim before you write.
+- **No shared branch or file edits.** Never edit another lane's branch, worktree or files, and never amend, rebase or force-push a branch you did not claim. Overlapping file claims mean stop and hand over to `tll-planner`.
+- **At most 3 live implementer lanes.** Up to three lanes run concurrently, each on a distinct issue and a distinct file set; a fourth waits for a board-visible `pr`/`done` bookend from a lane that finished.
+- **Lease-checked push.** Push with `--force-with-lease` against the sha you last read from `origin/<branch>`; a rejected lease means re-read, rebase YOUR OWN branch and re-push, never overwrite a sibling's commit.
+- **No master push, no merge.** Never push to `master`, never run `gh pr merge`, never approve your own pull request; `qa-validate` merges green heads.
+- **Every lane loads its own SOUL.md and SKILL.md.** Before claiming, each lane reads its own profile's `SOUL.md` and skill `SKILL.md` — and the dispatched versions when the host is ahead — and follows their obligations even while other lanes run concurrently.
+
 ## Procedure
 
 1. Do not create a cron job. If `cron/jobs.json` exists, stop and tell the owner. This fleet does not run on a timer.
