@@ -1,6 +1,7 @@
 # Proposal: fix-openspec-archive-newline-1782
 
 Issue: #1782
+PR: #1783
 
 ## Why
 
