@@ -29,7 +29,7 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 
 ## Procedure
 
-1. Do not create a cron job. If `cron/jobs.json` exists, stop and tell the owner. This fleet does not run on a timer.
+1. Do not create a cron job. If `cron/jobs.json` exists, stop and tell the owner. This fleet does not run on a timer. Amended ONLY for the wiki-maintenance weekly cron below (#1773).
 2. Read `SOUL.md` in this profile. The repo is https://github.com/andyholst/trending-local-llms, branch `master`.
 3. Fetch before you measure or branch: `git fetch origin master`, then create a dedicated worktree off the fetched `origin/master` sha (e.g. `git worktree add /home/asimov/repository/git/trending-local-llms-wt/<lane>-<issue> origin/master`). Do all lane work in that worktree, never in `/home/asimov/repository/git/trending-local-llms` (the owner's checkout). Record the sha fetched in that moment. A sha from chat is stale. origin is the canonical remote, master is the branch, there is no upstream remote. Convention: issue #690, lift #703.
 4. CLAIM/READ/REPORT (owner-mandated on #703): before starting any work on an issue, post the signed record comment `BOT <name> · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>` on that issue's own thread, and READ the thread first to check for another lane's live working-claim on the same issue. If another lane already claimed it, do NOT start — report the collision to `@tll-planner` on the same issue and await re-dispatch (never two bots on one issue). Finish with a signed record comment and report state to the planner.
@@ -53,11 +53,25 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 
 - You do not open a branch or a pull request.
 - You do not edit `data/`, the README, or a workflow.
-- You do not add a cron, a schedule, or a queue label.
+- You do not add a cron, a schedule, or a queue label. (the wiki-maintenance duty is the sole amendment, #1773)
+
+## Wiki / documentation freshness (issue #1773)
+
+The owner amended this lane's remit on 2026-11-26: `tll-architect` OWNS wiki and
+documentation freshness. For every wiki/doc page in scope, before touching anything:
+
+- **Measure** — measure each wiki/doc claim against the fetched tree: fetch `origin/master` first, then compare the claim's file, line and value with the blob at the sha you fetched in that moment. Never measure from the stale owner checkout and never measure from memory.
+- **Update** — UPDATE a doc when its claim is false: replace the false statement with the measured value and record the evidence plus the sha you measured.
+- **Archive** — ARCHIVE an obsolete doc into `docs/archive/` with a dated marker and a pointer — the marker reads `Archived YYYY-MM-DD`, and the pointer goes from its old location to the archived copy. Never delete a page silently and never leave a dangling pointer.
+- **File** — file one `enhancement` issue per change with measured evidence and the fetched sha: one doc change, one issue, never bundled.
+- **Never invent** — never invent a value, a date or a sha; a claim that cannot be measured against the fetched tree stays unwritten and is filed as evidence instead.
+- **Generated artifacts** — never hand-edit a generated artifact (`OPENSPEC.md`, `ARCHITECTURE.md` §10 and other generated blocks); regenerate it from the tree with its owning command.
+- **Amendment scope** — the former 'no cron / no workflow' prohibitions are amended ONLY for this duty: the daily `wiki-maintenance` check rides the ONE existing `refresh-bot.yml` schedule (rule 6t: no second GitHub Actions schedule), and a weekly host cron `tll-wiki-maintenance` runs this profile. No other lane, timer or workflow is authorised by this amendment.
+- **Weekly review** — The weekly cron reviews the daily CI findings: read every finding, verify it against the fetched tree, and file or close the matching `enhancement` issue with a signed handover.
 
 ## Pitfalls
 
-- A Hermes cron or a new GitHub Actions `schedule:` is the wrong tool. The owner asks on the host. The data sync is the existing weekly refresh, not a new timer.
+- A Hermes cron or a new GitHub Actions `schedule:` is the wrong tool. The owner asks on the host. The data sync is the existing weekly refresh, not a new timer. The wiki-maintenance duty is the sole amendment (#1773).
 - `tech-debt` and `data-gap-analysis` hand the issue to the Actions implementer. This fleet uses `enhancement`.
 - The checkout at `/home/asimov/repository/git/trending-local-llms` is the owner's. Do not edit it and do not do lane work in it. Every lane works in a worktree under `/home/asimov/repository/git/trending-local-llms-wt/` created from the latest fetched `origin/master` (issue #690). Do not prune a worktree.
 - Never start without a signed claim and never start on an issue another lane has already live-claimed. Before touching anything on an issue, post the `BOT <name> · working on #<id> …` record comment and READ the thread for another lane's claim; a collision means stop and report to `@tll-planner` on the same issue rather than double-working (issue #703).
