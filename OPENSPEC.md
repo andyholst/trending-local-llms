@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **573**
+Active changes: **3** · archived: **573**
 
 ## Active changes
 
@@ -17,6 +17,7 @@ Active changes: **2** · archived: **573**
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 | `wiki-rulebook` | active | #1773 | — | [wiki-rulebook](openspec/changes/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/wiki-rulebook/proposal.md) |
+| `wiki-rulebook-1773` | active | #1773 | fix/wiki-rulebook-1773 | [openspec-lifecycle](openspec/changes/wiki-rulebook-1773/specs/openspec-lifecycle/spec.md) | 1/1 | [proposal.md](openspec/changes/wiki-rulebook-1773/proposal.md) |
 
 ## Archived changes
 
