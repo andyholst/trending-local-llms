@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **567**
+Active changes: **2** · archived: **568**
 
 ## Active changes
 
@@ -90,6 +90,7 @@ Active changes: **2** · archived: **567**
 | `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-profile-provision-backup-skills-1754` | archived | #1754 | #1755 | [profile-provision-backups](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/specs/profile-provision-backups/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
+| `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | — | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |

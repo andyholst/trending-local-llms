@@ -254,7 +254,8 @@ def append_ledger(path: Path, ledger: dict, entry: dict) -> None:
 #: the same link (`gh run list --json url`).
 _RUN_ROW_FIELDS = (
     ("databaseId", "id"),
-    ("workflowName", "workflow_name"),
+    # REST `actions/runs` has NO `workflow_name` key — the workflow name is `name` (issue #1757).
+    ("workflowName", "name"),
     ("name", "name"),
     ("headBranch", "head_branch"),
     ("headSha", "head_sha"),
