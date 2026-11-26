@@ -131,6 +131,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: make hermes-pin-freshness REPO="${{ github.repository }}"
 
+  # Daily wiki/doc freshness (issue #1773): the written docs must stay true to the
+  # fetched tree. Rule 6t leaves refresh-bot as the ONLY scheduled pipeline, so this
+  # deterministic checker rides its existing cadence — NO new `on.schedule` and NO
+  # second workflow. It derives truth from data/models.json (the store), the README
+  # render and the ARCHITECTURE.md inventory: a false claim (stale render stamp or a
+  # store model with no row) must be UPDATED, an obsolete doc (a rendered row for a
+  # removed model, or an inventory line naming a deleted file) must be ARCHIVED.
+  # The checker is offline, stdlib-only and makes no model call; every finding names
+  # the exact file+needle. RED is the signal for the weekly architect review to act
+  # on; the `--apply` keeper body is composed on demand (`make wiki-maintenance`),
+  # never written into a doc by this job. A job `permissions:` block REPLACES the
+  # workflow's: this job reads the tree and touches no secret and no owner PAT.
+  wiki-maintenance:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Report stale claims and obsolete docs (make wiki-maintenance-check)
+        run: make wiki-maintenance-check
+
   # The weekly free-tier refresh (issue #1195): the chain's free models are a LIVE truth, and a
   # remembered list silently rots — a new free model (the next Qwen) can only enter the chain
   # when someone re-reads the catalogue. This job is that re-read on the cadence that actually
