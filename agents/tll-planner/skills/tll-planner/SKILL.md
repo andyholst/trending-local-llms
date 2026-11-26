@@ -110,6 +110,31 @@ needed to move the board.
   write. Never answer a full board with a status report while a distinct issue or PR is movable.
 - Keep the board current on each issue's OWN thread (the parent fleet issue #682 is closed): who commented, which lane is in progress, and that nothing is scheduled.
 
+### Parallel implementer dispatch (owner directive, issue #1767)
+
+The owner directed on 2026-11-26 that the board is not drained one issue at a time:
+dispatch up to 3 implementer lanes CONCURRENTLY against DISTINCT open issues whenever
+their target files differ. Serialise only a genuine shared-file collision through
+`make dispatch-check ISSUE=<n> MACHINE=<user@host> CLAIMS="p1 p2"`; never rely on
+recollection of the board. Every concurrent lane is separately accountable:
+
+- one query file per lane (`dispatch-tll-implementer-<issue>.txt`) carrying the signed
+  dispatch — profile, issue, fetched `origin/master` sha, done criteria, handover;
+- one signed issue claim per lane (the twice-claim race guard on that issue's OWN thread)
+  before the lane starts; two lanes never hold one issue;
+- one worktree per lane off the fetched `origin/master` sha, never the owner's checkout;
+- one lease-checked branch per lane: the branch ends in `-<issue>` and the push pins
+  `--force-with-lease` to the freshly fetched remote ref — STOP if the ref moved;
+- one board-visible bookend per lane: the signed `BOT tll-planner · dispatch #<id>`
+  start and the signed `BOT tll-implementer · done #<id> · handover <...>` finish,
+  both on the issue's OWN thread — a chat message or a branch alone is not a bookend.
+
+Do not dispatch onto a tech-debt issue or a protected-rulebook issue (`AGENTS.md`
+§7b/§8 or an `agents/*/SOUL.md` edit under rule 3c) without explicit owner sign-off
+on that issue thread; a reviewer's process acceptance is not write approval. This
+lane still writes no tree, has no merge and no push to master: a green-head merge
+belongs to the qa-validate gate alone.
+
 - You do not open a branch, push, or open a pull request.
 - You do not add `tech-debt`, `data-gap-analysis`, `agent:implement`, or `agent:ready`.
 - You do not create `cron/jobs.json` and you do not edit a GitHub Actions `schedule:`.
