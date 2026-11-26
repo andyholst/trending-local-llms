@@ -1,7 +1,7 @@
 # Proposal: architect-wiki-role
 
 Issue: #1773 (tll-architect wiki freshness; the daily CI job, weekly cron and rulebook rows are sibling slices of the same issue)
-PR: pending
+PR: #1776
 
 ## Why
 
