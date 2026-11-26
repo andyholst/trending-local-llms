@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **585**
+Active changes: **1** · archived: **589**
 
 ## Active changes
 
@@ -601,6 +601,7 @@ Active changes: **1** · archived: **585**
 | `watcher-files-red` | archived | #1376 | #1377 | [fleet-watcher](openspec/changes/archive/watcher-files-red/specs/fleet-watcher/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/watcher-files-red/proposal.md) |
 | `weekly-free-model-refresh` | archived | #1195 | #1205 | [fleet-model-chain](openspec/changes/archive/weekly-free-model-refresh/specs/fleet-model-chain/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/weekly-free-model-refresh/proposal.md) |
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
+| `wiki-maintenance-ci` | archived | #1773 | #1779 | [wiki-maintenance](openspec/changes/archive/wiki-maintenance-ci/specs/wiki-maintenance/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/wiki-maintenance-ci/proposal.md) |
 | `wiki-rulebook` | archived | #1773 | #1774 | [wiki-rulebook](openspec/changes/archive/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/wiki-rulebook/proposal.md) |
 | `wiki-rulebook-1773` | archived | #1773 | #1774 | [openspec-lifecycle](openspec/changes/archive/wiki-rulebook-1773/specs/openspec-lifecycle/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/wiki-rulebook-1773/proposal.md) |
 | `workflow-concurrency-groups-1560` | archived | #1560 | #1564 | [ci-concurrency](openspec/changes/archive/workflow-concurrency-groups-1560/specs/ci-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/workflow-concurrency-groups-1560/proposal.md) |

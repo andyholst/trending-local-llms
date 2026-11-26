@@ -1773,6 +1773,27 @@ _free-model-refresh-pr-body:
 free-model-refresh-pr-body: ## Print the free-model-refresh keeper PR body — no closing keyword, it records the read (RUN_URL=…; issue #1195)
 	@$(MAKE) --no-print-directory _free-model-refresh-pr-body RUN_URL="$(RUN_URL)"
 
+# ---- daily wiki/doc freshness checker (issue #1773, rule 6t)
+# The check is OFFLINE and deterministic: truth is derived from data/models.json
+# (canonical model names + generated_utc), the generated README render, and the
+# ARCHITECTURE.md inventory block — no network, no model call, no doc mutation.
+# A RED --check means a false claim must be UPDATED or an obsolete doc ARCHIVED;
+# --apply prints the keeper PR body a human reviews and writes NO doc. Both run
+# through the ONE python-env seam (no bare host interpreter) and are driven by a
+# single job on refresh-bot's existing cadence — rule 6t admits no new schedule.
+.PHONY: _wiki-maintenance wiki-maintenance _wiki-maintenance-check wiki-maintenance-check
+_wiki-maintenance:
+	$(PYTHON_RUN) python3 scripts/wiki_maintenance.py --apply
+
+wiki-maintenance: python-env-image ## Print the wiki-maintenance keeper PR body — never edits a doc (issue #1773)
+	@$(MAKE) --no-print-directory _wiki-maintenance
+
+_wiki-maintenance-check:
+	$(PYTHON_RUN) python3 scripts/wiki_maintenance.py --check
+
+wiki-maintenance-check: python-env-image ## Fail when a wiki/doc claim is stale or a doc is obsolete (issue #1773)
+	@$(MAKE) --no-print-directory _wiki-maintenance-check
+
 # ---- the chain's LOCAL tier: a capped live probe + an offline staleness check (issue #1352)
 # The `local_fallback` tier (issue #1192) is the owner's own box. When it goes silent a lane
 # blocks until its own client timeout before the paid last resort, and NO gate sees it:
