@@ -1,6 +1,7 @@
 # Proposal: planner-skill-ahead-1781
 
 Issue: #1781
+PR: #1786
 
 ## Why
 
