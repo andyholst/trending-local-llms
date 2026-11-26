@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **594**
+Active changes: **1** · archived: **595**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `parallel-implementer-lanes` | active | #1767 (the implementer-lane mirror; the planner mirror and the AGENTS.md rulebook are separate PRs) | pending | [implementer-lane-concurrency](openspec/changes/parallel-implementer-lanes/specs/implementer-lane-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/parallel-implementer-lanes/proposal.md) |
 
 ## Archived changes
 
@@ -427,6 +426,7 @@ Active changes: **2** · archived: **594**
 | `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
+| `parallel-implementer-lanes` | archived | #1767 (the implementer-lane mirror; the planner mirror and the AGENTS.md rulebook are separate PRs) | #1770 | [implementer-lane-concurrency](openspec/changes/archive/parallel-implementer-lanes/specs/implementer-lane-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/parallel-implementer-lanes/proposal.md) |
 | `parallel-lane-rule-1767` | archived | #1767 | #1768 | [parallel-lane-rule-1767](openspec/changes/archive/parallel-lane-rule-1767/specs/parallel-lane-rule-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/parallel-lane-rule-1767/proposal.md) |
 | `parallel-lane-rulebook` | archived | #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs) | #1768 | [parallel-implementer-lanes](openspec/changes/archive/parallel-lane-rulebook/specs/parallel-implementer-lanes/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/parallel-lane-rulebook/proposal.md) |
 | `parallel-planner-dispatch` | archived | #1767 | #1769 | [planner-dispatch](openspec/changes/archive/parallel-planner-dispatch/specs/planner-dispatch/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/parallel-planner-dispatch/proposal.md) |
