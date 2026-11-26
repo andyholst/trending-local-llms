@@ -91,6 +91,11 @@ elif head == ["issue", "comment"]:
     body = args[args.index("--body") + 1] if "--body" in args else ""
     with (D / "comments-posted.jsonl").open("a") as fh:
         fh.write(json.dumps({"issue": args[2], "body": body}) + "\\n")
+elif head == ["issue", "edit"] and "--add-label" in args:
+    # GraphQL `addLabelsToLabelable`, refused for an owner-PAT host (#1764/#1766).
+    # `--remove-label` is a different path and stays supported.
+    sys.stderr.write("addLabelsToLabelable is not available to this token\\n")
+    sys.exit(1)
 elif head in (["issue", "edit"], ["label", "create"], ["pr", "create"]):
     pass
 elif head == ["pr", "list"]:
@@ -103,7 +108,10 @@ elif head == ["repo", "view"]:
     out(fixture("repo.txt", "andyholst/trending-local-llms"))
 elif head[:1] == ["api"]:
     url = args[1]
-    if "/git/matching-refs/" in url:
+    if "/labels" in url:
+        # REST label write is the supported path; the read side has no fixture.
+        out("")
+    elif "/git/matching-refs/" in url:
         if (D / "fail-refs.txt").exists():
             sys.exit(3)
         out(fixture("branches.json", []))
@@ -545,8 +553,13 @@ def test_mark_sets_the_label_and_never_writes_a_body_marker_for_the_window_path(
         # Then  the label is applied and the marker comment names the instant
         log = (td_path / "calls.log").read_text()
         posted = (td_path / "comments-posted.jsonl").read_text() if (td_path / "comments-posted.jsonl").exists() else ""
-        check("mark(body): the chain label is applied",
-              "review-in-progress" in log and '"issue", "edit"' in log, log)
+        calls = [json.loads(line) for line in log.splitlines() if line.strip()]
+        check("mark(body): the chain label is applied via REST",
+              "review-in-progress" in log and any(
+                  c[0] == "api" and "/labels" in " ".join(c)
+                  and "review-in-progress" in " ".join(c) for c in calls), log)
+        check("mark(body): no GraphQL add-label mutation",
+              not any("--add-label" in c for c in calls), log)
         check("mark(body): the marker comment carries the instant and the run id",
               f"<!-- issue-review: {NOW} run=testrun -->" in posted, posted)
         check("mark(body): the body hash is printed for the write proof",

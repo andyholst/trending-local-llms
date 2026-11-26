@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **581**
+Active changes: **1** · archived: **585**
 
 ## Active changes
 
@@ -92,8 +92,10 @@ Active changes: **1** · archived: **581**
 | `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-label-rest-1764` | archived | #1764 | #1765 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-label-rest-1764/specs/pipeline-failure-filer/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-label-rest-1764/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
+| `2026-11-26-filers-label-rest-1766` | archived | #1766 | fix/filers-label-rest-1766 | [openspec-binding](openspec/changes/archive/2026-11-26-filers-label-rest-1766/specs/openspec-binding/spec.md) | 2/2 | [proposal.md](openspec/changes/archive/2026-11-26-filers-label-rest-1766/proposal.md) |
 | `2026-11-26-fix-openspec-archive-newline-1782` | archived | #1782 | #1783 | [openspec-archive](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/specs/openspec-archive/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
+| `2026-11-26-other-filers-label-rest` | archived | #1766 | — | [issue-filers](openspec/changes/archive/2026-11-26-other-filers-label-rest/specs/issue-filers/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-other-filers-label-rest/proposal.md) |
 | `2026-11-26-planner-skill-ahead-1781` | archived | #1781 | #1786 | [planner-skill-forward-merge](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/specs/planner-skill-forward-merge/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/proposal.md) |
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
 | `2026-11-26-search-leg-sigpipe-classify` | archived | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/proposal.md) |
@@ -263,6 +265,7 @@ Active changes: **1** · archived: **581**
 | `filer-rediagnosis-seam-969` | archived | #969 | #985 | [alarms](openspec/changes/archive/filer-rediagnosis-seam-969/specs/alarms/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/filer-rediagnosis-seam-969/proposal.md) |
 | `filer-stamps-owed-row` | archived | #765 | #917 | [owed-row-ledger](openspec/changes/archive/filer-stamps-owed-row/specs/owed-row-ledger/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/filer-stamps-owed-row/proposal.md) |
 | `filer-window-marker-reconcile` | archived | #1467 | #1500 | [pipeline-failure-filing](openspec/changes/archive/filer-window-marker-reconcile/specs/pipeline-failure-filing/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/filer-window-marker-reconcile/proposal.md) |
+| `filers-label-rest-1766` | archived | #1766 | #1771 | [filers-label-rest-1766](openspec/changes/archive/filers-label-rest-1766/specs/filers-label-rest-1766/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/filers-label-rest-1766/proposal.md) |
 | `findings-check-shape-gate` | archived | #1454 | #1480 | [findings-enforcement](openspec/changes/archive/findings-check-shape-gate/specs/findings-enforcement/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/findings-check-shape-gate/proposal.md) |
 | `findings-dedup-index-lag` | archived | #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent" | #1193 | [findings-dedup](openspec/changes/archive/findings-dedup-index-lag/specs/findings-dedup/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/findings-dedup-index-lag/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |

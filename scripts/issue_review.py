@@ -134,7 +134,13 @@ def cmd_pick(repo: str, gap_hours: int, now: dt.datetime, run: str | None = None
 def cmd_mark(repo: str, number: int, path: str, now: dt.datetime,
              run: str | None = None) -> int:
     ensure_label(repo)
-    _gh(["issue", "edit", str(number), "--repo", repo, "--add-label", REVIEW_LABEL], check=False)
+    # REST, not `gh issue edit --add-label`: the latter calls GraphQL
+    # `addLabelsToLabelable`, which a host authenticated with the owner PAT cannot
+    # call (issues #1764/#1766) — the review marker would be posted to an issue the
+    # implementer can no longer see as under review. `repos/:owner/:repo` is gh's
+    # current-repo shorthand, so the repo argument is not needed here.
+    _gh(["api", "-X", "POST", f"repos/:owner/:repo/issues/{number}/labels",
+         "-f", f"labels[]={REVIEW_LABEL}"], check=False)
     marker = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     if path == "body":
         # The run id is what stops this run from blocking its OWN guard re-check,

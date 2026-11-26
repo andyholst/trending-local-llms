@@ -1475,8 +1475,15 @@ def ensure_label(number: str) -> None:
     # The label must EXIST before an edit can apply it: GitHub ignores a label it
     # does not know, which is how a filing lands unlabelled while `gh` returns 0.
     ensure_label_exists()
-    edit = subprocess.run(["gh", "issue", "edit", number, "--add-label", LABEL],
-                          text=True, capture_output=True)
+    # REST, not `gh issue edit --add-label`: the latter goes through GraphQL
+    # `addLabelsToLabelable`, which a host authenticated with the owner PAT cannot
+    # call (issue #1764/#1766) — it creates the issue, then crashes before the label
+    # lands, leaving a queue-invisible unlabelled finding. `repos/:owner/:repo` is
+    # gh's current-repo shorthand, so no explicit repo argument is needed; the REST
+    # path works with the same token AND the CI default token.
+    edit = subprocess.run(["gh", "api", "-X", "POST",
+                           f"repos/:owner/:repo/issues/{number}/labels",
+                           "-f", f"labels[]={LABEL}"], text=True, capture_output=True)
     if LABEL not in labels():
         # `gh`'s OWN diagnosis is the actionable half: measured (issue #277), the
         # refusal is `Resource not accessible by personal access token` because the
