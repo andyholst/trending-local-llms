@@ -9,15 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **573**
+Active changes: **1** · archived: **576**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `wiki-rulebook` | active | #1773 | — | [wiki-rulebook](openspec/changes/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/wiki-rulebook/proposal.md) |
-| `wiki-rulebook-1773` | active | #1773 | fix/wiki-rulebook-1773 | [openspec-lifecycle](openspec/changes/wiki-rulebook-1773/specs/openspec-lifecycle/spec.md) | 1/1 | [proposal.md](openspec/changes/wiki-rulebook-1773/proposal.md) |
 
 ## Archived changes
 
@@ -91,6 +89,7 @@ Active changes: **3** · archived: **573**
 | `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-profile-provision-backup-skills-1754` | archived | #1754 | #1755 | [profile-provision-backups](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/specs/profile-provision-backups/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
+| `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
@@ -590,6 +589,8 @@ Active changes: **3** · archived: **573**
 | `watcher-files-red` | archived | #1376 | #1377 | [fleet-watcher](openspec/changes/archive/watcher-files-red/specs/fleet-watcher/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/watcher-files-red/proposal.md) |
 | `weekly-free-model-refresh` | archived | #1195 | #1205 | [fleet-model-chain](openspec/changes/archive/weekly-free-model-refresh/specs/fleet-model-chain/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/weekly-free-model-refresh/proposal.md) |
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
+| `wiki-rulebook` | archived | #1773 | #1774 | [wiki-rulebook](openspec/changes/archive/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/wiki-rulebook/proposal.md) |
+| `wiki-rulebook-1773` | archived | #1773 | #1774 | [openspec-lifecycle](openspec/changes/archive/wiki-rulebook-1773/specs/openspec-lifecycle/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/wiki-rulebook-1773/proposal.md) |
 | `workflow-concurrency-groups-1560` | archived | #1560 | #1564 | [ci-concurrency](openspec/changes/archive/workflow-concurrency-groups-1560/specs/ci-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/workflow-concurrency-groups-1560/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
