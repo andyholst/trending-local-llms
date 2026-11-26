@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **581**
+Active changes: **1** · archived: **583**
 
 ## Active changes
 
@@ -92,6 +92,7 @@ Active changes: **1** · archived: **581**
 | `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-label-rest-1764` | archived | #1764 | #1765 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-label-rest-1764/specs/pipeline-failure-filer/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-label-rest-1764/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
+| `2026-11-26-fix-openspec-archive-newline-1782` | archived | #1782 | #1783 | [openspec-archive](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/specs/openspec-archive/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
 | `2026-11-26-planner-skill-ahead-1781` | archived | #1781 | #1786 | [planner-skill-forward-merge](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/specs/planner-skill-forward-merge/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/proposal.md) |
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
@@ -146,6 +147,7 @@ Active changes: **1** · archived: **581**
 | `announce-corrupt-tag-fallback-1120` | archived | #1120 | #1134 | [image-fallback-announcement](openspec/changes/archive/announce-corrupt-tag-fallback-1120/specs/image-fallback-announcement/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/announce-corrupt-tag-fallback-1120/proposal.md) |
 | `announce-the-decided-hold` | archived | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/archive/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/announce-the-decided-hold/proposal.md) |
 | `arch-calls-from-a-script` | archived | #482 | — | [architecture-inventory](openspec/changes/archive/arch-calls-from-a-script/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/arch-calls-from-a-script/proposal.md) |
+| `architect-wiki-role` | archived | #1773 (tll-architect wiki freshness; the daily CI job, weekly cron and rulebook rows are sibling slices of the same issue) | #1776 | [architect-wiki-role](openspec/changes/archive/architect-wiki-role/specs/architect-wiki-role/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architect-wiki-role/proposal.md) |
 | `architecture-block-repair-keeper` | archived | #861 | #868 | [architecture-inventory](openspec/changes/archive/architecture-block-repair-keeper/specs/architecture-inventory/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/architecture-block-repair-keeper/proposal.md) |
 | `architecture-bot-write-path` | archived | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/archive/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/architecture-bot-write-path/proposal.md) |
 | `architecture-check-presence-boundary` | archived | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/archive/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/architecture-check-presence-boundary/proposal.md) |

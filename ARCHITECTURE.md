@@ -958,7 +958,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 279 make targets, 113 files in `scripts/`)
+### Bots in the tree (12 pipelines, 279 make targets, 114 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -1159,6 +1159,7 @@ One line each, taken from the script's own docstring.
 - `scripts/model_type_rollup.py` — scripts/model_type_rollup.py -- issue #1246.
 - `scripts/nerve_key_check.py` — The nerve-plugin credential guard (issue #120).
 - `scripts/openspec_archive_check.py` — An ACTIVE OpenSpec change must not sit completed-and-forgotten (issues #183/#513).
+- `scripts/openspec_archive_newline.py` — Give every text file an OpenSpec archive just created a final newline.
 - `scripts/openspec_backlog_check.py` — Fail when the ACTIVE OpenSpec backlog hits its ceiling (issue #938).
 - `scripts/openspec_binding_check.py` — Fail when an ACTIVE OpenSpec change carries no Issue binding (issue #952).
 - `scripts/openspec_duplicate_check.py` — Fail when two ACTIVE OpenSpec changes propose the same rule (issue #622).
