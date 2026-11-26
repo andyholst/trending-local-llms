@@ -612,8 +612,8 @@ def test_the_scope_claim_matches_the_tree():
             bucket = projected if any(t in ("--jq", "-q") for t in tokens) else without
             if key not in bucket:
                 bucket.append(key)
-    check("discovery totals are unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
-          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+    check("discovery totals are unchanged: 32 `gh api` token-lists (17 projecting, 15 not)",
+          len(projected) + len(without) == 32 and len(projected) == 17 and len(without) == 15,
           f"{len(projected) + len(without)} total / {len(projected)} projecting / "
           f"{len(without)} not")
     identity = sum(1 for e in expressions if (e or "").strip() == ".[]")
@@ -868,8 +868,8 @@ def test_shipped_jq_shapes_still_green():
             bucket = projected if any(t in ("--jq", "-q") for t in tokens) else without
             if key not in bucket:
                 bucket.append(key)
-    check("discovery unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
-          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+    check("discovery unchanged: 32 `gh api` token-lists (17 projecting, 15 not)",
+          len(projected) + len(without) == 32 and len(projected) == 17 and len(without) == 15,
           f"{len(projected) + len(without)} / {len(projected)} / {len(without)}")
     bad = [e for e in expressions if e and
            contract.api_jq_problems("repos/o/r/pulls/1", e) is None]
@@ -995,7 +995,7 @@ def test_all_18_registered_reads_match_tree():
 
 
 def test_shipped_jq_projections_still_green():
-    """Non-breaking proof: `--scan` is exit 0 / 0 findings, discovery stays 31/17/14 with
+    """Non-breaking proof: `--scan` is exit 0 / 0 findings, discovery stays 32/17/15 with
     exactly the 5 identity `.[]` projections, and every discovered expression still parses.
     """
     proc = _run_cli("--scan")
@@ -1017,8 +1017,8 @@ def test_shipped_jq_projections_still_green():
         for _node, _tokens, expr in found_here:
             if expr and expr.strip() == ".[]":
                 identity.append(path.name)
-    check("discovery unchanged: 31 `gh api` token-lists (17 projecting, 14 not)",
-          len(projected) + len(without) == 31 and len(projected) == 17 and len(without) == 14,
+    check("discovery unchanged: 32 `gh api` token-lists (17 projecting, 15 not)",
+          len(projected) + len(without) == 32 and len(projected) == 17 and len(without) == 15,
           f"{len(projected) + len(without)}/{len(projected)}/{len(without)}")
     check("exactly the 5 identity `--jq .[]` projections are discovered",
           sorted(identity) == sorted(f for f, *_ in IDENTITY_SITES_1711), identity)
