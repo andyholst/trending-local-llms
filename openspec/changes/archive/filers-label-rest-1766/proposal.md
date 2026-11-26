@@ -1,7 +1,7 @@
 # Proposal: filers-label-rest-1766
 
 Issue: #1766
-PR: fix/filers-label-rest-1766
+PR: #1771
 
 ## Why
 
