@@ -1,0 +1,2 @@
+- [x] Create change with Issue:, PR:, spec and tasks
+- [x] Regenerate OPENSPEC.md
