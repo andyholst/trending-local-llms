@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **576**
+Active changes: **1** · archived: **577**
 
 ## Active changes
 
@@ -92,6 +92,7 @@ Active changes: **1** · archived: **576**
 | `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
+| `2026-11-26-planner-skill-ahead-1781` | archived | #1781 | #1786 | [planner-skill-forward-merge](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/specs/planner-skill-forward-merge/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/proposal.md) |
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
 | `2026-11-26-search-leg-sigpipe-classify` | archived | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/proposal.md) |
 | `2026-11-26-test-image-qemu-handler` | archived | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/archive/2026-11-26-test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-test-image-qemu-handler/proposal.md) |
