@@ -1,7 +1,7 @@
 # Proposal: parallel-implementer-lanes
 
 Issue: #1767 (the implementer-lane mirror; the planner mirror and the AGENTS.md rulebook are separate PRs)
-PR: pending
+PR: #1770
 
 ## Why
 
