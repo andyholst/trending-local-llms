@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **576**
+Active changes: **1** · archived: **577**
 
 ## Active changes
 
@@ -89,6 +89,7 @@ Active changes: **1** · archived: **576**
 | `2026-11-25-pin-raise-1723` | archived | #1723 | #1725 | [hermes-toolchain](openspec/changes/archive/2026-11-25-pin-raise-1723/specs/hermes-toolchain/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-pin-raise-1723/proposal.md) |
 | `2026-11-25-profile-provision-backup-skills-1754` | archived | #1754 | #1755 | [profile-provision-backups](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/specs/profile-provision-backups/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-25-profile-provision-backup-skills-1754/proposal.md) |
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
+| `2026-11-26-ci-keeper-ledger-45788860357` | archived | #1784 | — | [pipeline-failure-ledger](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/specs/pipeline-failure-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-ci-keeper-ledger-45788860357/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-fix-openspec-archive-newline-1782` | archived | #1782 | #1783 | [openspec-archive](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/specs/openspec-archive/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
