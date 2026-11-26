@@ -2520,6 +2520,32 @@ def test_dispatch_only_run_tracked_with_projected_name() -> None:
           F._is_tracked_failure({**run, "workflowName": None}, None) is False)
 
 
+def test_the_committed_ledger_carries_a_real_workflow_name_per_row() -> None:
+    print("\n#1759: the shipped ledger has a real workflow name on every row (additive backfill)")
+    # The #1757 root-cause fix must stay: the filer projects `workflowName` from REST `name`,
+    # never from the always-null `workflow_name`. If that regresses, future rows rot again.
+    fields = dict(F._RUN_ROW_FIELDS)
+    check("the filer still projects workflowName from REST name (#1757)",
+          fields.get("workflowName") == "name" and "workflow_name" not in fields.values(),
+          str(fields))
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    rows = committed["failures"]
+    real_names = {"qa-validate", "queued-alarm", "refresh-bot", "issue-bot",
+                  "issue-review-bot", "architecture-bot", "security-scan",
+                  "qa-validate.yml"}
+    broken = [e.get("run_id") for e in rows
+              if e.get("workflowName") not in real_names]
+    check("every shipped ledger row carries a real workflowName (no None/null)",
+          rows and not broken,
+          f"rows={len(rows)} broken={broken[:10]}")
+    # Rule 3b: the backfill is purely additive -- the legacy `workflow` spelling and every
+    # other stored value survived byte-for-byte; only the new key was added.
+    check("the additive backfill kept every legacy key/value (rule 3b)",
+          all("workflow" in e for e in rows)
+          and all(isinstance(e.get("run_id"), int) for e in rows),
+          f"rows={len(rows)}")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_window_rest_name_projects_workflow_name()
@@ -2588,6 +2614,7 @@ def main() -> int:
     test_the_superseded_skip_is_announced_in_dry_output()
     test_a_cancelled_push_run_with_a_readable_diagnosis_still_files()
     test_a_cancelled_push_with_only_cancel_chatter_is_not_filed()
+    test_the_committed_ledger_carries_a_real_workflow_name_per_row()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
