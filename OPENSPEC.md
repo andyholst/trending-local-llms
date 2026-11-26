@@ -9,16 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **4** · archived: **569**
+Active changes: **2** · archived: **571**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `refresh-bot-pin-token` | active | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-bot-pin-token/proposal.md) |
 | `search-leg-sigpipe-classify` | active | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/search-leg-sigpipe-classify/proposal.md) |
-| `test-image-qemu-handler` | active | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/test-image-qemu-handler/proposal.md) |
 
 ## Archived changes
 
@@ -94,6 +92,8 @@ Active changes: **4** · archived: **569**
 | `2026-11-25-query-coverage-report-named-queries` | archived | #1693 | #1698 | [query-coverage-report](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/specs/query-coverage-report/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-25-query-coverage-report-named-queries/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
+| `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
+| `2026-11-26-test-image-qemu-handler` | archived | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/archive/2026-11-26-test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-test-image-qemu-handler/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
