@@ -1,6 +1,7 @@
 # Proposal: wiki-maintenance-ci
 
 Issue: #1773
+PR: #1779
 
 ## Why
 
