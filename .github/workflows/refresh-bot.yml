@@ -509,6 +509,12 @@ jobs:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      # The channel recorder reads `gh api repos/NousResearch/hermes-agent/releases/latest`
+      # through the ONE seam. That read is public, but `gh` in Actions REFUSES without a
+      # token (rc=4: "To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN
+      # environment variable"), which killed aggregate on run 45657191852 (issue #1747).
+      # The default token is enough for a public read; never the owner PAT here.
+      GH_TOKEN: ${{ github.token }}
       # The nerve plugin's Jev provider credential (issue #120): forwarded by NAME
       # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}

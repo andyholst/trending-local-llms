@@ -599,6 +599,28 @@ def test_the_recorder_is_wired_into_the_refresh_pipeline_and_the_makefile() -> N
           "tests/fixtures/hermes_releases_latest.json" in add_line, add_line)
 
 
+def test_the_aggregate_job_gives_the_pin_recorder_a_token() -> None:
+    """Issue #1747: `gh api` in Actions refuses without GH_TOKEN (rc=4).
+
+    The channel recorder runs inside the aggregate job of refresh-bot.yml. A public
+    read still needs a token in Actions; the default github.token is enough and the
+    owner PAT is deliberately not used for this read (AGENTS.md rule 6b).
+    """
+    refresh = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(encoding="utf-8")
+    lines = refresh.splitlines()
+    step = next(i for i, line in enumerate(lines)
+                if "make hermes-pin-channel-record TO=" in line)
+    headers = [i for i, line in enumerate(lines[:step]) if re.match(r"^  [A-Za-z0-9_-]+:$", line)]
+    job = max(headers)
+    block = "\n".join(lines[job:step])
+    check("the recorder lives in the aggregate job", lines[job].strip() == "aggregate:",
+          lines[job])
+    check("the aggregate job gives the pin recorder GH_TOKEN from github.token",
+          "GH_TOKEN: ${{ github.token }}" in block, block[-300:])
+    check("the recorder never borrows the owner PAT for a public read",
+          "GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}" not in block, block[-300:])
+
+
 def main() -> int:
     print("hermes pin freshness: the pinned agent vs the upstream channel (issue #1091)")
     test_channel_equal_to_pin_prints_ok_and_exits_green()
@@ -615,6 +637,7 @@ def main() -> int:
     test_the_recorder_writes_the_live_payload_through_the_one_seam()
     test_a_failed_read_leaves_the_old_fixture_byte_identical()
     test_the_recorder_is_wired_into_the_refresh_pipeline_and_the_makefile()
+    test_the_aggregate_job_gives_the_pin_recorder_a_token()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
