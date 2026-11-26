@@ -911,6 +911,33 @@ def test_fourth_batch_host_ahead_notes_are_landed() -> int:
     return failed
 
 
+def test_the_planner_mirror_carries_the_owner_style_and_pr_gate_notes() -> int:
+    """Issue #1781: land the host-ahead owner-style / PR-gate / OpenSpec notes verbatim-once.
+
+    The host copy of the planner skill is ahead of master by a small additive delta;
+    it also renamed the base's `## Docs lane scope` heading and drifted `690` to `660`.
+    Copying the host file wholesale would delete base prose. Pin each genuinely-new
+    clause with a count assertion and require the base headings to survive.
+    """
+    rel = "agents/tll-planner/skills/tll-planner/SKILL.md"
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    needles = (
+        "This owner's standing style this cycle: delegate without waiting for a human go-ahead",
+        "## User style (owner correction)",
+        "- **Short and result-first:** the conclusion (delivered, what it changed, the one open item and its URL)",
+        "## PR gate diagnosis (pr-closure red)",
+        "**Subclass — OpenSpec lifecycle red.**",
+        "## OpenSpec lifecycle gate (make openspec-archive-check)",
+        "- **#1775** (fleet-sync directive, delivered):",
+    )
+    failed = 0
+    for needle in needles:
+        failed += check(needle in text, f"planner mirror carries {needle!r}")
+        failed += check(text.count(needle) == 1, f"planner mirror carries {needle!r} exactly once")
+    for base_needle in ("## Docs lane scope (owner-mandated)", "(~12 in the 690/600s scope)"):
+        failed += check(base_needle in text, f"planner mirror keeps base prose {base_needle!r}")
+    return failed
+
 
 PREFLIGHT = "make pr-message-check PR=<n>"
 PREFLIGHT_REFUSAL = "A non-zero verdict means DO NOT post the"
@@ -987,6 +1014,7 @@ def main() -> int:
     failed = 0
     for fn in (
         test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule,
+        test_the_planner_mirror_carries_the_owner_style_and_pr_gate_notes,
         test_fourth_batch_host_ahead_notes_are_landed,
         test_third_batch_host_ahead_implementer_notes_are_landed,
         test_every_lane_carries_the_pr_handover_shapes,
