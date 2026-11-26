@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **584**
+Active changes: **1** · archived: **585**
 
 ## Active changes
 
@@ -93,6 +93,7 @@ Active changes: **1** · archived: **584**
 | `2026-11-26-filer-label-rest-1764` | archived | #1764 | #1765 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-label-rest-1764/specs/pipeline-failure-filer/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-label-rest-1764/proposal.md) |
 | `2026-11-26-filer-window-workflow-name-1757` | archived | #1757 | #1758 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/specs/pipeline-failure-filer/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-filer-window-workflow-name-1757/proposal.md) |
 | `2026-11-26-filers-label-rest-1766` | archived | #1766 | fix/filers-label-rest-1766 | [openspec-binding](openspec/changes/archive/2026-11-26-filers-label-rest-1766/specs/openspec-binding/spec.md) | 2/2 | [proposal.md](openspec/changes/archive/2026-11-26-filers-label-rest-1766/proposal.md) |
+| `2026-11-26-fix-openspec-archive-newline-1782` | archived | #1782 | #1783 | [openspec-archive](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/specs/openspec-archive/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-fix-openspec-archive-newline-1782/proposal.md) |
 | `2026-11-26-none-title-backfill-1759` | archived | #1759 | #1760 | [pipeline-failure-filer](openspec/changes/archive/2026-11-26-none-title-backfill-1759/specs/pipeline-failure-filer/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-none-title-backfill-1759/proposal.md) |
 | `2026-11-26-other-filers-label-rest` | archived | #1766 | — | [issue-filers](openspec/changes/archive/2026-11-26-other-filers-label-rest/specs/issue-filers/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-26-other-filers-label-rest/proposal.md) |
 | `2026-11-26-planner-skill-ahead-1781` | archived | #1781 | #1786 | [planner-skill-forward-merge](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/specs/planner-skill-forward-merge/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-26-planner-skill-ahead-1781/proposal.md) |
