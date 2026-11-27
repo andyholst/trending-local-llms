@@ -111,6 +111,37 @@ def test_prune_posts_retains_30d_removes_older():
     check("model row never removed by pruning", m["id"] == "m1")
 
 
+def test_prune_posts_keeps_stored_history_url_but_prunes_unrelated_old_post():
+    """Rule 3b / issue #1827: a post older than RETENTION_DAYS that is still the
+    source_post of one of the model's OWN stored measurements is history — it
+    survives the prune via prune_posts(keep_urls=...). An unrelated old post with
+    no backing stored measurement is still pruned (no blanket exemption, no
+    second history implementation), and the 7-day cutoff never moves."""
+    HISTORY = "https://lightbrd.com/Chahatusharma/status/2111173528838103533"
+    OTHER = "https://lightbrd.com/u/status/7777"
+    FRESH = "https://lightbrd.com/u/status/8888"
+    old = "2026-08-15"  # 45 days before today() -> beyond RETENTION_DAYS
+    m = {
+        "id": "bonsai-2-9b", "name": "Bonsai 2 9B",
+        "engines": [{"engine": "MLX", "tps": "36", "date": old,
+                     "source_post": HISTORY, "weight_gb": "~493GB NVFP4"}],
+        "engagement": {"seen_posts": [
+            {"url": HISTORY, "date": old, "likes": 100},  # >30d, backed by the stored measurement
+            {"url": OTHER, "date": old, "likes": 70},     # >30d, no backing measurement
+            {"url": FRESH, "date": "2026-09-27", "likes": 5},
+        ]},
+    }
+    UT.recompute_7d_engagement(m, today())
+    urls = [p["url"] for p in m["engagement"]["seen_posts"]]
+    check("the stored-history post survives the 30d prune (keep_urls)", HISTORY in urls, json.dumps(urls))
+    check("an unrelated >30d post with no stored measurement is still pruned", OTHER not in urls, json.dumps(urls))
+    check("a fresh post is unaffected", FRESH in urls, json.dumps(urls))
+    check("keep_urls does not move the 7-day cutoff (seen only, not recent)",
+          m["engagement"].get("posts_7d") == 1, str(m["engagement"].get("posts_7d")))
+    check("retained old history post does not raise the legacy counter",
+          m["engagement"].get("likes") == 5, str(m["engagement"].get("likes")))
+
+
 def test_ingest_seeds_and_dedupes_seen_posts():
     """ingest_raw_snapshots seeds engagement.seen_posts from engine source_posts
     and dedupes the same post across two raw snapshots (two overlapping 3-day
@@ -884,6 +915,7 @@ def main() -> int:
     test_recompute_7d_counts_distinct_posts_in_window()
     test_recompute_dedupes_before_counting()
     test_prune_posts_retains_30d_removes_older()
+    test_prune_posts_keeps_stored_history_url_but_prunes_unrelated_old_post()
     test_ingest_seeds_and_dedupes_seen_posts()
     test_correct_raw_fills_missing_backend()
     test_a_measured_footprint_is_raised_never_pinned()
