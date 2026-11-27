@@ -887,9 +887,15 @@ def dedupe_posts(posts: list) -> list[dict]:
     return list(by_key.values())
 
 
-def prune_posts(posts: list, today: datetime) -> list[dict]:
+def prune_posts(posts: list, today: datetime, keep_urls=None) -> list[dict]:
     """Drop engagement.seen_posts older than RETENTION_DAYS. The model row is
-    never removed — only its stale post history is pruned (AGENTS retention)."""
+    never removed — only its stale post history is pruned (AGENTS retention).
+
+    `keep_urls` (optional set of source-post URLs) exempts posts that are still
+    the evidence of a STORED measurement (rule 3b — history is never wiped). It
+    adds no key or flag to the post entry and does not change the 7-day cutoff:
+    an exempted old post stays in seen_posts but is still excluded from `recent`.
+    """
     out = []
     for p in posts:
         p = _as_post(p)
@@ -897,7 +903,7 @@ def prune_posts(posts: list, today: datetime) -> list[dict]:
             d = datetime.strptime(_post_date(p), "%Y-%m-%d").replace(tzinfo=timezone.utc)
         except Exception:  # noqa: BLE001
             continue  # unparseable date -> drop the stale/unknown post entry
-        if (today - d).days <= RETENTION_DAYS:
+        if (today - d).days <= RETENTION_DAYS or p.get("url") in (keep_urls or set()):
             out.append(p)
     return out
 
@@ -920,7 +926,13 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     # merge that rewrites a measurement can never leave a stale duplicate.
     stored_real = [p for p in (_as_post(x) for x in eng.get("seen_posts", [])) if _is_post_url(p.get("url", ""))]
     posts = dedupe_posts(stored_real + _collect_seen_posts(m))
-    posts = prune_posts(posts, today)
+    # Rule 3b: a source post of one of the model's OWN stored measurements is
+    # history, never wiped by the 30-day retention prune — even when the value
+    # that measurement carried was refused at ingest (the post is still the
+    # evidence). No new key/flag/list: reuse the measurement URLs already here.
+    history_urls = {str(e.get("source_post") or "") for e in m.get("engines", [])
+                    if e.get("source_post")}
+    posts = prune_posts(posts, today, keep_urls=history_urls)
     eng["seen_posts"] = posts
     cutoff = (today - timedelta(days=TRENDING_WINDOW_DAYS)).strftime("%Y-%m-%d")
     recent = [p for p in posts if _post_date(p) >= cutoff]
@@ -939,9 +951,15 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     # ingest-provided higher value is never lowered (rule 3b). These fields are NOT
     # in any sort key — the rank above uses trend_score/posts_7d — so this repairs
     # the stored data WITHOUT changing the ranking or last_7d_likes semantics.
+    # Issue #1182 legacy counters are raised from the RETENTION window only. A
+    # rule-3b history post kept solely by `keep_urls` is older than RETENTION_DAYS
+    # and was pruned before this fix, so it never fed these counters. Re-running
+    # the SAME prune without keep_urls recovers that exact pre-change view (rule
+    # 6d — one implementation), keeping stored counters value-for-value stable.
+    counted = prune_posts(posts, today)
     for counter in ("likes", "comments", "reshares", "views"):
         sourced = 0
-        for p in posts:
+        for p in counted:
             try:
                 sourced += max(0, int(float(p.get(counter) or 0)))
             except (TypeError, ValueError):
