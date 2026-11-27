@@ -355,7 +355,38 @@ jobs:
           # reads later in this same job (issue #1239 follow-up).
           git fetch origin master:refs/remotes/origin/master >/dev/null
           if ! git merge --no-commit --no-ff origin/master >/dev/null 2>&1; then
+            # Issue #1822: capture the unmerged paths BEFORE the abort, then ask the
+            # ONE pure verdict seam whether master simply advanced the generated
+            # index. A real source conflict keeps the original hard fail below.
+            conflicts=$(git diff --name-only --diff-filter=U | sort -u | paste -sd, -)
+            base_before=$(git merge-base HEAD origin/master)
+            master_after=$(git rev-parse origin/master)
+            verdict=$(make merge-tree-index-classify CONFLICTS="$conflicts" BASE_BEFORE="$base_before" MASTER_AFTER="$master_after")
             git merge --abort >/dev/null 2>&1 || true
+            if [ "$verdict" = "GENERATED_ADVANCE" ]; then
+              # One bounded retry on freshly fetched master. Regenerate the
+              # generated artifact with its OWNING command (never a hand edit),
+              # stage it to clear the conflict, then run the SAME unchanged
+              # index check on the merged tree. Any conflict on the retry stays
+              # a hard failure.
+              git fetch origin master:refs/remotes/origin/master >/dev/null
+              if ! git merge --no-commit --no-ff origin/master >/dev/null 2>&1; then
+                git merge --abort >/dev/null 2>&1 || true
+                echo "[merge-tree-index] MERGE CONFLICT: rebase on current master and retry"
+                exit 1
+              fi
+              make openspec-index
+              git add OPENSPEC.md
+              if ! make openspec-index-check; then
+                git reset --hard HEAD >/dev/null
+                echo "[merge-tree-index] FAIL: the index is stale on master + this PR."
+                echo "[merge-tree-index] Run 'make openspec-index' and rebase on current master."
+                exit 1
+              fi
+              git reset --hard HEAD >/dev/null
+              echo "[merge-tree-index] MASTER-ADVANCE-RETRY ok base=${base_before}..${master_after} paths=OPENSPEC.md"
+              exit 0
+            fi
             echo "[merge-tree-index] MERGE CONFLICT: rebase on current master and retry"
             exit 1
           fi
