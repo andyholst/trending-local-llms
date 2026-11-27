@@ -62,6 +62,12 @@ def _fixture(tmp: Path) -> Path:
         + "\nprose:\n\t$(call scrubbed_run,echo \"prose with 'single quotes' inside\")\n"
         + "\nleaky:\n\t$(call scrubbed_run,echo \"the key is $$NOUS_API_KEY\")\n"
         + "\nfailing:\n\t$(call scrubbed_run,exit 3)\n"
+        # issue #1820: a producer that stays alive a moment, prints NOTHING and exits 0. On the
+        # pre-fix seam this reads as a clean green leg (`stream: 0 line(s)`, rc 0).
+        + "\nquiet:\n\t$(call scrubbed_run,sleep 0.05)\n"
+        # Three real lines, one carrying the fake secret — the talking-stream control that must
+        # stay byte-for-byte green beside the new refusal.
+        + "\ntalking:\n\t$(call scrubbed_run,echo first; echo \"the key is $$NOUS_API_KEY\"; echo third)\n"
     )
     return tmp
 
@@ -215,6 +221,60 @@ def test_the_redactor_attaches_stdin_so_the_agent_stream_is_captured():
           "[agent] " not in qconsole, qconsole[-300:])
 
 
+def test_a_silent_producer_is_a_loud_classified_failure():
+    """issue #1820/#1747: a 0-line stream from a successful producer must FAIL, not look green.
+
+    RED on the pre-fix seam (`stream: 0 line(s)`, no `[agent]`, rc 0); GREEN once the redactor
+    refuses the empty stream and the seam promotes its non-zero status. Only the external CLI is
+    a stand-in — the shipped seam and the real `scrub_log.py` do all the work.
+    """
+    td = _fixture(Path(tempfile.mkdtemp()))
+    r = subprocess.run(["make", "quiet"], cwd=str(td), capture_output=True, text=True)
+    console = r.stdout + r.stderr
+    fails = [ln for ln in console.splitlines() if "[scrub-log] FAIL:" in ln]
+    # make turns ANY recipe failure into its own rc 2; the leg's exact exit 3 is pinned by make's
+    # `Error 3` diagnostic. On the pre-fix seam make is green (rc 0) and there is no such line.
+    check("quiet: a 0-line/0-status producer is refused with seam exit 3",
+          r.returncode != 0 and "Error 3" in console,
+          f"make rc={r.returncode}, console={console[-200:]!r}")
+    check("quiet: exactly ONE classified FAIL line", len(fails) == 1, fails)
+    check("quiet: the FAIL names quiet/agent-failed and both issues",
+          bool(fails) and "quiet/agent-failed" in fails[0] and "#1820" in fails[0]
+          and "#1747" in fails[0], fails[:1])
+    check("quiet: no [agent] line is printed for an empty stream",
+          "[agent]" not in console, console[:300])
+    check("quiet: no green 'stream: 0 line(s)' summary survives",
+          "stream: 0 line(s)" not in console, console[:300])
+
+
+def test_a_talking_producer_still_redacts_every_line():
+    """Control (#1820): a real 3-line stream must keep redacting, printing and staying green."""
+    td = _fixture(Path(tempfile.mkdtemp()))
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    r = subprocess.run(["make", "talking"], cwd=str(td), env=env, capture_output=True, text=True)
+    console = r.stdout + r.stderr
+    agent_lines = [ln for ln in console.splitlines() if ln.startswith("[agent] ")]
+    check("talking: all three lines reach the console", len(agent_lines) == 3, agent_lines)
+    check("talking: the value is masked, never printed", FAKE_VALUE not in console, console[:200])
+    scrubbed = td / "hermes-run.scrubbed.log"
+    check("talking: the redacted artifact is non-empty",
+          scrubbed.is_file() and scrubbed.stat().st_size > 0, str(scrubbed))
+    check("talking: the leg stays green (rc 0)", r.returncode == 0, r.returncode)
+
+
+def test_the_existing_seam_contract_survives_the_promotion():
+    """#1820 is byte-additive to the shipped seam: runner, PIPESTATUS[0], 141 line unchanged."""
+    seam = _seam()
+    check("seam: the shipped redactor runner is still used", "$(PYTHON_RUN)" in seam,
+          seam[:300])
+    check("seam: PIPESTATUS[0] is still the producer status", "PIPESTATUS[0]" in seam, seam[:300])
+    check("seam: the #1747 SIGPIPE(141) classification line is unchanged",
+          "the agent stream closed with SIGPIPE (exit 141)" in seam and "issue #1747" in seam,
+          seam[:400])
+    check("seam: the producer's exit status is still the seam's verdict",
+          'exit "$$st"' in seam, seam[:300])
+
+
 def main() -> int:
     print("scrubbed_run seam: positional command, never a splice (issue #632); stdin attach (#1808)")
     test_a_command_with_single_quotes_survives_the_seam()
@@ -222,6 +282,9 @@ def main() -> int:
     test_redaction_still_wraps_the_positional_command()
     test_a_red_command_keeps_its_exit_status_through_eval()
     test_the_redactor_attaches_stdin_so_the_agent_stream_is_captured()
+    test_a_silent_producer_is_a_loud_classified_failure()
+    test_a_talking_producer_still_redacts_every_line()
+    test_the_existing_seam_contract_survives_the_promotion()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
