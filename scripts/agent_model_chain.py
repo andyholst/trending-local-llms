@@ -355,19 +355,21 @@ def _goal_judge_lines(chain: Chain) -> list[str]:
     """Pin the goal judge to the served local model, with a Nous fallback_chain.
 
     An explicit auxiliary provider does not walk top-level ``fallback_providers``
-    (Hermes ``auxiliary_client``). The judge therefore repeats the chain's remote
-    hops. A ``nous`` hop carries only provider and model (issue #1203). Issue #1798.
+    (Hermes ``auxiliary_client``). The judge's own model is the local tier, so its
+    fallback repeats every other chain step: every ``:free`` Nous model, including
+    the free primary, then the paid last resort. A ``nous`` hop carries only
+    provider and model (issue #1203). Issue #1798.
     """
     local = chain.local_fallback
     if local is None:
         return []
-    hops = [e for e in chain.entries if e.role not in ("primary", "local_fallback")]
+    hops = [e for e in chain.entries if e.role != "local_fallback"]
     lines = [
         "",
         "# The goal judge is pinned to the local tier this chain already measured.",
-        "# An explicit auxiliary provider does not walk fallback_providers, so the",
-        "# remote hops are repeated here as fallback_chain (issue #1798). A nous",
-        "# hop carries ONLY provider and model (issue #1203).",
+        "# An explicit auxiliary provider does not walk fallback_providers, so every",
+        "# other chain step is repeated here, including every :free Nous model",
+        "# (issue #1798). A nous hop carries ONLY provider and model (issue #1203).",
         "auxiliary:",
         "  goal_judge:",
         f"    provider: {local.provider}",

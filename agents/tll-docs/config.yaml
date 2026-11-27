@@ -54,15 +54,17 @@ fallback_providers:
     model: deepseek/deepseek-v4-flash-0731
 
 # The goal judge is pinned to the local tier this chain already measured.
-# An explicit auxiliary provider does not walk fallback_providers, so the
-# remote hops are repeated here as fallback_chain (issue #1798). A nous
-# hop carries ONLY provider and model (issue #1203).
+# An explicit auxiliary provider does not walk fallback_providers, so every
+# other chain step is repeated here, including every :free Nous model
+# (issue #1798). A nous hop carries ONLY provider and model (issue #1203).
 auxiliary:
   goal_judge:
     provider: strata
     model: qwen3.8-flash-next-iq3_xxs
     base_url: http://127.0.0.1:8080/v1
     fallback_chain:
+      - provider: nous
+        model: tencent/hy4-flash:free
       - provider: nous
         model: upstage/solar-mini4:free
       - provider: nous

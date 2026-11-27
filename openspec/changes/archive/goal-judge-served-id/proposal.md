@@ -9,7 +9,7 @@ Hermes pauses a goal after five judge transport failures when `auxiliary.goal_ju
 
 ## What Changes
 
-- `scripts/agent_model_chain.py` renders `auxiliary.goal_judge` from the chain's `local_fallback` (provider, model, base_url) and a `fallback_chain` of the remote hops (every step that is not the primary and not the local tier). A `nous` hop stays provider and model only.
+- `scripts/agent_model_chain.py` renders `auxiliary.goal_judge` from the chain's `local_fallback` (provider, model, base_url) and a `fallback_chain` of every other chain step: every `:free` Nous model, including the free primary, then the paid last resort. The local tier is not repeated. A `nous` hop stays provider and model only.
 - `make agent-profile-model-render` rewrites every `agents/tll-*/config.yaml` from that renderer. The files are not hand-edited.
 - `tests/test_agent_model_chain.py` locks the pin, the hop list, and the untouched free primary.
 - The §8 row for that module names the new refusal.

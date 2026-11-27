@@ -242,21 +242,25 @@ def test_the_rendered_goal_judge_pins_the_served_local_model():
     """Issue #1798: goal_judge uses the chain's local model and a Nous fallback_chain.
 
     An explicit auxiliary provider does not walk fallback_providers, so the rendered
-    judge repeats the remote hops and leaves model.default on the free primary.
+    judge repeats every other chain step — every :free Nous model, including the
+    free primary, then the paid last resort — and leaves model.default on the free primary.
     """
     chain = _chain_json(ROOT)
     text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
     judge = text.split("auxiliary:", 1)[1] if "auxiliary:" in text else ""
     judge = re.split(r"(?m)^[A-Za-z_][\w-]*:", judge, maxsplit=1)[0]
-    hops = [e["model"] for e in chain["chain"] if e["role"] not in ("primary", "local_fallback")]
+    hops = [e["model"] for e in chain["chain"] if e["role"] != "local_fallback"]
     hop_models = re.findall(r"(?m)^        model: (\S+)", judge)
     check("goal_judge is present and pinned to the chain's local model",
           "goal_judge:" in judge
           and f"model: {F.local_model(chain)}" in judge
           and f"provider: {F.local_provider(chain)}" in judge
           and f"base_url: {F.local_endpoint(chain)}" in judge, judge[:400])
-    check("goal_judge fallback_chain is the remote hops, with no key_env",
+    free_ids = [e["model"] for e in chain["chain"] if str(e["model"]).endswith(":free")]
+    check("goal_judge fallback_chain is every Nous step except the local tier, with no key_env",
           hop_models == hops and "key_env" not in judge, str(hop_models))
+    check("goal_judge fallback_chain names every Nous :free model",
+          all(model in hop_models for model in free_ids), str(free_ids))
     check("model.default stays the free primary",
           F.default_line(chain) in text.split("model_aliases:", 1)[0], text[:200])
 
