@@ -1,6 +1,7 @@
 # Proposal: arm64-smoke-no-pytest-1807
 
 Issue: #1807
+PR: #1811
 
 ## Why
 
