@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **590**
+Active changes: **1** · archived: **591**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `goal-judge-served-id` | active | #1798 | — | [goal-judge-served-id](openspec/changes/goal-judge-served-id/specs/goal-judge-served-id/spec.md) | 3/3 | [proposal.md](openspec/changes/goal-judge-served-id/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -312,6 +311,7 @@ Active changes: **2** · archived: **590**
 | `ghost-alarm-gh-field-contract` | archived | #1158 | #1159 | [gh-json-field-contract](openspec/changes/archive/ghost-alarm-gh-field-contract/specs/gh-json-field-contract/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ghost-alarm-gh-field-contract/proposal.md) |
 | `ghost-pr-handoff-1251` | archived | #1251 | #1253 | [fleet-handover](openspec/changes/archive/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ghost-pr-handoff-1251/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
+| `goal-judge-served-id` | archived | #1798 | #1800 | [goal-judge-served-id](openspec/changes/archive/goal-judge-served-id/specs/goal-judge-served-id/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/goal-judge-served-id/proposal.md) |
 | `green-when-the-issue-closed-while-in-flight` | archived | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/proposal.md) |
 | `group-ingest-refusals-per-post` | archived | #882 — "Re-captured posts repeat refusal noise across search legs; group the | #1102 | [measurement-ingest](openspec/changes/archive/group-ingest-refusals-per-post/specs/measurement-ingest/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/group-ingest-refusals-per-post/proposal.md) |
 | `guard-registry-derived` | archived | #313 | — | [bot-guards](openspec/changes/archive/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/guard-registry-derived/proposal.md) |

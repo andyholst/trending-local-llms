@@ -1,6 +1,7 @@
 # Proposal: goal-judge-served-id
 
 Issue: #1798
+PR: #1800
 
 ## Why
 
