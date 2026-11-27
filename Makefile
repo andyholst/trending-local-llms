@@ -565,8 +565,8 @@ findings-check: python-env-image ## Fail when the analysis file (findings/<issue
 # (rule 3f/#351). `FINDINGS_BRANCH` defaults to the checkout's own branch for the fix loop,
 # which has no PR yet; a push or dispatch event carries no `pull_request` and is a green no-op.
 FINDINGS_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-findings-check-for-pr: ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings/<issue>.md; keepers/refreshes/docs are exempt (issue #1454, per-issue seam #1493)
-	python3 scripts/file_findings.py --check $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
+findings-check-for-pr: ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings/<issue>.md; keepers/refreshes/docs are exempt (issue #1454, per-issue seam #1493). PREPUSH=1 ISSUE=<n> is the fast offline pre-push guard (issue #1804).
+	python3 scripts/file_findings.py --check $(if $(PREPUSH),--prepush,) $(if $(ISSUE),--issue "$(ISSUE)",) $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
 
 # Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
 # third-party workflow `uses:` ref must be a 40-hex SHA or on the allow-ref list,

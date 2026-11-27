@@ -39,6 +39,7 @@ Usage:
     python3 scripts/file_findings.py --check [--issue <n>] [--branch <ref>]
     python3 scripts/file_findings.py --file [--pr 171] [--issue 170]
     python3 scripts/file_findings.py --check --path <file>   # an explicit file wins
+    python3 scripts/file_findings.py --prepush --issue <n>   # fast offline pre-push guard (#1804)
 """
 
 from __future__ import annotations
@@ -436,6 +437,40 @@ def slice_analysis_path(path: Path, *, issue: str | None,
     return matches[0], None
 
 
+def prepush_check(*, path: str | None = None, issue: str | None = None,
+                  branch: str | None = None) -> tuple[int, str]:
+    """Fast offline pre-push guard (issue #1804): refuse a push without an analysis.
+
+    A host-pushed implementation PR currently discovers a missing `findings/<n>.md`
+    only after a full CI run (measured: PR #1803 / run 45992168460). This is the SAME
+    seam CI's shape-aware gate uses — `analysis_path` (per-issue file, issue derived
+    from the branch when not given) then `slice_analysis_path` (one sibling slice may
+    stand in) then `parse` (well-formed, `- none` accepted) — with no network and no
+    container. Unlike the CI gate it takes no shape exemption: a lane calls it on its
+    own implementation branch, where rule 6g makes the analysis mandatory.
+
+    Returns (exit_code, message). Exit 2 is undecidable (no issue named), 1 is a
+    refusal (missing / ambiguous / malformed), 0 is green.
+    """
+    if issue is None and branch:
+        derived = pr_closure.implemented_issue(branch)
+        issue = str(derived) if derived is not None else None
+    if path is None and issue is None:
+        return 2, ("[findings] FAIL pre-push: no issue bound to this branch — "
+                   "pass ISSUE=<n> or use a branch that names it")
+    resolved = analysis_path(path=path, issue=issue)
+    resolved, ambiguity = slice_analysis_path(resolved, issue=issue)
+    if ambiguity:
+        return 1, f"[findings] FAIL {ambiguity} — set --path to the slice this PR owns"
+    if not resolved.is_file():
+        return 1, (f"[findings] FAIL {resolved} is missing — every implementation run "
+                   "must analyse what it touched (write `- none` when it found nothing)")
+    _, error = parse(resolved.read_text(encoding="utf-8"))
+    if error:
+        return 1, f"[findings] FAIL {resolved.name}: {error}"
+    return 0, f"[findings] OK {resolved.name}: pre-push analysis present and well-formed"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="File one issue per implementation finding")
     ap.add_argument("--file", action="store_true", help="file the findings in the analysis file")
@@ -450,7 +485,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--event", help="webhook payload ($GITHUB_EVENT_PATH): read the PR shape from it")
     ap.add_argument("--branch", help="the head branch, when there is no event payload")
     ap.add_argument("--body-file", help="the PR body on disk, when there is no event payload")
+    # (issue #1804) the fast offline pre-push guard. It is SHORT-CIRCUITED before the
+    # shape logic: a lane calls it on its own implementation branch, where the analysis
+    # is mandatory regardless of PR shape, and it must be container/network free.
+    ap.add_argument("--prepush", action="store_true",
+                    help="fast offline pre-push guard: refuse when findings/<issue>.md is absent")
     a = ap.parse_args(argv)
+
+    if a.prepush:
+        rc, message = prepush_check(path=a.path, issue=a.issue, branch=a.branch)
+        print(message, file=sys.stderr if rc else sys.stdout)
+        return rc
 
     branch, body = _shape_inputs(a)
     path = analysis_path(path=a.path, issue=a.issue, branch=branch)
