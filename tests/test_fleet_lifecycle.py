@@ -1021,6 +1021,7 @@ COLLAB_NEEDLES = (
     "BOT <lane> · pr #<id> · PR #<n> · base <sha> · handover tll-reviewer",
     "BOT <lane> · reviewing #<id> · PR #<n> · handover <tll-implementer|owner>",
     "The title carries the change and `Closes #<id>`, and the body repeats its own `Closes #<id>` line — never title-only, never body-only",
+    "small, single-purpose, non-breaking delivery for one issue (#690)",
     "BOT <lane> · done #<id> · handover <...>",
     "make dispatch-check ISSUE=<n>",
     "CLAIM_SETTLE_SECONDS",
