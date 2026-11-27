@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **597**
+Active changes: **1** · archived: **598**
 
 ## Active changes
 
@@ -102,6 +102,7 @@ Active changes: **1** · archived: **597**
 | `2026-11-26-test-image-qemu-handler` | archived | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/archive/2026-11-26-test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-test-image-qemu-handler/proposal.md) |
 | `2026-11-27-goal-judge-served-pin-1798` | archived | #1798 | #1799 | [auxiliary-judge-route](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/specs/auxiliary-judge-route/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/proposal.md) |
 | `2026-11-27-land-host-ahead-implementer-notes-1817` | archived | #1817 | #1818 | [implementer-lane-notes](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/specs/implementer-lane-notes/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/proposal.md) |
+| `2026-11-27-scrub-run-attach-stdin` | archived | #1808 | — | [agent-stream-redaction](openspec/changes/archive/2026-11-27-scrub-run-attach-stdin/specs/agent-stream-redaction/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/2026-11-27-scrub-run-attach-stdin/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |

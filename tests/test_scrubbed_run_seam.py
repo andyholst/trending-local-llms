@@ -116,12 +116,112 @@ def test_a_red_command_keeps_its_exit_status_through_eval():
           r.returncode != 0, r.returncode)
 
 
+#: A stand-in for the EXTERNAL docker CLI (rule 6m): it emulates the one behaviour that matters
+#: here — a `docker run` WITHOUT `-i` closes the container's stdin (the scrubber reads EOF and
+#: exits), while `docker run -i` forwards it. Everything else is ignored; the real seam and the
+#: real scripts/scrub_log.py still run.
+_STUB_DOCKER = """#!/usr/bin/env bash
+set -u
+img="python:slim"
+args=("$@")
+attach=0
+idx=-1
+for a in "${args[@]}"; do [ "$a" = "-i" ] && attach=1; done
+for ((i=0; i<${#args[@]}; i++)); do [ "${args[i]}" = "$img" ] && idx=$i; done
+cmd=("${args[@]:idx+1}")
+if [ "$attach" = 1 ]; then
+  exec "${cmd[@]}"
+else
+  exec "${cmd[@]}" </dev/null
+fi
+"""
+
+
+def _python_run_block() -> str:
+    """The SHIPPED `PYTHON_RUN` definition, extracted from the Makefile (no copy lives here)."""
+    lines = (ROOT / "Makefile").read_text().splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("PYTHON_RUN := "):
+            block = [ln]
+            while block[-1].rstrip().endswith("\\"):
+                block.append(lines[i + len(block)])
+            return "\n".join(block) + "\n"
+    raise AssertionError("PYTHON_RUN definition not found in the Makefile")
+
+
+def _stream_fixture(tmp: Path) -> Path:
+    """A fixture using the REAL seam + REAL PYTHON_RUN, with a stand-in docker on PATH."""
+    (tmp / "scripts").mkdir(exist_ok=True)
+    for f in ("scrub_log.py", "check_secret_output.py"):
+        shutil.copy(ROOT / "scripts" / f, tmp / "scripts" / f)
+    stub = tmp / "stubbin"
+    stub.mkdir(exist_ok=True)
+    docker = stub / "docker"
+    docker.write_text(_STUB_DOCKER)
+    docker.chmod(0o755)
+    (tmp / "Makefile").write_text(
+        "HERMES_LOG      := hermes-run.log\n"
+        "HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\n"
+        "PYTHON_IMAGE    := python:slim\n\n"
+        + _python_run_block()
+        + "\n"
+        + _seam()
+        + "\nstream:\n\t$(call scrubbed_run,sh -c 'sleep 0.4; printf \"alpha\\nbeta\\n\"')\n"
+        + "\nquiet:\n\t$(call scrubbed_run,sh -c 'sleep 0.4')\n"
+    )
+    return tmp
+
+
+def _make_env(tmp: Path) -> dict:
+    stub = str(tmp / "stubbin")
+    return dict(os.environ, PATH=stub + os.pathsep + os.environ.get("PATH", ""))
+
+
+def test_the_redactor_attaches_stdin_so_the_agent_stream_is_captured():
+    """Issue #1808: PYTHON_RUN is a `docker run` at the redactor end of the scrubbed_run pipe.
+    Without `-i` the container's stdin is closed, scrub_log.py --stream reads 0 lines and exits
+    immediately, and the still-writing producer dies with SIGPIPE (141) — measured on refresh
+    run 46000947806 (`stream: 0 line(s)` then `[scrub-log] FAIL … exit 141`). With `-i` the
+    scrubber reads the live pipe, both lines reach the redacted log, and the producer's status
+    is preserved. The anti-vacuous classification from #1747 must stay intact."""
+    td = _stream_fixture(Path(tempfile.mkdtemp()))
+    env = _make_env(td)
+
+    r = subprocess.run(["make", "stream"], cwd=str(td), env=env, capture_output=True, text=True)
+    console = r.stdout + r.stderr
+
+    check("stdin: the agent's line reaches the redactor", "[agent] alpha" in console, console[-400:])
+    check("stdin: both streamed lines are captured",
+          "[agent] alpha" in console and "[agent] beta" in console, console[-400:])
+    check("stdin: the scrubber reports a non-empty stream",
+          re.search(r"stream: [1-9]\d* line\(s\)", console) is not None, console[-400:])
+    check("stdin: no SIGPIPE classification on a live stream",
+          "SIGPIPE" not in console and "exit 141" not in console, console[-400:])
+    check("stdin: the producer keeps a success status", r.returncode == 0, str(r.returncode))
+
+    # The shipped seam still carries the #1747 classification and the producer's exit status:
+    # fixing the cause must not turn a genuinely dead agent into a skip or a retry-all.
+    seam = _seam()
+    check("anti-vacuous: the SIGPIPE classification is still present",
+          "SIGPIPE (exit 141)" in seam, seam[:300])
+    check("anti-vacuous: the seam still exits with the producer's status",
+          'exit "$$st"' in seam, seam[:300])
+
+    # A producer that emits nothing still yields a zero-line stream — no fabricated content,
+    # and the fix did not turn an empty stream into a fake success with invented lines.
+    q = subprocess.run(["make", "quiet"], cwd=str(td), env=env, capture_output=True, text=True)
+    qconsole = q.stdout + q.stderr
+    check("anti-vacuous: a silent producer yields no redacted lines",
+          "[agent] " not in qconsole, qconsole[-300:])
+
+
 def main() -> int:
-    print("scrubbed_run seam: positional command, never a splice (issue #632)")
+    print("scrubbed_run seam: positional command, never a splice (issue #632); stdin attach (#1808)")
     test_a_command_with_single_quotes_survives_the_seam()
     test_the_seam_never_splices_the_command_into_the_script_text()
     test_redaction_still_wraps_the_positional_command()
     test_a_red_command_keeps_its_exit_status_through_eval()
+    test_the_redactor_attaches_stdin_so_the_agent_stream_is_captured()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
