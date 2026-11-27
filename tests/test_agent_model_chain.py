@@ -216,7 +216,8 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
     local_model = F.local_model(chain)
     local_provider_needle = f"provider: {F.local_provider(chain)}"
     local_endpoint_needle = f"base_url: {F.local_endpoint(chain)}"
-    fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
+    fb = (text.split("fallback_providers:", 1)[1].split("\n# Auxiliary task routing", 1)[0]
+          if "fallback_providers:" in text else "")
     models = re.findall(r"(?m)^    model: (\S+)", fb)
     check("fallback_providers lists every non-primary step in chain order",
           models == F.fallback_models(chain), str(models))
@@ -490,6 +491,76 @@ def test_the_gate_is_wired_where_it_bites():
     check("this suite is discovered by `make test`", wired(__file__), "")
 
 
+def test_rendered_lane_configs_pin_goal_judge_to_the_served_local_model():
+    """Issue #1798: every generated lane config pins the judge to the chain's own served local id."""
+    chain = _chain_json(ROOT)
+    local_model = F.local_model(chain)
+    local_provider = F.local_provider(chain)
+    local_endpoint = F.local_endpoint(chain)
+    for lane in LANES:
+        text = (ROOT / "agents" / lane / "config.yaml").read_text(encoding="utf-8")
+        check(f"{lane}: the rendered config carries an auxiliary.goal_judge block",
+              "auxiliary:\n  goal_judge:\n" in text, text[-300:])
+        gj_lines: list[str] = []
+        capture = False
+        for line in text.splitlines():
+            if line == "  goal_judge:":
+                capture = True
+                continue
+            if capture:
+                if re.match(r"^  \S", line) or (line and not line.startswith(" ")) or line.startswith("#"):
+                    break
+                gj_lines.append(line)
+        gj = "\n".join(gj_lines)
+        check(f"{lane}: the judge provider is the local tier's provider",
+              f"    provider: {local_provider}" in gj, gj[:200])
+        check(f"{lane}: the judge names the served local id, never a stale alias",
+              f"    model: {local_model}" in gj and "inkling" not in gj, gj[:200])
+        check(f"{lane}: the judge names the local tier's own endpoint",
+              f"    base_url: {local_endpoint}" in gj, gj[:200])
+        check(f"{lane}: the judge block carries no credential value",
+              "key_env" not in gj and "api_key" not in gj, gj[:200])
+
+
+def test_goal_judge_fallback_chain_is_only_the_nous_steps():
+    """Issue #1798: a dead judge route falls through Nous steps, never the primary or the local tier."""
+    chain = _chain_json(ROOT)
+    local_model = F.local_model(chain)
+    text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line == "    fallback_chain:"), -1)
+    check("the judge block declares a fallback_chain", start >= 0, text[-300:])
+    got: list[tuple[str, str]] = []
+    if start >= 0:
+        provider = ""
+        for line in lines[start + 1:]:
+            if line.startswith("      - provider:"):
+                provider = line.split(":", 1)[1].strip()
+            elif line.startswith("        model:"):
+                got.append((provider, line.split(":", 1)[1].strip()))
+            elif line and not line.startswith(" "):
+                break
+    want = [(chain["provider"], e["model"]) for e in chain["chain"]
+            if e["role"] not in ("primary", "local_fallback")]
+    check("the judge fallback_chain is exactly the Nous steps in chain order", got == want, str(got))
+    check("the judge fallback_chain never names the served local model",
+          all(model != local_model for _, model in got), str(got))
+
+
+def test_a_misrouted_goal_judge_is_refused_by_the_gate():
+    """Issue #1798: a judge pinned to the primary, or a non-Nous fallback, is refused."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        data = _chain_json(root)
+        data["auxiliary"]["goal_judge"]["alias"] = data["chain"][0]["alias"]
+        _write_chain(root, data)
+        res = run("--check", root=root)
+        out = res.stdout + res.stderr
+        check("a judge pinned to the primary is refused", res.returncode == 1, out[-300:])
+        check("the refusal names the misrouted judge and issue #1798",
+              "goal_judge" in out and "1798" in out, out[-400:])
+
+
 def main() -> int:
     print(f"agent_model_chain (issue #1140): {len(LANES)} fleet lane(s) "
           f"{', '.join(LANES)}")
@@ -499,6 +570,9 @@ def main() -> int:
     test_a_nous_step_carrying_base_url_or_key_env_is_refused()
     test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias()
     test_local_tier_fixtures_follow_the_chain_not_a_frozen_snapshot()
+    test_rendered_lane_configs_pin_goal_judge_to_the_served_local_model()
+    test_goal_judge_fallback_chain_is_only_the_nous_steps()
+    test_a_misrouted_goal_judge_is_refused_by_the_gate()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()
     test_the_last_resort_must_be_the_model_the_makefile_pins()

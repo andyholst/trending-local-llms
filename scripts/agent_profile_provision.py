@@ -12,7 +12,8 @@ agent-model-chain-check` enforced "free first, paid last" only inside the reposi
 the repo, wrong on the machine" is the defect this seam closes.
 
 Issue #1192 widens the seam to the WHOLE host: `--profile <name>` merges the rendered chain into a
-NON-lane profile home (only the `model:`, `model_aliases:` and `fallback_providers:` top-level
+NON-lane profile home (only the `model:`, `model_aliases:`, `fallback_providers:` and
+`auxiliary:` top-level
 blocks are replaced; every other block is kept byte-for-byte and verified after the write), and
 `--profile default` names the Hermes home's own `config.yaml` beside the profiles root. The chain
 itself gained the credential-less `local_fallback` tier between the free steps and the paid pin.
@@ -70,7 +71,7 @@ BACKUP_SUFFIX = ".bak-"
 PROFILES_ENV = "HERMES_PROFILES_HOME"
 DEFAULT_PROFILE = "default"
 # The ONLY top-level blocks a non-lane merge replaces (issue #1192); everything else is kept.
-OWNED_BLOCKS = ("model", "model_aliases", "fallback_providers")
+OWNED_BLOCKS = ("model", "model_aliases", "fallback_providers", "auxiliary")
 _TOP_BLOCK_RE = re.compile(r"(?m)^([A-Za-z_][A-Za-z0-9_]*):")
 
 EXIT_OK, EXIT_PROBLEM, EXIT_UNDECIDABLE = AMC.EXIT_OK, AMC.EXIT_PROBLEM, AMC.EXIT_UNDECIDABLE
