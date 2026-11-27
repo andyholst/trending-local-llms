@@ -126,10 +126,24 @@ def test_a_heading_only_edit_cannot_satisfy_the_guard() -> int:
     return failed
 
 
+
+def test_skill_declares_the_branch_rename_and_rebind_pitfalls() -> int:
+    """Issue #1817: the two host-ahead pitfalls must live in the checked-in mirror."""
+    text = (ROOT / SKILL_REL).read_text(encoding="utf-8")
+    needles = (
+        "**GitHub's branch-rename REST endpoint does NOT carry an open PR",
+        "**A dispatch that rebinds an EXISTING PR to a different issue",
+    )
+    failed = 0
+    for needle in needles:
+        failed += check(f"SKILL.md carries: {needle[:52]}...", needle in text)
+    return failed
+
 def main() -> int:
     for fn in (
         test_soul_declares_the_concurrent_lane_contract,
         test_skill_declares_the_concurrent_lane_contract,
+        test_skill_declares_the_branch_rename_and_rebind_pitfalls,
         test_the_guard_is_red_on_the_pre_contract_text,
         test_a_heading_only_edit_cannot_satisfy_the_guard,
     ):
