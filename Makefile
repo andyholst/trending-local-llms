@@ -341,7 +341,14 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 # Slice 5 (#1496) adds `-e FIRECRAWL_API_KEY`, the one credential the search pre-flight
 # (`_search-preflight`) proves through this seam, so the check reads the value the AGENT will
 # get rather than a name the container drops — the same fixed name list DOCKER_RUN forwards.
-PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
+# Slice 6 (#1808): `-i` attaches stdin. PYTHON_RUN is the REDACTOR end of the `scrubbed_run`
+# pipe (`cmd | $(PYTHON_RUN) python3 scripts/scrub_log.py --stream …`). A `docker run` WITHOUT
+# `-i` closes the container's stdin, so scrub_log.py --stream read EOF immediately (measured:
+# refresh run 46000947806, `[scrub-log] stream: 0 line(s)`), exited, and the still-writing agent
+# died with SIGPIPE (141) before any redacted line was captured. `-i` forwards the live pipe;
+# the #1747 classification and pipefail status stay untouched, so a genuinely dead agent still
+# fails. `-i` is harmless for the many `python3 scripts/…` callers that never read stdin.
+PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm -i --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
 	-e PYTHONUNBUFFERED=1 -e FIRECRAWL_API_KEY $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
 
 # ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
