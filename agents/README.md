@@ -2,6 +2,8 @@
 
 The triage planner is `tll-planner`. The owner starts the fleet on the host with `hermes -p tll-planner chat`. The planner checks that the data sync is honest and dispatches the other lanes with an issue comment. It does not implement and it does not merge.
 
+For how the fleet works together end to end — the issue-thread board, signed claim/dispatch/handover formats, each lane's responsibility, four instances per delegable lane and the weekly cadence-not-timer pass — see the canonical [fleet collaboration doc](../docs/fleet-collaboration.md).
+
 There is no `trending-local-llm-issue-implementer` profile. Do not recreate it.
 
 | Profile | Lane |
