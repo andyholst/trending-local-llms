@@ -404,6 +404,38 @@ def analysis_path(*, path: str | None = None, issue: str | None = None,
     return LEGACY_FINDINGS
 
 
+def slice_analysis_path(path: Path, *, issue: str | None,
+                        findings_dir: Path | None = None) -> tuple[Path, str | None]:
+    """Resolve ONE explicit slice file when the canonical per-issue file is absent.
+
+    Issue #1778: parallel lanes that close a SHARED umbrella issue each write their
+    own `findings/<issue>-<slice>.md` (`1767-planner.md`, `1767-implementer.md`,
+    `1773-architect-role.md`). The shape-aware gate used to resolve only the canonical
+    `findings/<issue>.md` and red every such slice delivery. The ONE rule here: the
+    canonical file always wins; when it is missing, exactly ONE `findings/<issue>-*.md`
+    file may stand in for it. Zero matches leave the original path (so the existing
+    missing-file failure names it); more than one is a LOUD ambiguity, never a guess —
+    set `--path` to the slice this PR owns. The single-issue case is byte-identical,
+    and callers with an explicit `--path` never enter this seam.
+    """
+    if path.is_file() or issue is None:
+        return path, None
+    base = findings_dir if findings_dir is not None else FINDINGS_DIR
+    number = str(issue).strip().lstrip("#")
+    if not number.isdigit():
+        return path, None
+    canonical = base / f"{int(number)}.md"
+    if path != canonical:
+        return path, None
+    matches = sorted(base.glob(f"{int(number)}-*.md"))
+    if not matches:
+        return path, None
+    if len(matches) > 1:
+        return path, ("ambiguous slice findings for issue #" + number + ": "
+                      + ", ".join(p.name for p in matches))
+    return matches[0], None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="File one issue per implementation finding")
     ap.add_argument("--file", action="store_true", help="file the findings in the analysis file")
@@ -422,6 +454,20 @@ def main(argv: list[str] | None = None) -> int:
 
     branch, body = _shape_inputs(a)
     path = analysis_path(path=a.path, issue=a.issue, branch=branch)
+    shape_check = a.check and bool(a.event or a.body_file or a.branch)
+    if shape_check and not a.path and not path.is_file():
+        # (issue #1778) a sibling lane closing the same umbrella issue owns a slice
+        # file, not the canonical one. Resolve it through the ONE rule; an explicit
+        # --path always wins and never enters this seam.
+        issue_arg = a.issue
+        if issue_arg is None and branch:
+            derived = pr_closure.implemented_issue(branch)
+            issue_arg = str(derived) if derived is not None else None
+        path, ambiguity = slice_analysis_path(path, issue=issue_arg)
+        if ambiguity:
+            print(f"[findings] FAIL {ambiguity} — set --path to the slice this PR owns",
+                  file=sys.stderr)
+            return 1
     if a.check and (a.event or a.body_file or a.branch):
         if not pr_closure.implementation_shaped(branch, body):
             prefix = pr_closure.non_implementation_prefix(branch)

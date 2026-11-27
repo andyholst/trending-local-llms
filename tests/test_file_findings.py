@@ -19,6 +19,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -750,8 +751,82 @@ def main() -> int:
     test_a_closing_claim_alone_makes_it_implementation()
     test_a_quoted_claim_is_not_a_claim()
     test_the_shape_gate_is_wired_to_ci_and_the_fix_loop()
+    test_slice_resolution_covers_the_three_measured_shapes()
+    test_the_shape_gate_accepts_a_slice_file_end_to_end()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
+
+
+
+# --------------------------------------------------------------------------------------
+# Issue #1778: parallel lanes closing one umbrella issue own a SLICE findings file
+# --------------------------------------------------------------------------------------
+
+def test_slice_resolution_covers_the_three_measured_shapes():
+    """The ONE rule: canonical wins; one slice stands in; none keeps the old failure;
+    more than one is LOUD, never a guess. Single-issue path stays byte-identical."""
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        canonical = base / "1767.md"
+
+        got, amb = mod.slice_analysis_path(canonical, issue="1767", findings_dir=base)
+        check("neither: canonical path unchanged",
+              got == canonical and amb is None, str(got))
+
+        sl = base / "1767-planner.md"
+        sl.write_text("- none\n", encoding="utf-8")
+        got, amb = mod.slice_analysis_path(canonical, issue="1767", findings_dir=base)
+        check("slice present: resolves to the slice file",
+              got == sl and amb is None, str(got))
+
+        canonical.write_text("- none\n", encoding="utf-8")
+        got, amb = mod.slice_analysis_path(canonical, issue="1767", findings_dir=base)
+        check("canonical present: wins unchanged",
+              got == canonical and amb is None, str(got))
+
+        canonical.unlink()
+        (base / "1767-implementer.md").write_text("- none\n", encoding="utf-8")
+        got, amb = mod.slice_analysis_path(canonical, issue="1767", findings_dir=base)
+        check("two slices: LOUD ambiguity naming both",
+              got == canonical and amb is not None
+              and "1767-planner.md" in amb and "1767-implementer.md" in amb, str(amb))
+
+        # other issues and explicit paths never enter the seam
+        got, amb = mod.slice_analysis_path(canonical, issue="1768", findings_dir=base)
+        check("different issue: unchanged", got == canonical and amb is None, str(got))
+
+
+def test_the_shape_gate_accepts_a_slice_file_end_to_end():
+    """Drive the REAL CLI from a relocated tree: PR #1769's `findings/1767-planner.md`
+    shape is green, and the canonical-missing failure still names the file when no
+    slice exists. Only the filesystem layout changes — no symbol is stubbed."""
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        (scratch / "findings" / "1767-planner.md").write_text(
+            "# Findings\n\n- none\n", encoding="utf-8")
+        cli = scratch / "scripts" / "file_findings.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "--check", "--branch", "ci/data-gap-1767-planner-slice"],
+            cwd=scratch, capture_output=True, text=True)
+
+    check("slice: gate exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("slice: OK names the slice file", "1767-planner.md" in proc.stdout, proc.stdout)
+    check("slice: no FAIL", "FAIL" not in proc.stderr, proc.stderr)
+
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        cli = scratch / "scripts" / "file_findings.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "--check", "--branch", "ci/data-gap-1767-planner-slice"],
+            cwd=scratch, capture_output=True, text=True)
+
+    check("no slice: gate still red", proc.returncode != 0, proc.stdout + proc.stderr)
+    check("no slice: names the canonical file", "1767.md" in proc.stderr, proc.stderr)
 
 
 if __name__ == "__main__":
