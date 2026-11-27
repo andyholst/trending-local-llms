@@ -44,7 +44,7 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
    documented in `references/watcher-trigger.md` — never create it without explicit authorization and
    never register a second pair on a host that already has one.
 2. Read `SOUL.md` in this profile. The repo is https://github.com/andyholst/trending-local-llms, branch `master`.
-3. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
+3. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale. **Never extend a short sha quoted in a comment into a full one by guessing** — `git rev-parse origin/master` and `gh pr view <n> --json headRefOid` are the only sources for a 40-char sha in a dispatch; a fabricated ref sends the lane to a nonexistent commit and wastes its whole run.
 4. Read the data store shape and size before judging it: `data/models.json` currently has top-level
    `engines` (engine registry) + `models` (catalog) keys. MEASURED 2026-11-23 at `f2b3db89`: `models` is a
    LIST and a model row has NO `engines[]` — its per-(model, engine, source_post) measurement rows live in
@@ -52,12 +52,12 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
    `comments`, `reshares`, `views`. Count models, the engine registry, and total `seen_posts` rows;
    compare against the previous refresh to say whether the store grew or shrank. A store that lost a
    top-level key or shrank a model's seen-posts count is the alarm.
-5. Verify the rendered tables still match the store **without writing**: `python3
-   scripts/update_trending.py --render-only --dry-run` (exit 0 = clean render), then save `README.md` and
-   run `python3 scripts/update_trending.py --render-only` and `diff -q` the saved copy against the
-   regenerated one. Byte-identical means no drift between README and store; any diff means the committed
-   README is stale relative to `data/models.json`. `--render-only` regenerates from the store's own
-   `generated_utc` with no raw ingest, store write, or snapshot, so it is safe to run in the worktree.
+5. Report whether the rendered tables still match the store WITHOUT executing anything locally: read the
+   verdict from the newest push-to-master `qa-validate` run (`gh run view <id> --json jobs`), whose
+   `readme`/`validate` stage re-renders and fails on drift. The standing owner directive is that NO
+   product command, renderer, validator or `make` target runs on the host — even a `--render-only --dry-run`
+   probe is a local execution. Read blobs with `git show <sha>:<path>` when byte detail is needed; full
+   method in `references/data-sync-readback.md`.
 6. Do the lane work in `SOUL.md` and stop. Coordination lanes file or comment. Only `tll-implementer` writes the tree, and only after the planner names the issue.
 7. Post the result on the issue. The comment is the record.
 
@@ -96,6 +96,31 @@ needed to move the board.
   fast offline checks, fix loop, push — and must forbid cutting a new branch or rewording the commit. Run
   `make dispatch-check ISSUE=<n>` first (it reads live state) and honor the §7b race guard (post the
   dispatch, wait ~80 s, re-read the thread, start only if your comment is still newest).
+- **A lane that stops on a measured blocker gets a bounded RESUME, not a second implementation.** When a
+  lane posts a signed blocker with options, answer with ONE explicit ruling naming the chosen option,
+  the base sha, the exact preconditions (remote ref, gates already green) and the single next delivery;
+  forbid re-doing work already verified. Continue the SAME lane session with the resume command printed
+  at exit: `hermes --resume <session-id> -p <lane> chat --query-file <resume-file> --oneshot --yolo
+  --accept-hooks`. The resume file is a dispatch prompt (name it `resume-*`), not the ruling comment.
+  A master-move merge-tree red is a race, so authorise ONE bounded rebase with the lease pinned to the
+  current head; if master moves again the lane must report the race, not loop. Read the FULL verdict body
+  before writing the resume: a reviewer can mark a HOLD for a race while separately naming a shipped
+  defect (a spec pointing at absent tests, a false body claim). A rebase-only resume clears the HOLD and
+  leaves the real defect in the merged tree — put every named defect in the SAME bounded dispatch,
+  labelled primary vs secondary, and forbid re-litigating work already verified.
+- **A DIRTY, far-behind PR gets a bounded RE-CUT, not a second implementation and not a blind rebase.**
+  Measure the delta first (`git log --oneline origin/<branch> --not origin/master`, and compare the head
+  with master via `gh api repos/<o>/<r>/compare/<head>...master --jq '{ahead:.ahead_by,behind:.behind_by}'`).
+  Instruct the lane to keep ONLY the wanted additive delta (an evidence record, its OpenSpec change and
+  findings, the regenerated index), restore every conflicting file to the fetched master's LANDED shape
+  verbatim, drop a guard ONLY when master already carries THAT SAME guard, and force-push to the EXISTING
+  branch with `--force-with-lease` pinned to the measured stale head — STOP if the ref moved. **Before
+  pushing, resolve every `- **Test:**` line in the PR's bound OpenSpec spec against the new head**: a
+  narrow re-cut silently drops the issue's OWN test functions along with the unwanted churn, and an
+  ARCHIVED change is exempt from the test-line gate, so CI stays green while the spec names tests that
+  no longer exist. Restore those tests in the same head. Then verify the new diff is additive
+  (`gh pr diff --name-only`) and that CI registered with real jobs at the new head before routing a
+  reviewer. This is the resume shape for a PR that exists but is stale/conflicting.
 
 ## This lane
 
@@ -103,11 +128,17 @@ needed to move the board.
 - If the owner asks for a sync, check the weekly refresh. Do not install a timer and do not start a second scheduler.
 - Dispatch lanes in PARALLEL whenever their target files differ — the owner requires continuous work,
   not a serial queue, and worktrees isolate the trees (#1423/#1424 removed the local-VM reason for a
-  serial cap). The comment still names the profile, the `origin/master` sha, what done means, and the
+  serial cap). **A running lane never blocks the next dispatch:** fill every free implementer slot up
+  to the ceiling with a distinct open issue, and dispatch reviewers/designers on open PRs and filed
+  gaps in the same pass. Lanes already running is not a reason to end the turn — idle slots are lost
+  capacity and the board, not the chat, is the work surface. The comment still names the profile, the `origin/master` sha, what done means, and the
   handover target. Serialise ONLY shared files via `make dispatch-check ISSUE=<n> MACHINE=<user@host>
   CLAIMS="p1 p2"` (#1458 path overlap, #1569 cross-host claims): `agents/*/skills/*/SKILL.md`, `OPENSPEC.md`
   and generated artifacts. Architect, security, and reviewer file findings; only `tll-implementer` gets a
   write. Never answer a full board with a status report while a distinct issue or PR is movable.
+  When no unclaimed actionable issue exists but one gate defect has produced several measured red
+  runs, FILE ONE evidence-backed issue naming those runs and dispatch design/implementer lanes against
+  it — an empty actionable queue is a signal to create the next small issue, not to idle a free slot.
 - Keep the board current on each issue's OWN thread (the parent fleet issue #682 is closed): who commented, which lane is in progress, and that nothing is scheduled.
 
 ### Parallel implementer dispatch (owner directive, issue #1767)
@@ -145,6 +176,7 @@ belongs to the qa-validate gate alone.
 The owner's messages are terse and demand results: implement the issue, create the PR, deliver it. The planner's chat output must be:
 
 - **Short and result-first:** the conclusion (delivered, what it changed, the one open item and its URL) before any background — the issue thread is the record, the chat carries the conclusion. No process narration (dispatch waits, status loops, lane detail).
+- **While lanes are in flight, the chat gets one line, not a status log.** Name what is running and the single owner-gated item, then end the turn and resume on lane-completion notifications — but ONLY after every movable issue/PR already has a lane. The issue thread already holds every step; narrating waits in chat reads as an answer to a question nobody asked.
 - **Links only, one line each:** PR URL, gate run URL, issue URL.
 - **Never re-report a closed issue** without re-reading the thread — state from chat is stale; a claim is valid only against the current head.
 - **Everything a lane comments appears on the issue's own thread** in the signed `BOT <name> · …` record format — dispatch, status, verdict, closer. A chat message is never a delivery.
@@ -153,11 +185,21 @@ The owner's messages are terse and demand results: implement the issue, create t
 
 The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for the same class of defect: the gate binds every `#<id>` in the PR title/body as a closing reference, so prose mentioning another issue (`their own PRs closed #1747`) is parsed as closing that issue and rejects the branch; and the title must carry the closing keyword for THIS issue unmasked, or the branch cannot bind it. Diagnose and fix with this recipe:
 
-1. **Reproduce first.** Run the gate on the branch's PR metadata (`make pr-closure PR=<n>`) and read the job log for the failing step. A PR with **no checks reported** on the branch is never green (a never-started head) — name the run URL and head sha before re-pushing.
+1. **Reproduce first.** Run the live body preflight `make pr-message-check PR=<n>` before posting any PR handover, and reproduce the closure gate with its SUPPORTED inputs: `make pr-closure PR_EVENT=<event json>` or `make pr-closure BRANCH=<head ref> BODY_FILE=<body file>`. `make pr-closure PR=<n>` is NOT a supported invocation and exits 2. Read the job log for the failing step. A PR with **no checks reported** on the branch is never green (a never-started head) — name the run URL and head sha before re-pushing.
 2. **List the bindings.** Read the PR title and body; every `#<id>` that is NOT the PR's own `Closes #<n>` is a candidate defect.
 3. **Reword the mis-bound prose.** A cross-reference like `#1747` becomes inline code (`` `#1747` ``) — the gate strips inline-code spans, so masking hides the reference from its parser while keeping the record readable. Never remove it; never rewrite the record's meaning.
 4. **Unmask the issue's keyword in BOTH title and body.** `Closes #<id>` must appear in the title AND in the body content — title-only and body-only do not close the issue on merge.
 5. **Re-run the gate to green** on the final head, then re-trigger the full `validate`/`live-smoke` CI on a file change. File-filtered workflows do NOT fire on metadata-only commits; the pr-closure workflow fires. If `validate` stays red after the gate is green, fix the CODE (read the job log), not the trigger — do not add workflow edits to fix a CI-trigger artifact.
+
+### Rebinding an existing PR to a different issue
+
+Before telling a lane to re-bind an open PR, measure three seams against the live tree and rule from the results; a body-only `Closes` edit is never enough:
+
+- `python3 scripts/pr_closure.py --branch <branch> --body-file <body>` and `python3 scripts/pr_body.py --check-body-file <body> --branch <branch>` derive the implemented issue from the branch's trailing `-<number>`, so a body that binds a different issue is refused. Do not instruct a dual bind or a misleading branch name to dodge it.
+- `python3 scripts/openspec_archive_check.py --pr <n>` requires a change whose `Issue:` line names the NEW issue; an existing change bound to the old issue does not satisfy it.
+- `make findings-check-for-pr` resolves the analysis by the issue the PR closes, so the branch also needs `findings/<new-issue>.md`; an analysis named after the old issue does not count.
+
+GitHub's branch-rename API moves the ref but does NOT re-point an open PR's head ref, and deleting the old head closes the PR. When the branch name must encode the new issue, rule the bounded supersession: push the prepared head to a fresh `-<new-issue>` branch, open one READY PR with `Closes #<new>` in title and body, correct the OpenSpec `PR:` line to the new PR number, add the new findings file, then close the old PR unmerged with a signed supersession comment. Mask the old reference as inline code so it is not a second closing binding. Never assume a REST/GraphQL mutation can change a PR head ref.
 
 ## Pitfalls
 
@@ -185,7 +227,8 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
   issue is open or a PR is unverified by the reviewer/test lanes. **When every lane is CI-bound, do NOT post
   another status report on the same wait — that is idling in prose.** Pick the next movable thing (a stale or
   conflicting PR, a filed gap, an unclaimed issue, a host-gate divergence) and move it; repeat the wait only
-  when the state actually changed.
+  when the state actually changed. Tracker cleanup needs NO lane: close issues left open after their fix
+  merged and superseded duplicate PRs yourself with signed evidence while the implementers wait on CI.
 - A Hermes cron or a new GitHub Actions `schedule:` is the wrong tool. The owner asks on the host. The data sync is the existing weekly refresh, not a new timer.
 - `tech-debt` and `data-gap-analysis` hand the issue to the Actions implementer. This fleet uses `enhancement`.
 - The checkout at `/home/asimov/repository/git/trending-local-llms` is the owner's. Do not edit it.
@@ -199,8 +242,9 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
 - **A lane's DM queue lags and replays stale messages — it will re-ask questions you already answered
   several turns ago.** Do not re-DM the same answer more than once; instead make the answer durable
   in-thread: post the dispatch as a `gh issue comment` on the bound issue (e.g. #697) so the lane can read
-  it via `gh issue view <id>` regardless of DM lag. Treat a stale re-ask as "message not yet consumed", not
-  as a new question.
+  it via `gh issue view <id>` regardless of DM lag.  Treat a stale re-ask as "message not yet consumed", not
+  as a new question. Lane-completion notifications replay the same way: if the merge and cleanup were
+  already verified from live state, re-measure the PR and issue once and post no duplicate bookend.
 - **Single-binding issue discipline (small issues, owner-mandated).** An umbrella goal issue (e.g. #689)
   stays OPEN and tracks the program across slices; each slice gets its OWN implementation issue that the
   PR binds to via `Closes #<slice>` in title+body. Never re-bind a new slice's PR to the closed umbrella or
@@ -236,7 +280,11 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
   sha where the fix was pushed), and that the bound defect issue is still the right state. If the artifact is
   absent or the false claim still ships, the slice is NOT done even though the PR merged: correct the record,
   and dispatch the fix as a NEW follow-up PR on top of the merge commit (never reopen the merged PR). Only after
-  that lands on `master` is the integrity gate cleared.
+  that lands on `master` is the integrity gate cleared. The same applies to a HOLD on a duplicate PR:
+  `qa-validate` merges on green alone and does not read the HOLD. Re-read `gh pr view --json
+  state,mergedAt` after posting it; if the duplicate merged first, close the competing PR/issue with a
+  signed supersession record, back off and kill any lane still working that branch, rather than
+  continuing a review of a defect already resolved on master.
 - **A zero grep for a MANDATED TEST NAME does not prove the guard is absent.** When you demanded a specific
   test (e.g. a value-fidelity guard) by a suggested name, `git grep -c <that exact name>` returning 0 means
   only that the literal name is missing — the lane may have implemented the SAME contract under a different
@@ -265,6 +313,11 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
   that still holds — as credit), never re-litigating the fix already made. Likewise a reviewer's PASS at an
   old head does not carry: re-route it to the current head. Read the CURRENT CI at the exact current head
   (`gh pr checks <n>`) rather than trusting the verdict's quoted check state.
+- **A `make test` red naming a guard that asserts an old literal shape is a guard-update task, not a
+  runtime regression.** When a refactor moves values into a new variable or flag, first prove the effective
+  runtime configuration is byte-identical (diff the resolved old and new values), then update the test in
+  the SAME PR to resolve the new seam. Never revert the refactor or weaken the assertion into a skip. A
+  reviewer HOLD for this class must name the exact assertion lines and the replacement seam.
 - **A test DEFINED but never CALLED from `main()` is a silent CI red while local runs green.** A lane that
   runs a single test module locally (e.g. `python3 tests/test_x.py`, 33/0) can be green while CI's full
   `make test` fails because one test function was added but never wired into the module's `main()` runner, so
@@ -312,7 +365,12 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
   closes an issue from any PR whose title/body carries the keyword, including a PR that implements only PART
   of the issue's scope. After a merge run `gh pr diff <n> --name-only` and confirm every file the issue named
   actually changed; a missing file means the issue was closed with work outstanding. Re-file that half as its
-  own small issue with a handover instead of letting the close stand.
+  own small issue with a handover instead of letting the close stand. When the missing half is a protected
+  `AGENTS.md` row that was deliberately withheld pending owner authorization, grep the MERGED master for the
+  exact approved needles (`git show origin/master:AGENTS.md | grep -c <needle>`); a zero count means the
+  auto-close buried an undone rulebook landing. File the follow-up with BOTH approved texts quoted
+  byte-for-byte and hand it to `owner`, then record the gap on the closed issue so it cannot read as fully
+  delivered.
 - **Lanes change locally and PUSH; CI verifies. Never have a lane pre-run the full containerised suite.**
   Owner directive #1423: A head's local `make validate` + whole `make test` costs 15–30 min inside the per-purpose
   Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while each lane
@@ -353,7 +411,16 @@ The fleet merge gate is `pr-closure`. This cycle it refused a branch twice for t
   an issue-comment flag and exits 0 without posting.** A silent no-op looks identical to success in a
   shell batch. Re-read the thread after posting (`gh issue view <n> --comments --json comments`,
   last comment) whenever the record matters — a handover or ruling that was never posted leaves both
-  hosts without the decision.
+  hosts without the decision. On busy threads `gh api repos/<o>/<r>/issues/<n>/comments` returns only one page; use `--paginate`
+  (`?per_page=100` is still one page and truncates a longer thread). The last item of a page-limited read is
+  the tail of PAGE 1, not the real tail — never assert from it that a signed verdict or your own dispatch
+  "never landed". When checking a SPECIFIC comment id, fetch it directly with
+  `gh api repos/<o>/<r>/issues/comments/<id>`; a false "verdict missing" claim costs a re-post and erodes
+  the thread record. **Batch-reading threads into Python needs the same care:** flatten each body in jq
+  (`gsub("\n";" ")` in the `--jq` expression) before `json.loads`, or fetch one comment by id — raw
+  newlines inside a body make `json.loads` fail with `Invalid control character` even though the shell
+  command succeeded. **`gh pr close` has no `--comment-file`:** post the signed supersession reason with
+  `gh pr comment <n> --body-file <path>` first, then close the PR.
 - **Write the issue body to a draft and run `make issue-message-check BODY_FILE=<draft>` BEFORE `gh issue create` on a body declaring `message-pattern-opt-in` (issue #1730).** A non-zero verdict blocks the filing;
   repair the draft and re-run, never hand-edit a body after it landed. This is the same gate CI runs on
   `issues:opened/edited/reopened`, so a bot-filed body can no longer red `pr-closure` on its own shape.
@@ -392,13 +459,21 @@ lands — not after.
   backups (`*.bak-<UTC>`), leave the files, and route the two halves through the normal paths: the gate
   fix via its own PR, the note-landing via a reviewed change.
 - **A PR with "no checks reported" is NEVER green — it is a never-started head.** The seam: `gh pr
-  checks <n>` answers `no checks reported on the '<branch>' branch` AND `gh run list --commit <headSha>`
-  returns ZERO workflow runs. A `completed/action_required` run with 0 jobs whose actor is
-  `github-actions[bot]` is the same shape (a push through the job token schedules no jobs). Post ONE
-  failure report naming the run url, the head and the evidence, then hand the recovery to the branch's
+  checks <n>` answers `no checks reported on the '<branch>' branch`; enumerate
+  `gh api repos/<o>/<r>/actions/runs?head_sha=<headSha>` and `gh run view <id> --json jobs` for EVERY
+  run at that sha. Zero runs OR only `completed/action_required` runs with 0 jobs and actor
+  `github-actions[bot]` is the same shape — a job-token push schedules no jobs, and it can leave two
+  such runs, so do not infer the shape from `gh run list --commit` showing "no runs" alone. The commit
+  author name is NOT proof of a workflow-triggering push: `gh api repos/<o>/<r>/commits/<sha> --jq
+  .author.login` can name the owner while the push path still scheduled no workflows. Always enumerate
+  `gh api repos/<o>/<r>/actions/runs?head_sha=<headSha>` and check `total_count` plus each run's job
+  count; only real jobs are a verdict. Post ONE
+  failure report naming the run urls, the head and the evidence, then hand the recovery to the branch's
   OWNER lane: re-push ONLY that branch with an owner-git-identity empty commit through the owner-PAT
-  remote and prove `gh run view <id> --json jobs` shows jobs. Never report such a head as green, and
-  never start a second session on a branch another lane already holds (#1115).
+  remote and prove the new run has real jobs. Never report such a head as green, and never start a
+  second session on a branch another lane already holds. Put the owner identity and owner-PAT remote
+  in every bounded-rebase ruling for a branch that has already ghosted: a rebase pushed by the bot
+  actor recreates the zero-job head. Verify the new head's job count before accepting any bookend. (#1115)
 - **A green `validate` proves nothing when `master` moved during the run — the merge-tree OpenSpec check
   races EVERY open PR.** `qa-validate` merges the PR with `origin/master` and runs `make
   openspec-index-check` on the RESULT, so any master advance between a PR's cut and its run conflicts on
@@ -407,7 +482,17 @@ lands — not after.
   3-way blob merge is clean locally. Treat it as a RACE, not a code defect — rebase onto the fetched tip,
   regenerate the index (`python3 scripts/openspec_index.py --write`), re-push. Do not "fix" the branch's own
   logic, and do not rebase repeatedly while master keeps moving under the run: say so and let the gate land
-  on a stationary tip. Expect several rebases per PR while the board is busy.
+  on a stationary tip. Expect several rebases per PR while the board is busy. When the SAME race has
+  re-dirtied one PR more than twice, stop rebasing that PR: record the sha where CI was actually green,
+  file ONE evidence-backed issue for the gate seam instead of one per rebase, and hold the PR until the
+  gate fix lands or the owner rules — endless bounded rebases are churn, not throughput.
+- **A gate cancelled by `timeout-minutes` is not a code defect and must not be re-run into the same cap —
+  sequence behind the filed timeout fix.** Read the job's `conclusion` and its last step before ruling:
+  `cancelled` at the exact cap with a still-running unit suite is a capacity limit, not a failing test.
+  Hold the issue with that evidence on the thread; do not `gh run rerun` and do not ask a lane to re-push
+  merely to re-trigger CI. When the timeout fix lands, rebase the held PR onto that tip before re-triggering
+  — GitHub runs the workflow from the PR's own tree, so a re-push on the old base still carries the old
+  limit and burns the full cap again. A fix raised on master cannot help a branch that has not rebased.
 - **Before bulk-closing stale keeper PRs, measure the generated artifacts on master AND confirm each
   diff is generated-only.** In a detached worktree at the fetched tip run `python3
   scripts/openspec_index.py --check` and `python3 scripts/architecture_check.py`; if both report current,
@@ -416,9 +501,10 @@ lands — not after.
   reason naming the measured sha and 'reopen if you disagree'; never merge a moot PR by hand.
 - **A keeper whose target archived count is BELOW master's is SUPERSEDED — no rebase, no force-push.**
   Generated-artifact-only keeper PRs (`OPENSPEC.md` / `ARCHITECTURE.md` regeneration) go stale when master
-  advances past them. Measure the current count (`python3 scripts/openspec_index.py --check` in a detached
-  worktree at the fetched tip) and compare with the branch's target; if master is already ahead, close the
-  PR as superseded with a signed reason rather than producing an empty re-anchor or a no-op commit.
+  advances past them. Measure READ-ONLY, without executing a local gate: `git show
+  origin/master:OPENSPEC.md | grep -m1 'Active changes:'` for master's count and `gh pr diff <n> --patch`
+  for the keeper's one-line target. If master is already ahead, close the PR as superseded with a signed
+  reason rather than producing an empty re-anchor or a no-op commit.
 - **Before dispatching an implementation of a filed defect, verify the gap STILL EXISTS on fetched master.**
   A filed issue can already be fixed by another host or the Actions lane while it sits in the queue.
   Read `gh issue view <n> --json state` first, then `git show origin/master:<file>` for the named artifact
@@ -461,11 +547,23 @@ lands — not after.
   Measured 2026-11-23: two ticks filed the SAME change as #1455 and #1456 five seconds apart and each
   started an implementer on the same mirrors. Before filing or dispatching, search the newest issues for a
   sibling filed minutes earlier; consolidate (close the duplicate, withdraw your own lane BEFORE it pushes)
-  rather than letting two PRs race on one file pair.
+  rather than letting two PRs race on one file pair. Re-read the thread once more AFTER posting your own
+  dispatch: a newer implementer status may already report the fix pushed. In that case post a signed
+  back-off naming the existing head and kill the lane process you spawned before it claims or pushes —
+  a dispatch-check ALLOW only proves the issue is open, not that the work is still undone. When the other
+  session already holds the live items, do NOT re-dispatch them: take the distinct stalled item (a
+  conflicting PR with no recent claim, a stale keeper) and say that scope in your dispatch comment so the
+  two sessions cannot race. A missing `hermes -p tll-*` process does not make a signed claim stale — the
+  claim may come from another host or a session that has exited; the newest signed claim on the shared
+  thread is the source of truth.
 - **Master can move several times inside one cycle — re-measure before every ruling.** A dispatch's
   premise can be void by the time the lane reads it (#1448 merged while its implementer was still awaiting
   a ruling). Re-check `gh pr view <n> --json state,headRefOid` and `make dispatch-check ISSUE=<n>` before
-  answering a lane's question, and bind every verdict to the sha actually reviewed. The same applies to the
+  answering a lane's question, and bind every verdict to the sha actually reviewed. **Apply the same
+  re-measure in the dispatch-to-launch window:** after posting a dispatch but before spawning the lane,
+  re-read the newest comment and the PR head; if a newer state note moved the head, post a signed
+  correction on the issue and update the lane's query file to the new head and CI run ids before launch.
+  A reviewer started with a stale head rules on code that is no longer on the PR. The same applies to the
   BRANCH: an empty CI-retrigger commit can move an owned branch between measurement and push. Re-read
   `git ls-remote origin <branch>`, pin `--force-with-lease` to that fetched ref, and STOP if it moved again.
   Before ordering a force-push over a branch, confirm no live lane still owns it — a non-fast-forward
