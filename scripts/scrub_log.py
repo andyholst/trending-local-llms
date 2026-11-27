@@ -200,6 +200,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[scrub-log] FATAL: cannot write the stream to disk ({exc}) — a transcript that "
                   f"cannot be kept must never look like a clean run.", file=sys.stderr)
             return 2
+        # issue #1820/#1747: a producer that exits 0 without emitting ONE line is the
+        # `quiet`/`agent-failed` shape, not a clean leg and not a source outage. Refuse it here,
+        # before the routine summary, with ONE classified line — never a green `stream: 0`.
+        if lines == 0:
+            print("[scrub-log] FAIL: the agent stream produced 0 line(s) and exited 0 — "
+                  "classified quiet/agent-failed, not a source outage (issue #1820, #1747)",
+                  file=sys.stderr)
+            return 3
         print(f"[scrub-log] stream: {lines} line(s), {count} redaction(s); "
               f"REDACTED log: {args.dst}", flush=True)
         return 0

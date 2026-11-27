@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **598**
+Active changes: **1** · archived: **600**
 
 ## Active changes
 
@@ -552,6 +552,7 @@ Active changes: **1** · archived: **598**
 | `section6-role-text-reviewed` | archived | #508 | — | [architecture-role-boundary](openspec/changes/archive/section6-role-text-reviewed/specs/architecture-role-boundary/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/section6-role-text-reviewed/proposal.md) |
 | `security-scan-dispatch-pipeline` | archived | #1185 | #1188 | [security-scan](openspec/changes/archive/security-scan-dispatch-pipeline/specs/security-scan/spec.md) | 6/9 | [proposal.md](openspec/changes/archive/security-scan-dispatch-pipeline/proposal.md) |
 | `setup-output-visible` | archived | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/archive/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/setup-output-visible/proposal.md) |
+| `silent-agent-zero-lines-fail` | archived | #1820 | #1821 | [agent-log-capture](openspec/changes/archive/silent-agent-zero-lines-fail/specs/agent-log-capture/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/silent-agent-zero-lines-fail/proposal.md) |
 | `silent-recipe-when-redirected` | archived | #539 | — | [issue-bot-artifacts](openspec/changes/archive/silent-recipe-when-redirected/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/silent-recipe-when-redirected/proposal.md) |
 | `skip-note-every-hold` | archived | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/archive/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/skip-note-every-hold/proposal.md) |
 | `skip-note-every-sweep` | archived | #202 | — | [issue-review-queue](openspec/changes/archive/skip-note-every-sweep/specs/issue-review-queue/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/skip-note-every-sweep/proposal.md) |
