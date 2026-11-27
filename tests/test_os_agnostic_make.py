@@ -113,12 +113,22 @@ def test_the_two_cross_cutting_seams_run_through_the_container_seam() -> None:
 
     # The redaction filter is a `python3` too: it runs at the redactor end of the pipeline through
     # the ONE python-env seam, never wrapped around the agent leg it filters.
-    check("seam: scrubbed_run pipes through $(PYTHON_RUN)",
-          "$(PYTHON_RUN) python3 scripts/scrub_log.py" in MAKEFILE_TEXT,
-          "the redaction filter no longer runs through the python-env seam")
+    check("seam: scrubbed_run pipes through $(PYTHON_RUN_STDIN)",
+          "$(PYTHON_RUN_STDIN) python3 scripts/scrub_log.py" in MAKEFILE_TEXT,
+          "the redaction filter no longer runs through the stdin-attached python-env seam")
     check("seam: scrubbed_run has no bare host redactor left",
           not re.search(r"\|\s*python3 scripts/scrub_log\.py", MAKEFILE_TEXT),
           "a bare `| python3 scripts/scrub_log.py` is back in scrubbed_run")
+    # #1810: -i belongs to the REDACTOR only. The shared seam must stay detached so the ~30
+    # other `python3 scripts/…` callers keep their old stdin contract.
+    run_def = next((l for l in MAKEFILE_TEXT.splitlines() if l.startswith("PYTHON_RUN :=")), "")
+    stdin_def = next((l for l in MAKEFILE_TEXT.splitlines()
+                      if l.startswith("PYTHON_RUN_STDIN :=")), "")
+    check("seam: a scoped PYTHON_RUN_STDIN exists and attaches stdin",
+          bool(stdin_def) and re.search(r"(?:^|\s)-i(?:\s|$)", stdin_def) is not None,
+          stdin_def or "PYTHON_RUN_STDIN is not defined")
+    check("seam: the shared PYTHON_RUN still has no global -i",
+          bool(run_def) and re.search(r"(?:^|\s)-i(?:\s|$)", run_def) is None, run_def)
 
     # The parse-time execs: all five go through the seam (recursive, so still lazy).
     shell_execs = re.findall(r"^\w+ = \$\(shell ([^\n]*)\)$", MAKEFILE_TEXT, re.M)
@@ -172,6 +182,15 @@ def test_the_detector_is_red_on_the_pre_change_seam_shapes() -> None:
                           "$(shell $(PYTHON_RUN) python3 scripts/query_coverage.py")
     fixed_findings, _ = module.violations(fixed)
     check("green: the containerised shapes are clean", not fixed_findings, fixed_findings)
+
+    # #1810: the redactor's scoped sibling is a container seam too — without it in
+    # HARNESS_TOKENS the new seam reads as a bare host python and this guard would red.
+    scoped = fixed.replace("| $(PYTHON_RUN) python3 scripts/scrub_log.py",
+                           "| $(PYTHON_RUN_STDIN) python3 scripts/scrub_log.py")
+    scoped = scoped.replace("PYTHON_RUN := docker run",
+                            "PYTHON_RUN := docker run\nPYTHON_RUN_STDIN := docker run -i")
+    scoped_findings, _ = module.violations(scoped)
+    check("green: the stdin-attached redactor seam is clean", not scoped_findings, scoped_findings)
 
 
 def test_the_detector_sees_the_pip_tools_console_scripts_and_keeps_them_harnessed() -> None:

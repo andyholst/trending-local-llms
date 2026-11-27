@@ -41,7 +41,10 @@ from pathlib import Path
 import architecture_bot  # noqa: E402  (the ONE Makefile target-line parser — rule 6d, issue #752)
 
 #: The container seams. A line carrying one of these is NOT a bare host invocation.
-HARNESS_TOKENS = ("$(PYTHON_RUN)", "$(TEST_RUN)", "$(DOCKER_RUN)", "$(OS_OPTS)", "docker run")
+#: #1810: `PYTHON_RUN_STDIN` is the redactor-only sibling of `PYTHON_RUN` (same flags plus `-i`);
+#: the detector must recognise it as a container seam or the scoped attach reads as a bare python.
+HARNESS_TOKENS = ("$(PYTHON_RUN)", "$(PYTHON_RUN_STDIN)", "$(TEST_RUN)", "$(DOCKER_RUN)",
+                  "$(OS_OPTS)", "docker run")
 
 #: A host interpreter invocation, but not `python3.12` / `my-python3` / `scripts/pip`.
 #: The pip-tools console scripts are their OWN words — `pip-compile`, `pip-sync`,

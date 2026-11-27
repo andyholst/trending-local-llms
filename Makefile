@@ -218,8 +218,13 @@ HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
 # around the command being scrubbed: those agent legs are already `$(DOCKER_RUN)`/`$(TEST_RUN)`
 # containers and wrapping them again would be docker-in-docker. The capture contract is unchanged
 # (raw + redacted files, `--append` per round, streamed masked lines, the command's own status).
+# Issue #1810: the redactor's stdin must BE the producer pipe. The shared `PYTHON_RUN` has no
+# `-i`, so Docker handed the stream reader /dev/null: it saw an immediate EOF, captured zero
+# lines, and the still-writing producer died of SIGPIPE (`PIPESTATUS[0]=141`, make Error 141).
+# Only this redactor end uses `PYTHON_RUN_STDIN` (the same flags plus `-i`). pipefail,
+# PIPESTATUS[0], `--stream --append --raw --out` and the #1747 classification line are unchanged.
 define scrubbed_run
-	@bash -o pipefail -c 'eval "$$1" 2>&1 | $(PYTHON_RUN) python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"; st=$${PIPESTATUS[0]}; if [ "$$st" = 141 ]; then printf "%s\n" "[scrub-log] FAIL: the agent stream closed with SIGPIPE (exit 141) and NO redacted line was captured — classified as quiet/agent-failed, not a source outage (issue #1747)" >&2; fi; exit "$$st"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
+	@bash -o pipefail -c 'eval "$$1" 2>&1 | $(PYTHON_RUN_STDIN) python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"; st=$${PIPESTATUS[0]}; if [ "$$st" = 141 ]; then printf "%s\n" "[scrub-log] FAIL: the agent stream closed with SIGPIPE (exit 141) and NO redacted line was captured — classified as quiet/agent-failed, not a source outage (issue #1747)" >&2; fi; exit "$$st"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
 endef
 
 
@@ -349,6 +354,12 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 # the #1747 classification and pipefail status stay untouched, so a genuinely dead agent still
 # fails. `-i` is harmless for the many `python3 scripts/…` callers that never read stdin.
 PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm -i --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
+	-e PYTHONUNBUFFERED=1 -e FIRECRAWL_API_KEY $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
+# Issue #1810: the LIVE redactor reads a pipe, so its container needs stdin attached. `-i` is
+# scoped to THIS one harness, never added to PYTHON_RUN: ~30 other `python3 scripts/…` callers
+# share that seam and must keep a detached stdin. The scoped definition carries the SAME flags
+# (a guard in tests/test_scrub_log_stdin.py refuses drift); inside the image both are empty.
+PYTHON_RUN_STDIN := $(if $(IN_CONTAINER),,docker run -i --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) $(if $(SELF_ARCHIVE_BASELINE),-v "$(dir $(SELF_ARCHIVE_BASELINE)):$(dir $(SELF_ARCHIVE_BASELINE))",) -w /workspace \
 	-e PYTHONUNBUFFERED=1 -e FIRECRAWL_API_KEY $(if $(SELF_ARCHIVE_BASELINE),-e SELF_ARCHIVE_BASELINE,) -e SELF_ARCHIVE_REF -e SELF_ARCHIVE_RESTORE $(PYTHON_IMAGE))
 
 # ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
