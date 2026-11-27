@@ -753,6 +753,9 @@ def main() -> int:
     test_the_shape_gate_is_wired_to_ci_and_the_fix_loop()
     test_slice_resolution_covers_the_three_measured_shapes()
     test_the_shape_gate_accepts_a_slice_file_end_to_end()
+    test_prepush_guard_refuses_a_missing_analysis()
+    test_prepush_guard_accepts_none_and_one_slice()
+    test_prepush_guard_is_wired_to_the_lane_and_the_make_target()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
@@ -827,6 +830,102 @@ def test_the_shape_gate_accepts_a_slice_file_end_to_end():
 
     check("no slice: gate still red", proc.returncode != 0, proc.stdout + proc.stderr)
     check("no slice: names the canonical file", "1767.md" in proc.stderr, proc.stderr)
+
+
+# --------------------------------------------------------------------------------------
+# Issue #1804: a fast offline pre-push guard so a host lane cannot push an
+# implementation PR without its findings/<issue>.md (measured: PR #1803 / run
+# 45992168460). Only the filesystem layout changes in these tests — the real CLI runs.
+# --------------------------------------------------------------------------------------
+
+def _prepush_cli(scratch: Path, *args: str) -> subprocess.CompletedProcess:
+    cli = scratch / "scripts" / "file_findings.py"
+    return subprocess.run([sys.executable, str(cli), "--prepush", *args],
+                          cwd=scratch, capture_output=True, text=True)
+
+
+def test_prepush_guard_refuses_a_missing_analysis():
+    """A host-pushed implementation PR with no findings/<n>.md is refused BEFORE push.
+
+    Given a relocated tree with no findings file, when --prepush --issue 1804 runs, then
+    it exits non-zero naming findings/1804.md and never prints a shape SKIP.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        proc = _prepush_cli(scratch, "--issue", "1804")
+
+    check("prepush missing: red", proc.returncode != 0, proc.stdout + proc.stderr)
+    check("prepush missing: names findings/1804.md", "1804.md" in proc.stderr, proc.stderr)
+    check("prepush missing: no SKIP", "SKIP" not in proc.stdout, proc.stdout)
+
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        proc = _prepush_cli(scratch)  # no issue, no branch -> undecidable, not a pass
+
+    check("prepush no-issue: refuses (exit 2)", proc.returncode == 2, proc.stdout + proc.stderr)
+
+
+def test_prepush_guard_accepts_none_and_one_slice():
+    """The guard accepts the same shapes CI does: `- none`, and ONE sibling slice."""
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        (scratch / "findings" / "1804.md").write_text("# Findings\n\n- none\n", encoding="utf-8")
+        proc = _prepush_cli(scratch, "--issue", "1804")
+
+    check("prepush none: green", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("prepush none: OK names the file", "1804.md" in proc.stdout, proc.stdout)
+
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        (scratch / "findings" / "1804-reviewer.md").write_text(
+            "# Findings\n\n- none\n", encoding="utf-8")
+        proc = _prepush_cli(scratch, "--issue", "1804")
+
+    check("prepush slice: green", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("prepush slice: OK names the slice", "1804-reviewer.md" in proc.stdout, proc.stdout)
+
+    with tempfile.TemporaryDirectory() as td:
+        scratch = Path(td)
+        shutil.copytree(ROOT / "scripts", scratch / "scripts")
+        (scratch / "findings").mkdir()
+        (scratch / "findings" / "1804-reviewer.md").write_text("- none\n", encoding="utf-8")
+        (scratch / "findings" / "1804-planner.md").write_text("- none\n", encoding="utf-8")
+        proc = _prepush_cli(scratch, "--issue", "1804")
+
+    check("prepush two slices: LOUD ambiguity", proc.returncode != 0, proc.stdout + proc.stderr)
+    check("prepush two slices: names both", "1804-reviewer.md" in proc.stderr
+          and "1804-planner.md" in proc.stderr, proc.stderr)
+
+
+def test_prepush_guard_is_wired_to_the_lane_and_the_make_target():
+    """Rule 6d/6m: the seam is reachable from a make target and the lane runs it.
+
+    The guard rides the EXISTING CI-wired target (no new gate to register): PREPUSH=1
+    adds --prepush, the plain call stays byte-identical, and the implementer skill
+    tells host lanes to run it before any push.
+    """
+    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+    skill = (ROOT / "agents" / "skills" / "issue-implement" / "SKILL.md").read_text(encoding="utf-8")
+    qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+
+    block = re.search(r"^findings-check-for-pr:.*\n(?:\t.*\n)+", mk, re.M)
+    check("wiring: target still host-side", block is not None
+          and "$(PYTHON_RUN)" not in block.group(0), "")
+    check("wiring: PREPUSH=1 adds --prepush", block is not None
+          and "$(if $(PREPUSH),--prepush,)" in block.group(0), "")
+    check("wiring: ISSUE= forwarded", block is not None
+          and "$(if $(ISSUE),--issue" in block.group(0), "")
+    check("wiring: CI still calls the plain target", "make findings-check-for-pr" in qa, "")
+    check("wiring: implementer skill runs the guard before push",
+          "findings-check-for-pr PREPUSH=1 ISSUE=" in skill and "BEFORE any push" in skill, "")
 
 
 if __name__ == "__main__":

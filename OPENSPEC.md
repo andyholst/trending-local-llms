@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **592**
+Active changes: **1** · archived: **593**
 
 ## Active changes
 
@@ -271,6 +271,7 @@ Active changes: **1** · archived: **592**
 | `findings-dedup-index-lag` | archived | #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent" | #1193 | [findings-dedup](openspec/changes/archive/findings-dedup-index-lag/specs/findings-dedup/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/findings-dedup-index-lag/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |
 | `findings-mixed-none-refusal` | archived | #1662 | #1663 | [findings-analysis-integrity](openspec/changes/archive/findings-mixed-none-refusal/specs/findings-analysis-integrity/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/findings-mixed-none-refusal/proposal.md) |
+| `findings-prepush-guard-1804` | archived | #1804 | — | [findings-prepush](openspec/changes/archive/findings-prepush-guard-1804/specs/findings-prepush/spec.md) | 7/9 · 2 blocked | [proposal.md](openspec/changes/archive/findings-prepush-guard-1804/proposal.md) |
 | `findings-seam-per-issue-1493` | archived | #1493 | #1592 | [findings-analysis](openspec/changes/archive/findings-seam-per-issue-1493/specs/findings-analysis/spec.md) | 7/9 · 2 blocked | [proposal.md](openspec/changes/archive/findings-seam-per-issue-1493/proposal.md) |
 | `findings-slice-resolution-1778` | archived | #1778 | #1794 | [findings-resolution](openspec/changes/archive/findings-slice-resolution-1778/specs/findings-resolution/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/findings-slice-resolution-1778/proposal.md) |
 | `fix-bot-announces-its-window` | archived | #198 | — | [bot-coordination](openspec/changes/archive/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-bot-announces-its-window/proposal.md) |

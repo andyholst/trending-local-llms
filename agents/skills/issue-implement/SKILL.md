@@ -86,6 +86,7 @@ deliverable.
 - **Analysis ships issues, never code:** one `## <title>` section per real gap you found, each with
   `**Evidence:**`, `**Why:**`, `**Done when:**`, or the single line `- none`. Never fix a finding
   here. `make findings-check` must pass.
+- **Run the pre-push guard BEFORE any push** (issue #1804): `make findings-check-for-pr PREPUSH=1 ISSUE=<n>` in the worktree — a fast, offline, host-side check using the same per-issue/slice seam as CI's shape gate. A missing, malformed or ambiguous `findings/<n>.md` fails here, not after a full CI run (measured: PR #1803 / run 45992168460). One `findings/<n>-<slice>.md` stands in for a shared umbrella issue; `- none` is a valid green analysis.
 - **Gates only on `TRIAGE: implement`:** `make validate`, `make validate-mapped`, `make test`,
   `make openspec-check`, `make architecture-check` — fix what they report, never weaken a test.
 - **Branch naming states what the PR does.** An implementation branch binds its issue —
