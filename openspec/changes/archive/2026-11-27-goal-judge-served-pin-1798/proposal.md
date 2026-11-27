@@ -1,6 +1,7 @@
 # Proposal: goal-judge-served-pin-1798
 
 Issue: #1798
+PR: #1799
 
 ## Why
 
