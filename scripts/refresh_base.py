@@ -57,18 +57,25 @@ except ImportError:  # pragma: no cover - only when run outside scripts/
 #: `data/models.json` AND the three additive ledgers `data/measurements.json`,
 #: `data/posts.json`, `data/refusals.json` — a refresh that changes data carries
 #: them dirty, and refusing them would strand every refresh with new data (issue
-#: #997).
+#: #997). The recorded Hermes release-channel fixture is here too: the refresh runs
+#: `make hermes-pin-channel-record` itself, so a pin raise leaves this fixture dirty
+#: at sync time and must not strand the whole refresh (issue #1828).
 GENERATED_PATHS = ("README.md", "data/models.json", "data/measurements.json",
                    "data/posts.json", "data/refusals.json",
                    "data/gap_baseline.json",
-                   "data/snapshots/", "data/raw/", "tests/fixtures/github_meta.json")
+                   "data/snapshots/", "data/raw/", "tests/fixtures/github_meta.json",
+                   "tests/fixtures/hermes_releases_latest.json")
 
 #: The subset that is NOT re-derivable and must survive the reset: the raw snapshots
 #: are the refresh's whole input, the gap baseline is analysis output whose loss
 #: re-files the same gap issue the next run, and the engine-metadata fixture records
 #: what `make engine-meta-capture` read from GitHub for the engines this run registers
 #: (issue #334) — the reset would otherwise drop it and red the PR's `make test`.
-KEEP_PATHS = ("data/raw", "data/gap_baseline.json", "tests/fixtures/github_meta.json")
+#: The recorded release-channel fixture is kept too: it is the payload `gh` served on
+#: THIS run, so a pin raise must land it in the PR rather than the base's older copy
+#: (issue #1828).
+KEEP_PATHS = ("data/raw", "data/gap_baseline.json", "tests/fixtures/github_meta.json",
+              "tests/fixtures/hermes_releases_latest.json")
 
 RAW_NAME = re.compile(r"-(?P<stamp>\d{8}-\d{6})\.json$")
 
