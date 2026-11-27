@@ -524,7 +524,7 @@ jobs:
     # NEVER run on a refused guard or a failed build.
     if: always() && needs.guard.result == 'success' && needs.build.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     # This job WRITES AN ISSUE (the data-gap filing), and issue writes — creating
     # the issue, and applying the `data-gap-analysis` label the whole bot chain
     # triggers on — need `issues: write` on the token that performs them. The
