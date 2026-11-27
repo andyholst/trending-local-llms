@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **604**
+Active changes: **1** · archived: **606**
 
 ## Active changes
 
@@ -100,6 +100,7 @@ Active changes: **1** · archived: **604**
 | `2026-11-26-refresh-bot-pin-token` | archived | #1747 (one of three root causes; this change fixes only the aggregate token) | pending | [hermes-pin-freshness](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/specs/hermes-pin-freshness/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-refresh-bot-pin-token/proposal.md) |
 | `2026-11-26-search-leg-sigpipe-classify` | archived | #1747 (search-leg shape; the buildkit lock and aggregate token are separate) | pending | [no-bare-host-python](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-search-leg-sigpipe-classify/proposal.md) |
 | `2026-11-26-test-image-qemu-handler` | archived | #1747 (test-image root cause; the aggregate token and search-leg SIGPIPE are separate) | pending | [agent-image-publish](openspec/changes/archive/2026-11-26-test-image-qemu-handler/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-26-test-image-qemu-handler/proposal.md) |
+| `2026-11-27-fleet-collaboration-doc-1833` | archived | #1833 | — | [fleet-collaboration](openspec/changes/archive/2026-11-27-fleet-collaboration-doc-1833/specs/fleet-collaboration/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-27-fleet-collaboration-doc-1833/proposal.md) |
 | `2026-11-27-goal-judge-served-pin-1798` | archived | #1798 | #1799 | [auxiliary-judge-route](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/specs/auxiliary-judge-route/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/proposal.md) |
 | `2026-11-27-issue-body-prefile-architect-1814` | archived | #1814 | #1816 | [issue-filing](openspec/changes/archive/2026-11-27-issue-body-prefile-architect-1814/specs/issue-filing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-issue-body-prefile-architect-1814/proposal.md) |
 | `2026-11-27-land-host-ahead-implementer-notes-1817` | archived | #1817 | #1818 | [implementer-lane-notes](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/specs/implementer-lane-notes/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/proposal.md) |

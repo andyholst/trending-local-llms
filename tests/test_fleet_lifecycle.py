@@ -1010,9 +1010,83 @@ def test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule() -> int:
     return failed
 
 
+COLLAB_DOC = ROOT / "docs" / "fleet-collaboration.md"
+AGENTS_README = ROOT / "agents" / "README.md"
+COLLAB_LINK = "../docs/fleet-collaboration.md"
+COLLAB_NEEDLES = (
+    "hermes -p tll-planner chat",
+    "BOT <lane> (host <user>@<hostname>)",
+    "BOT <lane> · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>",
+    "BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> · done <criteria> · handover <next> · answering <comment-id>",
+    "BOT <lane> · pr #<id> · PR #<n> · base <sha> · handover tll-reviewer",
+    "BOT <lane> · reviewing #<id> · PR #<n> · handover <tll-implementer|owner>",
+    "BOT <lane> · done #<id> · handover <...>",
+    "make dispatch-check ISSUE=<n>",
+    "CLAIM_SETTLE_SECONDS",
+    *LANES,
+    "four instances of each delegable lane",
+    "make fleet-host-sync-check BASE=origin/master",
+)
+COLLAB_CADENCE_NEEDLES = (
+    "no Hermes cron in the fleet",
+    "never a cron",
+    "not a timer",
+    "#1834",
+)
+
+
+def test_the_canonical_collaboration_doc_covers_every_lane_and_the_board_protocol() -> int:
+    """Issue #1833: one reader-facing doc names the board, the formats and every lane."""
+    rel = COLLAB_DOC.relative_to(ROOT)
+    if not COLLAB_DOC.is_file():
+        print(f"FAIL {rel} missing")
+        return 1
+    text = COLLAB_DOC.read_text(encoding="utf-8")
+    failed = 0
+    for needle in COLLAB_NEEDLES:
+        if needle not in text:
+            print(f"FAIL {rel} does not name {needle!r}")
+            failed += 1
+    return failed
+
+
+def test_agents_readme_points_at_the_canonical_collaboration_doc() -> int:
+    """Issue #1833: the short 18-line table is a pointer, not a second source of truth."""
+    rel = AGENTS_README.relative_to(ROOT)
+    if not AGENTS_README.is_file():
+        print(f"FAIL {rel} missing")
+        return 1
+    text = AGENTS_README.read_text(encoding="utf-8")
+    if COLLAB_LINK not in text:
+        print(f"FAIL {rel} does not cross-link {COLLAB_LINK!r}")
+        return 1
+    if "canonical" not in text:
+        print(f"FAIL {rel} does not call the doc canonical")
+        return 1
+    return 0
+
+
+def test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer() -> int:
+    """Issue #1833/#1834: the weekly pass is work the planner does, not a cron."""
+    rel = COLLAB_DOC.relative_to(ROOT)
+    if not COLLAB_DOC.is_file():
+        print(f"FAIL {rel} missing")
+        return 1
+    text = COLLAB_DOC.read_text(encoding="utf-8")
+    failed = 0
+    for needle in COLLAB_CADENCE_NEEDLES:
+        if needle not in text:
+            print(f"FAIL {rel} does not keep the cadence-not-timer boundary ({needle!r})")
+            failed += 1
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
+        test_the_canonical_collaboration_doc_covers_every_lane_and_the_board_protocol,
+        test_agents_readme_points_at_the_canonical_collaboration_doc,
+        test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer,
         test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule,
         test_the_planner_mirror_carries_the_owner_style_and_pr_gate_notes,
         test_fourth_batch_host_ahead_notes_are_landed,
