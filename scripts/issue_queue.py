@@ -78,6 +78,7 @@ BRANCH_PREFIX = "ci/data-gap-"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bot_markers as bm  # noqa: E402
+import dispatch_guard as dg  # noqa: E402  (the ONE thread-claim parser, rule 6d / issue #1801)
 import pr_closure  # noqa: E402  (the ONE closing-keyword parser, rule 6d)
 from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 
@@ -322,6 +323,18 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
     for issue in _issues(repo, label):
         number = int(issue["number"])
         labels = {l.get("name") for l in issue.get("labels") or []}
+        comments = _comments(repo, number)
+        # A host fleet lane claims an issue on its OWN thread with a signed
+        # `BOT <lane> · working on #<n>` marker BEFORE it cuts a branch (rules
+        # 6u/7b). Read that claim through the ONE parser (rule 6d) so a sweep
+        # cannot pick an issue another lane already holds (issue #1801). A
+        # RELEASE marker (`done`/`pr`/`reviewing`) clears the claim, and a claim
+        # older than the window releases it — a cancelled lane may not park
+        # the issue for ever.
+        claim = dg.active_claim(dg.normalize_comments(comments), str(number))
+        claim_ts = parse_ts(claim.get("created")) if claim else None
+        claim_fresh = (bool(claim_ts)
+                       and (now - claim_ts) < dt.timedelta(hours=gap_hours))
         branch = None
         for name in sorted(refs):
             if name.startswith(f"{BRANCH_PREFIX}{number}-"):
@@ -331,11 +344,10 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
         closing_pull = next((p for p in pulls
                              if _is_open(p) and _closes_issue(p, number)), None)
         has_implementer = (bool(branch) or _is_open(pull)
-                           or bool(closing_pull))
+                           or bool(closing_pull) or claim_fresh)
         if has_implementer:
             continue
 
-        comments = _comments(repo, number)
         start_ts = newest([parse_ts(c.get("createdAt")) for c in comments
                            if bm.read_marker(c.get("body") or "", "issue-bot", "start")])
         start_marker_ts = newest([bm.ts_of(c.get("body") or "", "issue-bot", "start")
