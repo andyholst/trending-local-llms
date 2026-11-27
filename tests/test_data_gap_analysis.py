@@ -501,7 +501,7 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
     # from the post the #468 seam REFUSED as measuring `Qwen 3.5 35B`, and the guard test
     # above proves the reader once flagged it from that refused post's prose.
     check("real store: an untraceable stated figure is its own class, not 'unstructured'",
-          report["untraceable"]["context_tokens"] == ["gemma-4-12b", "qwen-3.6-27b"]
+          set(report["untraceable"]["context_tokens"]) == {"gemma-4-12b", "qwen-3.6-27b"}
           and "gemma-4-12b" not in report["unstructured"]["context_tokens"]
           and "qwen-3.6-27b" not in report["unstructured"]["context_tokens"],
           str(report["untraceable"]["context_tokens"]))
