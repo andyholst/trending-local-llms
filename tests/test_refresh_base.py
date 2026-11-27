@@ -91,6 +91,11 @@ def fixture(tmp: Path) -> dict:
     for ledger in ("measurements.json", "posts.json", "refusals.json"):
         (seed / "data" / ledger).write_text(f'{{"{ledger}": "base"}}\n')
     (seed / "data" / "gap_baseline.json").write_text('{"signature": "base"}\n')
+    # The pin recorder's fixture is TRACKED in the real repo; seed it so a sync onto a
+    # moved base can only keep the newly recorded payload via KEEP_PATHS (issue #1828).
+    fixtures = seed / "tests" / "fixtures"
+    fixtures.mkdir(parents=True, exist_ok=True)
+    (fixtures / "hermes_releases_latest.json").write_text('{"tag_name": "v0.23.2"}\n')
     git(["add", "-A"], seed)
     git(["commit", "-qm", "base"], seed)
     git(["branch", "-m", "master"], seed)
@@ -225,6 +230,46 @@ def test_generated_paths_cover_every_store_path_update_trending_writes(tmp: Path
           not missing, (missing, refresh_base.GENERATED_PATHS))
 
 
+def test_sync_accepts_and_keeps_a_recorded_channel_fixture(tmp: Path) -> None:
+    """A pin raise rewrites the recorder's fixture before `refresh-sync` runs. The
+    fixture is a generated path (#1828), and its freshly recorded payload must survive
+    the reset — otherwise the recorded channel response never lands in the refresh PR."""
+    fx = fixture(tmp)
+    ci, seed = fx["ci"], fx["seed"]
+    recorded = ci / "tests" / "fixtures" / "hermes_releases_latest.json"
+    new_payload = '{"tag_name": "v0.23.3"}\n'
+    recorded.write_text(new_payload)
+    advance(seed, "merged while the legs searched\n")
+    proc = run_script("sync", ci)
+    check("sync: a tree dirty only in the recorded fixture is accepted (no REFUSED)",
+          proc.returncode == 0, (proc.returncode, proc.stderr))
+    check("sync: it reports sync=reset on the fetched tip",
+          "sync=reset" in proc.stdout, proc.stdout)
+    check("sync: the newly recorded payload survives the reset (a pin raise lands in the PR)",
+          recorded.read_text() == new_payload, recorded.read_text())
+
+
+def test_generated_paths_cover_the_hermes_pin_channel_recorder_fixture(tmp: Path) -> None:
+    """Derive the path from the recorder's own Makefile seam — never re-type it — so a
+    future recorder output cannot drift out of the allow-list again (#997 class)."""
+    recipe = next((line for line in MAKEFILE.splitlines()
+                   if line.startswith("hermes-pin-channel-record:")), "")
+    paths = re.findall(r"tests/fixtures/[A-Za-z0-9_.-]+\.json", recipe)
+    check("recorder guard: the Makefile names exactly one default fixture path",
+          bool(recipe) and len(set(paths)) == 1, (recipe, paths))
+    if len(set(paths)) != 1:
+        return
+    fixture_path = paths[0]
+    check("recorder guard: the recorder's fixture is GENERATED (sync accepts it)",
+          fixture_path in refresh_base.GENERATED_PATHS,
+          (fixture_path, refresh_base.GENERATED_PATHS))
+    check("recorder guard: the recorder's fixture is KEPT (a pin raise lands its payload)",
+          fixture_path in refresh_base.KEEP_PATHS,
+          (fixture_path, refresh_base.KEEP_PATHS))
+    check("recorder guard: a foreign scripts/ edit is still refused",
+          not refresh_base._generated("scripts/some_guard.py"), "")
+
+
 def test_sync_refuses_a_head_with_its_own_commits(tmp: Path) -> None:
     fx = fixture(tmp)
     ci, seed = fx["ci"], fx["seed"]
@@ -327,6 +372,8 @@ def main() -> int:
         test_sync_refuses_a_dirty_path_a_refresh_does_not_generate(tmp / "c3")
         test_sync_accepts_a_tree_dirty_only_in_the_ledger_stores(tmp / "c3b")
         test_generated_paths_cover_every_store_path_update_trending_writes(tmp / "c3c")
+        test_sync_accepts_and_keeps_a_recorded_channel_fixture(tmp / "c3d")
+        test_generated_paths_cover_the_hermes_pin_channel_recorder_fixture(tmp / "c3e")
         test_sync_refuses_a_head_with_its_own_commits(tmp / "c4")
         test_require_tip_fails_on_a_branch_behind_the_fetched_base(tmp / "c5")
         test_require_tip_passes_after_the_tree_is_synced(tmp / "c6")

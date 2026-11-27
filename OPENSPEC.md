@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **600**
+Active changes: **1** · archived: **601**
 
 ## Active changes
 
@@ -103,6 +103,7 @@ Active changes: **1** · archived: **600**
 | `2026-11-27-goal-judge-served-pin-1798` | archived | #1798 | #1799 | [auxiliary-judge-route](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/specs/auxiliary-judge-route/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-27-goal-judge-served-pin-1798/proposal.md) |
 | `2026-11-27-issue-body-prefile-architect-1814` | archived | #1814 | #1816 | [issue-filing](openspec/changes/archive/2026-11-27-issue-body-prefile-architect-1814/specs/issue-filing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-issue-body-prefile-architect-1814/proposal.md) |
 | `2026-11-27-land-host-ahead-implementer-notes-1817` | archived | #1817 | #1818 | [implementer-lane-notes](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/specs/implementer-lane-notes/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-land-host-ahead-implementer-notes-1817/proposal.md) |
+| `2026-11-27-refresh-fixture-generated-paths-1828` | archived | #1828 | #1829 | [refresh-sync](openspec/changes/archive/2026-11-27-refresh-fixture-generated-paths-1828/specs/refresh-sync/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-27-refresh-fixture-generated-paths-1828/proposal.md) |
 | `2026-11-27-scrub-run-attach-stdin` | archived | #1808 | #1819 | [agent-stream-redaction](openspec/changes/archive/2026-11-27-scrub-run-attach-stdin/specs/agent-stream-redaction/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-27-scrub-run-attach-stdin/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
