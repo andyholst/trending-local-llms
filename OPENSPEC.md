@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **610**
+Active changes: **1** · archived: **611**
 
 ## Active changes
 
@@ -461,6 +461,7 @@ Active changes: **1** · archived: **610**
 | `pr-blockage-subset-dedup` | archived | #1565 | #1571 | [pr-blockage-grouping](openspec/changes/archive/pr-blockage-subset-dedup/specs/pr-blockage-grouping/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-blockage-subset-dedup/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
+| `pr-closes-title-and-body-1838` | archived | #1838 | #1842 | [fleet-collaboration](openspec/changes/archive/pr-closes-title-and-body-1838/specs/fleet-collaboration/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-closes-title-and-body-1838/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |
 | `pr-exercises-every-pipeline` | archived | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/archive/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-exercises-every-pipeline/proposal.md) |
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
