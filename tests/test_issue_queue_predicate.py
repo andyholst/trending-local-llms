@@ -188,6 +188,92 @@ def test_the_queue_plants_ghs_real_open_spelling() -> None:
           seam.count('get("state")') == 1 and "def _is_open" in seam, "")
 
 
+def _stub_gh_claims(tmp: Path, comments: list[dict]) -> None:
+    """A stub `gh` serving one issue's thread comments; only the external CLI is faked."""
+    bin_dir = tmp / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    script = bin_dir / "gh"
+    script.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "a = sys.argv[1:]\n"
+        f"COMMENTS = {json.dumps(comments)}\n"
+        "if a[:1] == ['issue'] and 'list' in a:\n"
+        "    print(json.dumps([{'number': 1176, 'createdAt': '2026-11-20T13:50:49Z',\n"
+        "                       'labels': [{'name': 'tech-debt'}]}]))\n"
+        "elif a[:1] == ['api'] and any('/comments' in x for x in a):\n"
+        "    print(json.dumps(COMMENTS))\n"
+        "else:\n"
+        "    print('[]')\n",
+        encoding="utf-8",
+    )
+    script.chmod(script.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    os.environ["PATH"] = f"{bin_dir}:{os.environ['PATH']}"
+
+
+_FRESH_CLAIM = (
+    "BOT tll-implementer (host asimov@omarchy) · working on #1176 · next tll-reviewer"
+)
+_RELEASE = "BOT tll-implementer (host asimov@omarchy) · done #1176 · handover tll-reviewer"
+_NOW = dt.datetime(2026, 11, 27, 12, 0, tzinfo=dt.timezone.utc)
+
+
+def _claim(body: str, created: str) -> dict:
+    return {"createdAt": created, "body": body}
+
+
+def test_a_thread_claim_hides_an_issue_from_the_sweep() -> None:
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh_claims(Path(d), [_claim(_FRESH_CLAIM, "2026-11-27T11:30:00Z")])
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3, _NOW)
+        check("a fresh signed thread claim removes the issue from the pick order",
+              all(r["issue"] != 1176 for r in rows), str(rows))
+
+
+def test_a_stale_thread_claim_releases_the_issue() -> None:
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh_claims(Path(d), [_claim(_FRESH_CLAIM, "2026-11-20T11:30:00Z")])
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3, _NOW)
+        check("a claim older than the gap releases the issue",
+              any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
+
+
+def test_a_released_thread_claim_does_not_hide_the_issue() -> None:
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh_claims(Path(d), [
+            _claim(_FRESH_CLAIM, "2026-11-27T11:30:00Z"),
+            _claim(_RELEASE, "2026-11-27T11:45:00Z"),
+        ])
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3, _NOW)
+        check("a signed release clears the thread claim",
+              any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
+
+
+def test_a_claim_on_another_issue_does_not_hide_this_one() -> None:
+    other = _FRESH_CLAIM.replace("#1176", "#1175")
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh_claims(Path(d), [_claim(other, "2026-11-27T11:30:00Z")])
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3, _NOW)
+        check("a claim naming another issue does not hide this one",
+              any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
+
+
+def test_the_one_claim_parser_is_reused_not_a_hand_rolled_regex() -> None:
+    seam = (ROOT / "scripts" / "issue_queue.py").read_text(encoding="utf-8")
+    check("the queue reads the ONE claim seam",
+          "dg.active_claim(" in seam and "dg.normalize_comments(" in seam, "")
+    check("no second claim marker grammar is compiled in the queue",
+          not any("working on" in line for line in seam.splitlines()
+                  if "re.compile" in line), "")
+    dg = getattr(q, "dg", None)
+    if dg is None:  # the base script: refuse cleanly, never abort the module
+        check("the claim grammar has ONE home", False, "issue_queue has no dispatch_guard seam")
+        return
+    markers = dg.comment_markers(_FRESH_CLAIM)
+    check("the ONE parser reads the fleet claim shape",
+          any(m["kind"] == "working on" and m["issue"] == 1176 for m in markers), str(markers))
+
+
 def main() -> int:
     test_a_fix_prefixed_closing_pr_is_an_implementer()
     test_a_pr_without_a_closing_binding_stays_in_the_queue()
@@ -196,6 +282,11 @@ def main() -> int:
     test_an_open_closing_pr_survives_a_window_of_closed_prs()
     test_the_one_closure_parser_is_used_not_a_hand_rolled_regex()
     test_the_queue_plants_ghs_real_open_spelling()
+    test_a_thread_claim_hides_an_issue_from_the_sweep()
+    test_a_stale_thread_claim_releases_the_issue()
+    test_a_released_thread_claim_does_not_hide_the_issue()
+    test_a_claim_on_another_issue_does_not_hide_this_one()
+    test_the_one_claim_parser_is_reused_not_a_hand_rolled_regex()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
