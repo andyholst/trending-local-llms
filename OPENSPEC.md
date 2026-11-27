@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **613**
+Active changes: **1** · archived: **614**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `readme-vram-badge-bridge-1850` | active | #1850 | — | [readme-trending](openspec/changes/readme-vram-badge-bridge-1850/specs/readme-trending/spec.md) | 6/6 | [proposal.md](openspec/changes/readme-vram-badge-bridge-1850/proposal.md) |
 
 ## Archived changes
 
@@ -495,6 +494,7 @@ Active changes: **2** · archived: **613**
 | `r-marker-workflow-1288` | archived | #1288 | #1293 | [fleet-watch](openspec/changes/archive/r-marker-workflow-1288/specs/fleet-watch/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/r-marker-workflow-1288/proposal.md) |
 | `raw-quarantine-underivable-models` | archived | #381 | — | [raw-snapshot-quarantine](openspec/changes/archive/raw-quarantine-underivable-models/specs/raw-snapshot-quarantine/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/raw-quarantine-underivable-models/proposal.md) |
 | `readme-bot-cadence-863` | archived | #863 | #930 | [validation](openspec/changes/archive/readme-bot-cadence-863/specs/validation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/readme-bot-cadence-863/proposal.md) |
+| `readme-vram-badge-bridge-1850` | archived | #1850 | #1851 | [readme-trending](openspec/changes/archive/readme-vram-badge-bridge-1850/specs/readme-trending/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/readme-vram-badge-bridge-1850/proposal.md) |
 | `real-pick-prints-one-line` | archived | #578 | — | [issue-queue](openspec/changes/archive/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/real-pick-prints-one-line/proposal.md) |
 | `rebase-pushes-with-owner-pat` | archived | #1115 | #1116 | [alarms](openspec/changes/archive/rebase-pushes-with-owner-pat/specs/alarms/spec.md)<br>[merge-queue-rebase](openspec/changes/archive/rebase-pushes-with-owner-pat/specs/merge-queue-rebase/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/rebase-pushes-with-owner-pat/proposal.md) |
 | `rebase-step-ci-diagnosis-1646` | archived | #1646 | #1665 | [rebase-ci-diagnosis](openspec/changes/archive/rebase-step-ci-diagnosis-1646/specs/rebase-ci-diagnosis/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/rebase-step-ci-diagnosis-1646/proposal.md) |

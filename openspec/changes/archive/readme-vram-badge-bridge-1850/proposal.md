@@ -1,6 +1,7 @@
 # Proposal: readme-vram-badge-bridge-1850
 
 Issue: #1850
+PR: #1851
 
 ## Why
 
