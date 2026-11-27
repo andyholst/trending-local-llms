@@ -1,6 +1,7 @@
 # Proposal: ghost-run-head-visibility-1797
 
 Issue: #1797
+PR: #1803
 
 ## Why
 
