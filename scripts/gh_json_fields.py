@@ -401,7 +401,7 @@ API_PYTHON_FIELDS: dict[object, frozenset[str]] = {
                                    "id", "status", "started_at", "conclusion"}),
     ("issues", "pulls", "actions/runs", "commits"): frozenset({
         "workflow_runs", "head_branch", "event", "pull_requests", "number", "id",
-        "status", "conclusion", "name", "sha", "body"}),
+        "status", "conclusion", "name", "sha", "body", "jobs"}),
     ("actions/runs/{}", "actions/runs/{}/jobs"): frozenset({
         "html_url", "run_started_at", "jobs", "name", "started_at"}),
 }
@@ -451,7 +451,8 @@ API_PYTHON_READ_SITES: tuple[ApiPythonReadSite, ...] = (
                       ("payload", "runs_payload", "run"), ("rows", "r"),
                       ("marker_state", "pull_token", "inject_run_prs"),
                       frozenset({"workflow_runs", "head_branch", "event", "pull_requests",
-                                 "number", "id", "status", "conclusion", "name", "sha"}),
+                                 "number", "id", "status", "conclusion", "name", "sha",
+                                 "jobs"}),
                       exclude=frozenset({"comments", "runs", "master", "run_prs",
                                          "COMMENTS_V2_KEY"})),
     ApiPythonReadSite("refresh_run_block.py", "fetch",

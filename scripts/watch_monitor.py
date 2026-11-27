@@ -6,6 +6,7 @@ changed markers, with no timestamps and no random ordering:
 
     C:<comment id>                       a new issue/PR comment
     R:<run id>:<status>:<conclusion>[:<workflow>][:<pr>]  a CI run changed state
+    G:<run id>:<pr>                      a GHOST PR run: completed with zero jobs (#1797)
     M:<master sha>                       master moved (a merge or a push)
     H:<bucket>                           opt-in work heartbeat (--heartbeat-seconds N)
     S:<issue>:<claim-id>:stale|released  a claim became stale / was released (#1620)
@@ -13,6 +14,12 @@ changed markers, with no timestamps and no random ordering:
 An `R:` marker names its PR when the run has one (issue #1284), so a woken lane can read
 that PR's own thread before acting instead of guessing which thread a run id belongs to. A
 push-triggered run carries no `pull_requests` and keeps the shorter shape.
+
+A `G:` marker is the board-visible half of issue #1797: a zero-job `action_required` run on
+an open PR used to sit UNSTABLE with no issue and no `R:` duty (rule 6w files only concluded
+`failure`), so neither host could tell "never started" from "slow". The ghost decision is the
+ONE in `ghost_run_alarm.ghost_verdict` (rule 6d); the marker carries the PR identity, fires
+once per run, and points the lane at the owner-identity re-push remedy in `ghost_run_alarm`.
 
 GitHub CLEARS a run's `pull_requests` once its PR merges and the branch is deleted (measured
 2026-11-23: run `45085274450` on the merged PR #1350's old head answered `pull_requests: []`
@@ -56,8 +63,15 @@ import sys
 import time
 from pathlib import Path
 
+from ghost_run_alarm import ghost_verdict  # noqa: E402  (scripts/ is on sys.path; ONE ghost decision, rule 6d)
+
 DEFAULT_REPO = "andyholst/trending-local-llms"
-MARKER_PREFIXES = ("C:", "R:", "M:", "H:", "S:")
+MARKER_PREFIXES = ("C:", "R:", "G:", "M:", "H:", "S:")
+
+# The per-tick cap on job reads for ghost detection (issue #1797). A ghost is a COMPLETED
+# `action_required` run, so only those runs need a jobs read; an unreadable one contributes
+# no jobs entry and therefore no G marker, never a guess that wakes both hosts.
+GHOST_JOBS_MAX = 10
 
 # The per-tick cap on branch→PR resolutions (issue #1364). A tick that follows a burst of
 # merges can carry many PR runs whose `pull_requests` GitHub has already cleared; resolving
@@ -195,6 +209,12 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
         state["comments"][kind] = max([seen] + ids) if ids else seen
 
     prev_runs = previous.get("runs", {}) if isinstance(previous.get("runs"), dict) else {}
+    raw_ghosts = previous.get("ghosts")
+    prev_ghosts: dict = raw_ghosts if isinstance(raw_ghosts, dict) else {}
+    state["ghosts"] = {str(k): str(v) for k, v in prev_ghosts.items()}
+    raw_jobs = payload.get("jobs")
+    jobs_by_run: dict = ({str(k): v for k, v in raw_jobs.items()}
+                         if isinstance(raw_jobs, dict) else {})
     for run in as_list(payload.get("runs")):
         run_id = run.get("id")
         if not isinstance(run_id, int):
@@ -212,6 +232,16 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
         state["runs"][str(run_id)] = stamp
         if prev_runs.get(str(run_id)) != stamp:
             lines.append(f"R:{run_id}:{stamp}")
+        jobs = jobs_by_run.get(str(run_id))
+        # Reuse the alarm's ONE ghost verdict (rule 6d), then narrow to the measured
+        # zero-job shape from #1797: an action_required run that DID start has its own
+        # duty and must not wake both hosts as a never-started head.
+        if isinstance(jobs, list) and not jobs and ghost_verdict(run, jobs):
+            state["ghosts"][str(run_id)] = pr or "-"
+            # A ghost is board-visible ONCE per run, and only with a PR identity: a lane
+            # must be able to name the PR whose head never started (issue #1797).
+            if pr and str(run_id) not in prev_ghosts:
+                lines.append(f"G:{run_id}:{pr}")
 
     master = payload.get("master")
     master_sha = master.get("sha") if isinstance(master, dict) else None
@@ -248,6 +278,34 @@ def gh_client() -> str:
     return shutil.which("gh") or os.environ.get("TLL_GH", "gh")
 
 
+def fetch_ghost_jobs(repo: str, client: str, runs: list[dict]) -> dict[str, list]:
+    """Read the jobs of completed `action_required` PR runs — the evidence a G marker needs.
+
+    Capped at GHOST_JOBS_MAX so a burst of stuck heads cannot turn one detector tick into a
+    request storm; an unreadable run contributes no entry, so the monitor never guesses that
+    a PR is blocked (issue #1797). The explicit `client` is the one the caller pinned.
+    """
+    jobs: dict[str, list] = {}
+    targets = [r for r in runs
+               if r.get("status") == "completed" and r.get("conclusion") == "action_required"
+               and isinstance(r.get("id"), int)][:GHOST_JOBS_MAX]
+    for run in targets:
+        run_id = run["id"]
+        proc = subprocess.run(
+            [client, "api", f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"],
+            capture_output=True, text=True, timeout=40, check=False)
+        if proc.returncode != 0:
+            continue
+        try:
+            data = json.loads(proc.stdout)
+        except ValueError:
+            continue
+        rows = data.get("jobs") if isinstance(data, dict) else None
+        if isinstance(rows, list):
+            jobs[str(run_id)] = rows
+    return jobs
+
+
 def fetch_payload(repo: str, client: str) -> dict:
     def get(path: str) -> object:
         proc = subprocess.run([client, "api", f"repos/{repo}/{path}"],
@@ -277,7 +335,8 @@ def fetch_payload(repo: str, client: str) -> dict:
         # Keep the caller's gh (the explicit --gh path in the stripped cron env): a second
         # gh_client() lookup here would silently drop it for the resolution leg.
         runs = inject_run_prs(runs, resolve_branch_prs(repo, client, missing))
-    return {"comments": comments, "runs": runs, "master": get("commits/master")}
+    return {"comments": comments, "runs": runs, "master": get("commits/master"),
+            "jobs": fetch_ghost_jobs(repo, client, runs)}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -296,14 +355,17 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.check:
-        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:", "H:", "S:")):
+        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "G:", "M:", "H:", "S:")):
             print("CHECK FAILED: marker prefixes changed", file=sys.stderr)
+            return 2
+        if ghost_verdict({"status": "completed", "conclusion": "action_required"}, []) is not True:
+            print("CHECK FAILED: the ghost decision drifted from ghost_run_alarm", file=sys.stderr)
             return 2
         if args.claim_settle_seconds < CLAIM_SETTLE_FLOOR_SECONDS:
             print(f"CHECK FAILED: the claim settle window {args.claim_settle_seconds}s is below "
                   f"the {CLAIM_SETTLE_FLOOR_SECONDS}s floor", file=sys.stderr)
             return 2
-        print(f"[watch-monitor] OK: C/R/M/H/S markers, caller-owned state, no timestamps; "
+        print(f"[watch-monitor] OK: C/R/G/M/H/S markers, caller-owned state, no timestamps; "
               f"claim settle window {args.claim_settle_seconds}s "
               f"(floor {CLAIM_SETTLE_FLOOR_SECONDS}s)")
         return 0

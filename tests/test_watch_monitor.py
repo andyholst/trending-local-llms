@@ -151,6 +151,7 @@ def test_r_marker_carries_workflow_name() -> None:
 
 def test_offline_check_mode() -> None:
     print("\nOffline check: no network, no state file")
+    check("G is a legal detector-marker prefix", "G:" in W.MARKER_PREFIXES, "")
     check("H is a legal marker prefix", "H:" in W.MARKER_PREFIXES, "")
     check("S is a legal detector-marker prefix", "S:" in W.MARKER_PREFIXES, "")
     check("the module docstring lists the S marker",
@@ -505,6 +506,75 @@ def test_the_rulebook_requires_filing_a_red_pipeline() -> None:
     check("the filer seam is a make target", "pipeline-failure-issue:" in makefile, "")
 
 
+def test_ghost_marker_names_the_pr_and_fires_once() -> None:
+    """Issue #1797: a zero-job action_required PR head is board-visible to both hosts."""
+    print("\nGhost marker: the never-started head names its PR once")
+    p = payload(conclusion="action_required")
+    p["runs"][0]["name"] = "qa-validate"
+    p["runs"][0]["event"] = "pull_request"
+    p["runs"][0]["pull_requests"] = [{"number": 1770}]
+    p["jobs"] = {7: []}
+    lines, state = W.marker_state({}, p)
+    check("G marker names the PR", "G:7:1770" in lines, str(lines))
+    check("the R marker keeps its unchanged shape",
+          any(line.startswith("R:7:completed:action_required") for line in lines), str(lines))
+    again, state2 = W.marker_state(state, p)
+    check("a known ghost does not re-wake the lane every tick",
+          "G:7:1770" not in again, str(again))
+    check("the ghost is remembered in caller-owned state",
+          str(state2.get("ghosts", {}).get("7")) == "1770", str(state2))
+
+
+def test_ghost_marker_needs_zero_jobs_and_a_pr() -> None:
+    """No job evidence and no PR identity: no marker, never a guess that wakes a lane."""
+    print("\nGhost marker: evidence and PR identity are both required")
+    with_jobs = payload(conclusion="action_required")
+    with_jobs["runs"][0]["pull_requests"] = [{"number": 1770}]
+    with_jobs["jobs"] = {7: [{"id": 1}]}
+    lines, _ = W.marker_state({}, with_jobs)
+    check("a run with jobs is not a ghost", not any(x.startswith("G:") for x in lines), str(lines))
+    no_pr = payload(conclusion="action_required")
+    no_pr["jobs"] = {7: []}
+    lines2, _ = W.marker_state({}, no_pr)
+    check("a ghost with no PR emits nothing", not any(x.startswith("G:") for x in lines2), str(lines2))
+    no_jobs = payload(conclusion="action_required")
+    no_jobs["runs"][0]["pull_requests"] = [{"number": 1770}]
+    lines3, _ = W.marker_state({}, no_jobs)
+    check("a run without a jobs read emits nothing",
+          not any(x.startswith("G:") for x in lines3), str(lines3))
+
+
+def test_fetch_ghost_jobs_reads_only_action_required_heads() -> None:
+    """The detector reads jobs only where a ghost can be, on the caller's explicit gh."""
+    print("\nGhost job reads: capped, explicit client, no guess on a failed read")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        log = tmp / "jobs.log"
+        stub = tmp / "gh"
+        stub.write_text('''#!/usr/bin/env python3
+import json, sys
+args = sys.argv[1:]
+with open(__LOG__, "a", encoding="utf-8") as fh:
+    fh.write(" ".join(args[:2]) + "\\n")
+parts = args[1].split("?")[0].split("/")
+run_id = parts[parts.index("runs") + 1] if "runs" in parts else ""
+if run_id == "9":
+    sys.exit(1)
+print(json.dumps({"jobs": [] if run_id == "7" else [{"id": 1}]}))
+'''.replace("__LOG__", repr(str(log))), encoding="utf-8")
+        stub.chmod(0o755)
+        runs = [
+            {"id": 7, "status": "completed", "conclusion": "action_required"},
+            {"id": 8, "status": "completed", "conclusion": "success"},
+            {"id": 9, "status": "completed", "conclusion": "action_required"},
+        ]
+        jobs = W.fetch_ghost_jobs("o/r", str(stub), runs)
+        calls = log.read_text(encoding="utf-8")
+    check("only action_required heads are read", calls.count("/actions/runs/") == 2, calls)
+    check("a failed jobs read contributes no evidence", "9" not in jobs, str(jobs))
+    check("a zero-job head is recorded", jobs.get("7") == [], str(jobs))
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
     test_fetch_payload_keeps_the_explicit_gh_client()
@@ -526,6 +596,9 @@ def main() -> int:
     test_offline_check_mode()
     test_the_rulebook_names_the_claim_settle_window()
     test_the_offline_contract_pins_the_settle_floor()
+    test_ghost_marker_names_the_pr_and_fires_once()
+    test_ghost_marker_needs_zero_jobs_and_a_pr()
+    test_fetch_ghost_jobs_reads_only_action_required_heads()
     print(f"\nPASSED {_passed} | FAILED {_failed}")
     return 0 if _failed == 0 else 1
 
