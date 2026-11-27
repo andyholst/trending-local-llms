@@ -217,6 +217,7 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
     local_provider_needle = f"provider: {F.local_provider(chain)}"
     local_endpoint_needle = f"base_url: {F.local_endpoint(chain)}"
     fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
+    fb = re.split(r"(?m)^[A-Za-z_][\w-]*:", fb, maxsplit=1)[0]
     models = re.findall(r"(?m)^    model: (\S+)", fb)
     check("fallback_providers lists every non-primary step in chain order",
           models == F.fallback_models(chain), str(models))
@@ -235,6 +236,29 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
     check("the local alias block carries its own provider/base_url and NO key_env",
           local_provider_needle in alias_block and local_endpoint_needle in alias_block
           and "key_env" not in alias_block, alias_block)
+
+
+def test_the_rendered_goal_judge_pins_the_served_local_model():
+    """Issue #1798: goal_judge uses the chain's local model and a Nous fallback_chain.
+
+    An explicit auxiliary provider does not walk fallback_providers, so the rendered
+    judge repeats the remote hops and leaves model.default on the free primary.
+    """
+    chain = _chain_json(ROOT)
+    text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
+    judge = text.split("auxiliary:", 1)[1] if "auxiliary:" in text else ""
+    judge = re.split(r"(?m)^[A-Za-z_][\w-]*:", judge, maxsplit=1)[0]
+    hops = [e["model"] for e in chain["chain"] if e["role"] not in ("primary", "local_fallback")]
+    hop_models = re.findall(r"(?m)^        model: (\S+)", judge)
+    check("goal_judge is present and pinned to the chain's local model",
+          "goal_judge:" in judge
+          and f"model: {F.local_model(chain)}" in judge
+          and f"provider: {F.local_provider(chain)}" in judge
+          and f"base_url: {F.local_endpoint(chain)}" in judge, judge[:400])
+    check("goal_judge fallback_chain is the remote hops, with no key_env",
+          hop_models == hops and "key_env" not in judge, str(hop_models))
+    check("model.default stays the free primary",
+          F.default_line(chain) in text.split("model_aliases:", 1)[0], text[:200])
 
 
 def test_local_tier_fixtures_follow_the_chain_not_a_frozen_snapshot():
@@ -498,6 +522,7 @@ def main() -> int:
     test_the_local_tier_is_guarded_like_every_other_tier()
     test_a_nous_step_carrying_base_url_or_key_env_is_refused()
     test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias()
+    test_the_rendered_goal_judge_pins_the_served_local_model()
     test_local_tier_fixtures_follow_the_chain_not_a_frozen_snapshot()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()

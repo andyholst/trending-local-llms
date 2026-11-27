@@ -347,7 +347,43 @@ def render_text(chain: Chain) -> str:
             lines.append(f"    base_url: {e.base_url}")
         if e.role != "local_fallback" and e.key_env:
             lines.append(f"    key_env: {e.key_env}")
+    lines.extend(_goal_judge_lines(chain))
     return "\n".join(lines) + "\n"
+
+
+def _goal_judge_lines(chain: Chain) -> list[str]:
+    """Pin the goal judge to the served local model, with a Nous fallback_chain.
+
+    An explicit auxiliary provider does not walk top-level ``fallback_providers``
+    (Hermes ``auxiliary_client``). The judge therefore repeats the chain's remote
+    hops. A ``nous`` hop carries only provider and model (issue #1203). Issue #1798.
+    """
+    local = chain.local_fallback
+    if local is None:
+        return []
+    hops = [e for e in chain.entries if e.role not in ("primary", "local_fallback")]
+    lines = [
+        "",
+        "# The goal judge is pinned to the local tier this chain already measured.",
+        "# An explicit auxiliary provider does not walk fallback_providers, so the",
+        "# remote hops are repeated here as fallback_chain (issue #1798). A nous",
+        "# hop carries ONLY provider and model (issue #1203).",
+        "auxiliary:",
+        "  goal_judge:",
+        f"    provider: {local.provider}",
+        f"    model: {local.model}",
+    ]
+    if local.base_url:
+        lines.append(f"    base_url: {local.base_url}")
+    lines.append("    fallback_chain:")
+    for hop in hops:
+        lines.append(f"      - provider: {hop.provider}")
+        lines.append(f"        model: {hop.model}")
+        if hop.provider != "nous" and hop.base_url:
+            lines.append(f"        base_url: {hop.base_url}")
+        if hop.provider != "nous" and hop.key_env:
+            lines.append(f"        key_env: {hop.key_env}")
+    return lines
 
 
 def lane_append(root: Path, lane: str) -> str:
