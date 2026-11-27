@@ -572,6 +572,25 @@ lands — not after.
 - **Re-read the current head before answering a lane that says it is blocked or waiting for a ruling.** By the time you answer, another host may have pushed the branch, merged the PR, or already recovered the CI. Measure `gh pr view <n> --json state,headRefOid,mergeable`, `gh pr checks <n>`, and the newest issue comment first. Then post ONE explicit ownership ruling on the shared thread — "not handed back, lane X is live" / "handed back, push held head with lease pinned to <sha>" — so nobody force-pushes over a live writer and nobody re-dispatches a finished issue.
 - **A lane a planner cron starts can be hard-interrupted when that cron session ends — verify liveness, then RESUME.** Measured #1495 (2026-11-24): the implementer ran 599 s, cut its worktree and posted its claim, then its profile log recorded `Interrupt requested (hard): explicit stop requested` with NO commit and NO PR, and no `tll-*` process survived. Launch lanes with `terminal(background=true, persist_on_release=true)`, and before trusting that work continues check `ps -p <pid>` AND the lane's `logs/agent.log` for fresh API calls. On death, run `make dispatch-check ISSUE=<n>` and dispatch the bounded RESUME above — never a second implementation.
 
+## Fleet scale + autonomous pick-up
+
+The fleet scales to four instances of each delegable lane — `<lane>`, `<lane>-2`, `<lane>-3` and
+`<lane>-4` — with `tll-planner` a single instance. Instances self-claim from the issue comments:
+read the full thread, take the newest signed state, and only a signed handover moves an item between
+lanes. `make dispatch-check ISSUE=<n>` enforces the active-lane ceiling and refuses overlapping
+claims; post a claim, wait, re-read (claim twice) before writing. Use one worktree and one branch per
+claimed issue, with a lease-checked push. On a master merge, re-fetch, rebase your own open PRs and
+regenerate `OPENSPEC.md` on each head.
+
+## Per-host sync check
+
+The weekly lane-maintenance pass runs the sync check from EACH host, never from CI on a timer:
+`git fetch origin master` then `make fleet-host-sync-check BASE=origin/master`. Capture the fetched
+base sha, report the drift, and file a small `enhancement` issue fixed through `tll-implementer`.
+Never wipe Hermes runtime stamps or byte-copy a host-ahead note to force green. The pass is a cadence
+the owner starts with `hermes -p tll-planner chat` — no Hermes cron, no new Actions `schedule:`; see
+`docs/weekly-lane-maintenance.md` and `docs/fleet-collaboration.md` §5-6.
+
 ## Worktree default (fleet-wide, owner-mandated)
 
 Every tll lane works in **worktrees** created from the **latest fetched `origin/master`** and never in the
