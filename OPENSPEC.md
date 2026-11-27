@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **613**
+Active changes: **1** · archived: **614**
 
 ## Active changes
 
@@ -330,6 +330,7 @@ Active changes: **1** · archived: **613**
 | `hermes-pin-freshness` | archived | #1091 | #1092 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-freshness/specs/hermes-pin-freshness/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/hermes-pin-freshness/proposal.md) |
 | `hermes-pin-raise-to-0-23-2` | archived | #1145 | #1146 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-raise-to-0-23-2/specs/hermes-pin-freshness/spec.md)<br>[hermes-temp-home-teardown](openspec/changes/archive/hermes-pin-raise-to-0-23-2/specs/hermes-temp-home-teardown/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/hermes-pin-raise-to-0-23-2/proposal.md) |
 | `hermes-pin-raise-to-0-23-3` | archived | #1161 | #1162 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-raise-to-0-23-3/specs/hermes-pin-freshness/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/hermes-pin-raise-to-0-23-3/proposal.md) |
+| `host-ahead-lane-skills-1745` | archived | #1745 | #1852 | [fleet-lane-skills](openspec/changes/archive/host-ahead-lane-skills-1745/specs/fleet-lane-skills/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/host-ahead-lane-skills-1745/proposal.md) |
 | `host-fleet-souls` | archived | #682 | #688 | [host-fleet](openspec/changes/archive/host-fleet-souls/specs/host-fleet/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/host-fleet-souls/proposal.md) |
 | `host-python-env-silence-1457` | archived | #1457 | #1461 | [host-artifact-silence](openspec/changes/archive/host-python-env-silence-1457/specs/host-artifact-silence/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/host-python-env-silence-1457/proposal.md) |
 | `host-suite-loud-skip-and-full-red-list` | archived | #890 | #945 | [test-harness](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/specs/test-harness/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/proposal.md) |

@@ -1083,9 +1083,46 @@ def test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer() -> int:
     return failed
 
 
+def test_host_ahead_lane_skill_clauses_are_landed() -> int:
+    """Issue #1745: the owner-authorised host-ahead clauses survive in all three mirrors.
+
+    Each needle is one clause the owner signed off on in-thread (comment 7229469094).
+    A later sync that byte-copies a base blob over a mirror must not silently drop it;
+    this guard reads the REAL tracked skills, no fixture (rule 6m).
+    """
+    clauses = {
+        "agents/tll-planner/skills/tll-planner/SKILL.md": (
+            "Never extend a short sha quoted in a comment into a full one by guessing",
+            "references/data-sync-readback.md",
+            "WITHOUT executing anything locally",
+            "A lane that stops on a measured blocker gets a bounded RESUME",
+            "A DIRTY, far-behind PR gets a bounded RE-CUT",
+            "A running lane never blocks the next dispatch",
+            "While lanes are in flight, the chat gets one line, not a status log",
+            "`make pr-closure PR=<n>` is NOT a supported invocation",
+            "### Rebinding an existing PR to a different issue",
+        ),
+        "agents/tll-implementer/skills/tll-implementer/SKILL.md": (
+            "must be registered in `scripts/master_alarm.py::GATES`",
+            "Replaying an existing PR chain onto a fresh base with cherry-pick",
+        ),
+        "agents/tll-reviewer/skills/tll-reviewer/SKILL.md": (
+            "A lane-SKILL.md rewrite can break a DIFFERENT guard module",
+            "keeps its backticks ESCAPED",
+        ),
+    }
+    failed = 0
+    for rel, needles in clauses.items():
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        for needle in needles:
+            failed += check(needle in text, f"{rel} keeps {needle[:60]!r}")
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
+        test_host_ahead_lane_skill_clauses_are_landed,
         test_the_canonical_collaboration_doc_covers_every_lane_and_the_board_protocol,
         test_agents_readme_points_at_the_canonical_collaboration_doc,
         test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer,
