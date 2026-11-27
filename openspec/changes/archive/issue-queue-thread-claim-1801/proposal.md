@@ -1,6 +1,7 @@
 # Proposal: issue-queue-thread-claim-1801
 
 Issue: #1801
+PR: #1802
 
 ## Why
 

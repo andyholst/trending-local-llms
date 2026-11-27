@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **591**
+Active changes: **1** · archived: **592**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `issue-queue-thread-claim-1801` | active | #1801 | — | [issue-queue-claim](openspec/changes/issue-queue-thread-claim-1801/specs/issue-queue-claim/spec.md) | 5/7 · 1 blocked | [proposal.md](openspec/changes/issue-queue-thread-claim-1801/proposal.md) |
 
 ## Archived changes
 
@@ -338,6 +337,7 @@ Active changes: **2** · archived: **591**
 | `issue-queue-branch-hold` | archived | #647 | — | [issue-queue-hold](openspec/changes/archive/issue-queue-branch-hold/specs/issue-queue-hold/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/issue-queue-branch-hold/proposal.md) |
 | `issue-queue-open-pr-predicate` | archived | #1310 | #1311 | [issue-queue](openspec/changes/archive/issue-queue-open-pr-predicate/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/issue-queue-open-pr-predicate/proposal.md) |
 | `issue-queue-open-pr-window-1324` | archived | #1324 | #1325 | [issue-queue](openspec/changes/archive/issue-queue-open-pr-window-1324/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/issue-queue-open-pr-window-1324/proposal.md) |
+| `issue-queue-thread-claim-1801` | archived | #1801 | #1802 | [issue-queue-claim](openspec/changes/archive/issue-queue-thread-claim-1801/specs/issue-queue-claim/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/issue-queue-thread-claim-1801/proposal.md) |
 | `issue-review-bot` | archived | #179 | — | [issue-review](openspec/changes/archive/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/issue-review-bot/proposal.md) |
 | `issue-triage` | archived | #210 | — | [issue-triage](openspec/changes/archive/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/issue-triage/proposal.md) |
 | `keeper-body-reports-the-run-conclusion` | archived | #1651 | #1658 | [openspec-index](openspec/changes/archive/keeper-body-reports-the-run-conclusion/specs/openspec-index/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/keeper-body-reports-the-run-conclusion/proposal.md) |
