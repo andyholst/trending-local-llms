@@ -491,6 +491,20 @@ openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from o
 openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a change on disk has no row
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --check
 
+# Issue #1822: ONE pure verdict seam for the #1239 merge-tree step. The workflow
+# captures the unmerged paths before its abort and passes git's own SHAs here;
+# only a generated-OPENSPEC.md conflict with a real master advance is retryable.
+# The index check itself is NEVER routed through this seam — it still runs
+# unchanged on the merged tree for both verdicts. Host `_` recipe + docker
+# wrapper through the python-env seam (rule 6d/6m); the leading `@` keeps the
+# verdict the ONLY stdout line so `verdict=$(make …)` in the step is parseable.
+.PHONY: _merge-tree-index-classify merge-tree-index-classify
+_merge-tree-index-classify:
+	@$(PYTHON_RUN) python3 scripts/merge_tree_index.py --conflicts "$(CONFLICTS)" --base-before "$(BASE_BEFORE)" --master-after "$(MASTER_AFTER)"
+
+merge-tree-index-classify: python-env-image ## Classify a merge-tree conflict as GENERATED_ADVANCE (generated index + master moved) or REAL_CONFLICT (issue #1822)
+	@$(MAKE) --no-print-directory _merge-tree-index-classify
+
 # Issue #1634: `--check` only WARNs inside MAX_OPENSPEC_INDEX_DRIFT and exits 0,
 # so a drifted index keeps `validate` GREEN and the event-driven `index-repair`
 # keeper (gated on a RED validate) never wakes. This target reports the SAME

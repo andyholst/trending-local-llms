@@ -81,6 +81,18 @@ GATES: dict[str, tuple[str, str]] = {
     # `tests/test_master_alarm.py` on this PR. It checks the same generated index
     # as `openspec-check`, so the same two keepers repair a stale index on master.
     "openspec-index-check": ("keeper", "qa-validate index-repair + architecture-bot"),
+    # Issue #1822: the merge-tree step's ONE pure classifier runs in `validate`.
+    # It neither checks a regenerated artifact nor writes one, so a red master
+    # goes to the alarm — no keeper regenerates a verdict. Registered because
+    # `validate_gates_from_trees` reads every `make X` the validate job runs;
+    # the unchanged `make openspec-index-check` remains keeper-backed above.
+    "merge-tree-index-classify": ("alarm", "master-alarm"),
+    # Issue #1822: the retry resolves a generated-only conflict with its OWNING
+    # command, `make openspec-index`, on the merged tree. It is a generator, not
+    # a verifier — a failure there has no keeper that regenerates the generator,
+    # so the master-alarm names it. The #1281 extractor sees a real `make X`
+    # command here (an echo literal is excluded), so it must be registered too.
+    "openspec-index": ("alarm", "master-alarm"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
     "fleet-host-sync-check": ("alarm", "master-alarm"),
     # Issue #1464: the reconciliation seam's READ-ONLY half runs in `validate`; it
