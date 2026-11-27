@@ -144,6 +144,27 @@ def refresh_chain(data: dict, live_free: list[dict], stamp: str) -> tuple[dict |
 
     new_data = dict(data)
     new_data["chain"] = new_free + others
+
+    # Issue #1798: every :free chain step must also sit on the goal-judge fallback list, or
+    # `make agent-model-chain-check` refuses the refreshed chain. A weekly refresh that adds
+    # or retires a free id has to keep that alias list in sync with the free steps it just
+    # changed; the paid last-resort alias (and every other non-free alias) survives verbatim.
+    aux = data.get("auxiliary")
+    gj = aux.get("goal_judge") if isinstance(aux, dict) else None
+    fbs = gj.get("fallback_aliases") if isinstance(gj, dict) else None
+    if isinstance(fbs, list):
+        old_free_aliases = {str(e.get("alias")) for e in free_entries}
+        synced = [str(e.get("alias")) for e in new_free] + [
+            str(name) for name in fbs if str(name) not in old_free_aliases
+        ]
+        if synced != [str(name) for name in fbs]:
+            changes.append("goal_judge fallback_aliases synced to the free steps: " + ", ".join(synced))
+            new_gj = dict(gj)
+            new_gj["fallback_aliases"] = synced
+            new_aux = dict(aux)
+            new_aux["goal_judge"] = new_gj
+            new_data["auxiliary"] = new_aux
+
     measured = dict(data.get("measured") or {})
     history = list(measured.get("refresh_history") or [])
     history.append({"at": stamp, "added": [m["id"] for m in added],
