@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **609**
+Active changes: **1** · archived: **610**
 
 ## Active changes
 
@@ -620,6 +620,7 @@ Active changes: **1** · archived: **609**
 | `watch-monitor-explicit-gh-client` | archived | #1368 | #1369 | [watch-monitor-markers](openspec/changes/archive/watch-monitor-explicit-gh-client/specs/watch-monitor-markers/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/watch-monitor-explicit-gh-client/proposal.md) |
 | `watcher-files-red` | archived | #1376 | #1377 | [fleet-watcher](openspec/changes/archive/watcher-files-red/specs/fleet-watcher/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/watcher-files-red/proposal.md) |
 | `weekly-free-model-refresh` | archived | #1195 | #1205 | [fleet-model-chain](openspec/changes/archive/weekly-free-model-refresh/specs/fleet-model-chain/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/weekly-free-model-refresh/proposal.md) |
+| `weekly-lane-maintenance-doc-1834` | archived | #1834 | #1837 | [weekly-lane-maintenance](openspec/changes/archive/weekly-lane-maintenance-doc-1834/specs/weekly-lane-maintenance/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/weekly-lane-maintenance-doc-1834/proposal.md) |
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
 | `wiki-maintenance-ci` | archived | #1773 | #1779 | [wiki-maintenance](openspec/changes/archive/wiki-maintenance-ci/specs/wiki-maintenance/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/wiki-maintenance-ci/proposal.md) |
 | `wiki-rulebook` | archived | #1773 | #1774 | [wiki-rulebook](openspec/changes/archive/wiki-rulebook/specs/wiki-rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/wiki-rulebook/proposal.md) |
