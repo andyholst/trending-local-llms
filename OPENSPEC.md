@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **594**
+Active changes: **1** · archived: **596**
 
 ## Active changes
 
@@ -357,6 +357,7 @@ Active changes: **1** · archived: **594**
 | `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
 | `land-host-ahead-skill-notes-1462` | archived | #1462 | #1463 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1462/specs/fleet-host-sync-check/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1462/proposal.md) |
+| `land-implementer-contract-1809` | archived | #1809 | #1813 | [implementer-lane-landing](openspec/changes/archive/land-implementer-contract-1809/specs/implementer-lane-landing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-implementer-contract-1809/proposal.md) |
 | `land-implementer-rebase-conflict-note-1639` | archived | #1639 | #1641 | [implementer-skill-mirror](openspec/changes/archive/land-implementer-rebase-conflict-note-1639/specs/implementer-skill-mirror/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/land-implementer-rebase-conflict-note-1639/proposal.md) |
 | `land-invalid-change-repair-owed-rows` | archived | #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write) | #1106 | [rulebook-invalid-change-repair](openspec/changes/archive/land-invalid-change-repair-owed-rows/specs/rulebook-invalid-change-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-invalid-change-repair-owed-rows/proposal.md) |
 | `land-planner-implementer-skill-notes-1440` | archived | #1440 | #1441 | [fleet-host-sync-check](openspec/changes/archive/land-planner-implementer-skill-notes-1440/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-planner-implementer-skill-notes-1440/proposal.md) |
@@ -426,6 +427,7 @@ Active changes: **1** · archived: **594**
 | `owed-row-prose-quote-discriminator` | archived | #1690 | #1696 | [owed-row-derivation](openspec/changes/archive/owed-row-prose-quote-discriminator/specs/owed-row-derivation/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/owed-row-prose-quote-discriminator/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
+| `parallel-implementer-lanes` | archived | #1767 (the implementer-lane mirror; the planner mirror and the AGENTS.md rulebook are separate PRs) | #1770 | [implementer-lane-concurrency](openspec/changes/archive/parallel-implementer-lanes/specs/implementer-lane-concurrency/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/parallel-implementer-lanes/proposal.md) |
 | `parallel-lane-rule-1767` | archived | #1767 | #1768 | [parallel-lane-rule-1767](openspec/changes/archive/parallel-lane-rule-1767/specs/parallel-lane-rule-1767/spec.md) | 1/1 | [proposal.md](openspec/changes/archive/parallel-lane-rule-1767/proposal.md) |
 | `parallel-lane-rulebook` | archived | #1767 (parallel implementer lanes — rulebook §7b/§8 half; the implementer and planner SOUL/skill mirrors are the two sibling PRs) | #1768 | [parallel-implementer-lanes](openspec/changes/archive/parallel-lane-rulebook/specs/parallel-implementer-lanes/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/parallel-lane-rulebook/proposal.md) |
 | `parallel-planner-dispatch` | archived | #1767 | #1769 | [planner-dispatch](openspec/changes/archive/parallel-planner-dispatch/specs/planner-dispatch/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/parallel-planner-dispatch/proposal.md) |
