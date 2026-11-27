@@ -310,9 +310,23 @@ def test_a_second_pipeline_with_an_environment_gate_fails_the_scan():
               not any("ok.yml" in p for p in problems), problems)
 
 
+def test_the_refresh_aggregate_timeout_allows_validation():
+    """Issue #1843: run 46044870416's aggregate was cancelled at exactly 30 min
+    while in `Commit + open PR`, with every earlier job and validation step green.
+    Pin the SHIPPED YAML's job-level timeout, not a fixture or a prose claim —
+    the search legs already get 60 min (#1843, match `search` at :457)."""
+    text = (ROOT / scan.WF_DIR / "refresh-bot.yml").read_text()
+    wf = scan.parse_workflow(text)
+    body = wf["jobs"]["aggregate"]["body"]
+    timeouts = re.findall(r"^    timeout-minutes:\s*(\d+)\s*$", body, re.M)
+    check("refresh-bot aggregate: job timeout leaves room for validate + PR (60 min)",
+          timeouts == ["60"], timeouts or "no job-level timeout-minutes in aggregate")
+
+
 def main() -> int:
     """Run every test in this file — a test defined but never called passes CI silently."""
     print("workflow guards: every workflow is guard-scanned, every guard class executed")
+    test_the_refresh_aggregate_timeout_allows_validation()
     test_the_real_tree_scans_green_and_covers_every_workflow()
     test_the_real_guard_scripts_decide_every_caller_class()
     test_a_scheduled_pipeline_starts_from_no_human()
