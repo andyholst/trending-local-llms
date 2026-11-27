@@ -13,6 +13,7 @@ Plain-script harness (the test image runs these as scripts, not pytest — the s
 command CI runs must be the command you can run locally, rule 6m).
 """
 import io
+import re
 import sys
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
@@ -269,6 +270,28 @@ jobs:
           'echo "guard $ACTOR $TRIGGER $OWNER"' in step["run"], step["run"])
 
 
+def _job_block(text: str, name: str) -> str:
+    """One job block of the shipped qa-validate.yml, 2-space key to next key."""
+    m = re.search(rf"^  {name}:\n(.*?)(?=^  \S|\Z)", text, re.M | re.S)
+    if not m:
+        raise AssertionError(f"job {name!r} not found in qa-validate.yml")
+    return m.group(1)
+
+
+def test_validate_job_timeout_is_45_minutes():
+    """Issue #1845: PR #1837's qa-validate run was cancelled at exactly 30m
+    (`validate` cancelled, unit suite passed 124/0). The shipped YAML must give
+    the deterministic validate job enough headroom to finish.
+    """
+    wf = (ROOT / scan.WF_DIR / "qa-validate.yml").read_text(encoding="utf-8")
+    job = _job_block(wf, "validate")
+    m = re.search(r"^    timeout-minutes:\s*(\d+)\s*$", job, re.M)
+    check("the shipped validate job declares a job-level timeout", m is not None, job[:300])
+    check("the shipped validate timeout is 45 minutes (issue #1845)",
+          m is not None and int(m.group(1)) == 45,
+          f"timeout-minutes={m.group(1) if m else 'missing'}")
+
+
 def test_a_second_pipeline_with_an_environment_gate_fails_the_scan():
     """The exact scenario the owner reported: another agent's PR added a manual
     approval gate. A tree carrying it turns the scan red — rule 6c."""
@@ -300,6 +323,7 @@ def main() -> int:
     test_the_scan_is_wired_through_the_makefile_into_lint()
     test_parse_workflow_reads_triggers_needs_and_guard_run()
     test_a_second_pipeline_with_an_environment_gate_fails_the_scan()
+    test_validate_job_timeout_is_45_minutes()
     print(f"\nPASSED {PASSED} | FAILED {FAILED}")
     return 1 if FAILED else 0
 

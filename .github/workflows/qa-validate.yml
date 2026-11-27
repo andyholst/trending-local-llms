@@ -128,7 +128,7 @@ jobs:
       issues: read
     # 20 -> 30: when the revision's Dockerfile is not published yet this job
     # builds the base from source before the suite (issue #135).
-    timeout-minutes: 30
+    timeout-minutes: 45
     outputs:
       # (issue #1120) the `corrupt-tag-fallback=<image>=<tag>` lines the two image
       # steps captured; `announce-fallback` is the only consumer, and it is the
