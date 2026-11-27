@@ -5,4 +5,4 @@
 - [x] Run `make lint`, `make architecture-check` and `make findings-check ISSUE=1808` — all rc 0
 - [x] OpenSpec change (proposal bound to `Issue: #1808`, spec with per-scenario tests, tasks) and regenerate `OPENSPEC.md` — 1 active / 597 archived
 - [x] Archive the change by name on the branch (`2026-11-27-scrub-run-attach-stdin`); PR number is recorded on the archived proposal after `gh pr create`
-- [~] Open the PR with the five-section body and `closes #1808` — blocked: PR number assigned after this gate (headless leg); ticked in the follow-up commit
+- [x] Open the PR with the five-section body and `closes #1808` — PR #1819, branch `fix/scrub-log-stdin-attach-1808`, non-draft

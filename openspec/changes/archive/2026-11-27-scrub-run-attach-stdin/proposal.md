@@ -1,6 +1,7 @@
 # Proposal: scrub-run-attach-stdin
 
 Issue: #1808
+PR: #1819
 
 ## Why
 
