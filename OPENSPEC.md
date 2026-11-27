@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **606**
+Active changes: **1** · archived: **607**
 
 ## Active changes
 
@@ -375,6 +375,7 @@ Active changes: **1** · archived: **606**
 | `ledger-fix-pr-stamp` | archived | #1068 | #1069 | [openspec-lifecycle](openspec/changes/archive/ledger-fix-pr-stamp/specs/openspec-lifecycle/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/ledger-fix-pr-stamp/proposal.md) |
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
+| `live-free-tier-verification-1226` | archived | #1226 | #1227 | [fleet-model-chain](openspec/changes/archive/live-free-tier-verification-1226/specs/fleet-model-chain/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/live-free-tier-verification-1226/proposal.md) |
 | `live-smoke-merge-gate-claim` | archived | #1033 | #1135 | [architecture-job-behaviour-claim](openspec/changes/archive/live-smoke-merge-gate-claim/specs/architecture-job-behaviour-claim/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/live-smoke-merge-gate-claim/proposal.md) |
 | `local-endpoint-probe-1352` | archived | #1352 | #1353 | [local-endpoint-probe](openspec/changes/archive/local-endpoint-probe-1352/specs/local-endpoint-probe/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/local-endpoint-probe-1352/proposal.md) |
 | `make-hop-reachability-both-spellings-1596` | archived | #1596 | #1614 | [no-bare-host-python](openspec/changes/archive/make-hop-reachability-both-spellings-1596/specs/no-bare-host-python/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/make-hop-reachability-both-spellings-1596/proposal.md) |

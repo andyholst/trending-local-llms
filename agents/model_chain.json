@@ -37,6 +37,20 @@
         }
       ]
     },
+    "verified": {
+      "at": "2026-11-21T20:14:30Z",
+      "endpoint": "https://inference-api.nousresearch.com/v1",
+      "models": 415,
+      "free_count": 5,
+      "free_ids": [
+        "meituan/longcat-2.5:free",
+        "tencent/hy4-flash:free",
+        "qwen/qwen4-max:free",
+        "upstage/solar-mini4:free",
+        "stepfun/step-3.7-flash:free"
+      ],
+      "how": "GET /v1/models answered HTTP 200 with 415 models; the Nous portal OAuth credential was passed by NAME in-process (never printed); the payload was saved outside the repo. All five `:free` ids and their context_length values match the free steps below, so the refresh seam correctly wrote nothing (issue #1226)."
+    },
     "refresh_history": [
       {
         "at": "2026-11-25T16:44:44Z",

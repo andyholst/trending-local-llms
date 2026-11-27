@@ -473,6 +473,85 @@ def test_a_declared_lane_append_is_rendered_and_an_undeclared_one_is_refused():
               and "redeclares `model:`" in out, out[-300:])
 
 
+def verification_problems(data: dict) -> list[str]:
+    """Issue #1226: every way a verification record can misdescribe the chain.
+
+    The record is a DATED read (2026-11-21, five `:free` ids); a later refresh retired
+    two of them, so truthfulness here is internal consistency plus every CURRENT free
+    step being named — not equality with today's shorter chain (rule 3b: no loss).
+    """
+    problems: list[str] = []
+    measured = data.get("measured") or {}
+    v = measured.get("verified")
+    if not isinstance(v, dict):
+        return ["measured.verified is missing — a no-op live read left no trace (issue #1226)"]
+    free_steps = [e for e in data.get("chain", []) if e.get("role") in ("primary", "fallback")]
+    current = {e.get("model") for e in free_steps}
+    recorded = v.get("free_ids")
+    if not isinstance(recorded, list) or not recorded:
+        problems.append("verified.free_ids is not a non-empty list")
+        recorded = []
+    # The landed #1203 `nous` provider carries NO top-level base_url; the chain's own
+    # measured.endpoint is the Nous Portal endpoint this record must describe.
+    if v.get("endpoint") != measured.get("endpoint"):
+        problems.append("verified.endpoint disagrees with the chain's measured Nous endpoint")
+    if not isinstance(v.get("models"), int) or isinstance(v.get("models"), bool) or v["models"] <= 0:
+        problems.append("verified.models is not a positive catalogue count")
+    if v.get("free_count") != len(recorded):
+        problems.append("verified.free_count disagrees with the recorded free ids")
+    if len(set(recorded)) != len(recorded) or any(
+            not isinstance(m, str) or not m.endswith(":free") for m in recorded):
+        problems.append("verified.free_ids is not a unique list of `:free` ids")
+    if not current.issubset(set(recorded)):
+        problems.append("a current free step is absent from the dated verification record")
+    at = str(v.get("at", ""))
+    if "T" not in at or not at.endswith("Z"):
+        problems.append("verified.at is not a UTC timestamp")
+    if any(k in v for k in ("api_key", "apikey", "token", "secret", "credential",
+                            "password", "authorization", "key")):
+        problems.append("verified carries a credential-shaped field (rule 3e)")
+    return problems
+
+
+def test_the_chain_records_its_live_free_tier_verification():
+    data = json.loads(CHAIN.read_text(encoding="utf-8"))
+    v = (data.get("measured") or {}).get("verified") or {}
+    current = [e for e in data["chain"] if e.get("role") in ("primary", "fallback")]
+    problems = verification_problems(data)
+    check("the shipped verification record is truthful about the dated read and current chain",
+          not problems, "; ".join(problems))
+    check("the record names the live read's timestamp and catalogue size",
+          v.get("at") == "2026-11-21T20:14:30Z" and v.get("models") == 415, str(v)[:160])
+    check("every current free step is a recorded `:free` id with a context window",
+          all(str(e.get("model")) in v.get("free_ids", []) and e.get("context_window", 0) > 0
+              for e in current), str(v.get("free_ids"))[:120])
+    check("the dated read is distinct from today's shorter chain, with provenance kept",
+          v.get("free_count", 0) > len(current)
+          and ":free" in str((data.get("measured") or {}).get("previous_read", {}).get("how", "")),
+          str((data.get("measured") or {}).get("previous_read", {}))[:160])
+    res = run("--check")
+    check("the shipped chain still passes --check with the verification stamp", res.returncode == 0,
+          (res.stdout + res.stderr)[-200:])
+
+
+def test_verification_record_refusals_are_red():
+    import copy
+    data = json.loads(CHAIN.read_text(encoding="utf-8"))
+    check("control: the untouched verification record is clean", not verification_problems(data), "")
+    cases = {
+        "a ghost id without the `:free` price suffix": lambda d: d["measured"]["verified"]["free_ids"].__setitem__(0, "ghost/model"),
+        "a dropped free id": lambda d: d["measured"]["verified"]["free_ids"].pop(),
+        "a wrong endpoint": lambda d: d["measured"]["verified"].__setitem__("endpoint", "http://127.0.0.1:1/v1"),
+        "a wrong count": lambda d: d["measured"]["verified"].__setitem__("free_count", 99),
+        "a credential field": lambda d: d["measured"]["verified"].__setitem__("api_key", "not-a-value"),
+        "no record": lambda d: d["measured"].pop("verified"),
+    }
+    for name, break_it in cases.items():
+        scratch = copy.deepcopy(data)
+        break_it(scratch)
+        check(f"refused: {name}", bool(verification_problems(scratch)), name)
+
+
 def test_the_gate_is_wired_where_it_bites():
     """Rule 6m: the check runs in `make lint` (qa-validate + the fix loop) and the suite runs it."""
     mk = (ROOT / "Makefile").read_text()
@@ -584,6 +663,8 @@ def main() -> int:
     print(f"agent_model_chain (issue #1140): {len(LANES)} fleet lane(s) "
           f"{', '.join(LANES)}")
     test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green()
+    test_the_chain_records_its_live_free_tier_verification()
+    test_verification_record_refusals_are_red()
     test_every_free_step_comes_before_the_paid_last_resort()
     test_the_local_tier_is_guarded_like_every_other_tier()
     test_a_nous_step_carrying_base_url_or_key_env_is_refused()
