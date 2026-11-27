@@ -20,15 +20,16 @@ credential value or a `key_env`.
 
 - **Given** the shipped chain's fallback aliases
 - **When** the rendered config's `auxiliary.goal_judge.fallback_chain` is read
-- **Then** it lists exactly the Nous steps in chain order, never the primary and never the served
-  local model, and every step is `provider: nous` with no `base_url`/`key_env`
+- **Then** it lists every Nous chain step except the local tier, in chain order, including
+  every `:free` model (the free primary included), never the served local model, and every
+  step is `provider: nous` with no `base_url`/`key_env`
 - **Test:** tests/test_agent_model_chain.py::test_goal_judge_fallback_chain_is_only_the_nous_steps
 
 ### Requirement: A misrouted judge is refused
 
 `make agent-model-chain-check` SHALL refuse a chain whose `auxiliary.goal_judge.alias` does not name
-its own `role=local_fallback` entry, whose fallback list is empty, whose fallback names the primary,
-or whose fallback is not a Nous step. The refusal SHALL name the defect and issue #1798.
+its own `role=local_fallback` entry, whose fallback list is empty, whose fallback omits a `:free`
+chain step, or whose fallback is not a Nous step. The refusal SHALL name the defect and issue #1798.
 
 #### Scenario: A judge pinned to the primary is refused
 

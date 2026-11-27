@@ -18,7 +18,7 @@ tracked configs cannot reproduce that correction because the renderer owns no `a
   Nous fallback chain.
 - `scripts/agent_model_chain.py` renders an `auxiliary.goal_judge` block into every generated lane
   config and refuses a chain whose judge alias is not its own `role=local_fallback` entry, whose
-  fallback names the primary, or whose fallback is not a Nous step.
+  fallback omits a `:free` chain step, or whose fallback is not a Nous step.
 - `auxiliary` becomes an owned block in both `agent_model_chain.py` and `agent_profile_provision.py`,
   so a declared append may not redeclare it and a non-lane merge replaces it with the rendered one.
 - The eight generated `agents/tll-*/config.yaml` files are regenerated from the chain.

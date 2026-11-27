@@ -62,6 +62,8 @@ auxiliary:
     base_url: http://127.0.0.1:8080/v1
     fallback_chain:
       - provider: nous
+        model: tencent/hy4-flash:free
+      - provider: nous
         model: upstage/solar-mini4:free
       - provider: nous
         model: stepfun/step-3.7-flash:free

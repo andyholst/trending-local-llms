@@ -223,8 +223,9 @@ def fleet_lanes(root: Path) -> list[str]:
 def auxiliary_problems(chain: Chain) -> list[str]:
     # Issue #1798: the judge's local route is NOT a second copy of the model id — it resolves a
     # chain alias, so re-pointing the served local tier moves the judge with it. Its fallback
-    # chain may only name Nous steps (a `nous` step carries no base_url/key_env, #1203) and never
-    # the primary: a dead judge route must fall THROUGH, not restart at the top of the chain.
+    # chain names every Nous step except that local tier, including every `:free` model (the
+    # free primary included — the judge's own model is the local tier, so the free primary is
+    # a fallback here, not a restart). A `nous` step carries no base_url/key_env (#1203).
     problems: list[str] = []
     aux = chain.auxiliary
     gj = aux.get("goal_judge") if isinstance(aux, dict) else None
@@ -243,20 +244,28 @@ def auxiliary_problems(chain: Chain) -> list[str]:
     if not isinstance(fbs, list) or not fbs:
         problems.append("auxiliary.goal_judge.fallback_aliases must name the Nous fallback steps (issue #1798)")
     else:
-        for name in fbs:
-            entry = by_alias.get(str(name))
+        declared = [str(name) for name in fbs]
+        for name in declared:
+            entry = by_alias.get(name)
             if not entry:
                 problems.append(f"auxiliary.goal_judge fallback alias {name!r} is not a chain entry")
-            elif entry.alias == (chain.primary.alias if chain.primary else None):
+            elif entry.role == "local_fallback":
                 problems.append(
-                    f"auxiliary.goal_judge fallback alias {name!r} names the primary — "
-                    "the judge must fall through, not restart (issue #1798)"
+                    f"auxiliary.goal_judge fallback alias {name!r} names the local tier — "
+                    "the judge already runs that model (issue #1798)"
                 )
             elif entry.provider != chain.provider:
                 problems.append(
                     f"auxiliary.goal_judge fallback alias {name!r} is a {entry.provider!r} step, "
                     f"not a {chain.provider!r} step (issue #1798)"
                 )
+        missing = [e.alias for e in chain.entries if str(e.model).endswith(":free") and e.alias not in declared]
+        if missing:
+            problems.append(
+                "auxiliary.goal_judge.fallback_aliases omits Nous free model(s) "
+                + ", ".join(missing)
+                + " — every :free chain step belongs on the judge fallback (issue #1798)"
+            )
     return problems
 
 

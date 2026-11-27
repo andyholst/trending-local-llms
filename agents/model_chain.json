@@ -85,10 +85,10 @@
     }
   ],
   "auxiliary": {
-    "comment": "Issue #1798: a strata-pinned auxiliary task must name the model the local server actually serves (the chain's own role=local_fallback entry), with a Nous fallback chain so a dead local route falls through instead of pausing the goal after five transport failures. The alias values are chain entries, never duplicated model ids; no credential value appears here (rule 3e).",
+    "comment": "Issue #1798: a strata-pinned auxiliary task must name the model the local server actually serves (the chain's own role=local_fallback entry), with a Nous fallback chain so a dead local route falls through instead of pausing the goal after five transport failures. fallback_aliases names every :free chain step, including the free primary, then the paid last resort. The alias values are chain entries, never duplicated model ids; no credential value appears here (rule 3e).",
     "goal_judge": {
       "alias": "local-strata",
-      "fallback_aliases": ["free-solar", "free-step", "nous-deepseek"]
+      "fallback_aliases": ["free-hy4", "free-solar", "free-step", "nous-deepseek"]
     }
   }
 }

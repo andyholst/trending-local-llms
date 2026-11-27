@@ -523,7 +523,11 @@ def test_rendered_lane_configs_pin_goal_judge_to_the_served_local_model():
 
 
 def test_goal_judge_fallback_chain_is_only_the_nous_steps():
-    """Issue #1798: a dead judge route falls through Nous steps, never the primary or the local tier."""
+    """Issue #1798: a dead judge route falls through every Nous step except the local tier.
+
+    That includes every :free model, the free primary included, because the judge's
+    own model is the local tier.
+    """
     chain = _chain_json(ROOT)
     local_model = F.local_model(chain)
     text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
@@ -541,8 +545,12 @@ def test_goal_judge_fallback_chain_is_only_the_nous_steps():
             elif line and not line.startswith(" "):
                 break
     want = [(chain["provider"], e["model"]) for e in chain["chain"]
-            if e["role"] not in ("primary", "local_fallback")]
-    check("the judge fallback_chain is exactly the Nous steps in chain order", got == want, str(got))
+            if e["role"] != "local_fallback"]
+    free_ids = [e["model"] for e in chain["chain"] if str(e["model"]).endswith(":free")]
+    check("the judge fallback_chain is every Nous step except the local tier, in chain order",
+          got == want, str(got))
+    check("the judge fallback_chain names every Nous :free model",
+          all(model in [m for _, m in got] for model in free_ids), str(free_ids))
     check("the judge fallback_chain never names the served local model",
           all(model != local_model for _, model in got), str(got))
 
@@ -559,6 +567,17 @@ def test_a_misrouted_goal_judge_is_refused_by_the_gate():
         check("a judge pinned to the primary is refused", res.returncode == 1, out[-300:])
         check("the refusal names the misrouted judge and issue #1798",
               "goal_judge" in out and "1798" in out, out[-400:])
+        data = _chain_json(root)
+        data["auxiliary"]["goal_judge"]["alias"] = next(
+            e["alias"] for e in data["chain"] if e["role"] == "local_fallback")
+        data["auxiliary"]["goal_judge"]["fallback_aliases"] = [
+            e["alias"] for e in data["chain"]
+            if e["role"] != "local_fallback" and not str(e["model"]).endswith(":free")]
+        _write_chain(root, data)
+        res = run("--check", root=root)
+        out = res.stdout + res.stderr
+        check("a judge fallback that omits a Nous :free model is refused",
+              res.returncode == 1 and "omits Nous free" in out, out[-400:])
 
 
 def main() -> int:
