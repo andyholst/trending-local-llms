@@ -18,6 +18,8 @@ Jump to your card: [8 GB](#up-to-8-gb) · [12 GB](#up-to-12-gb) · [16 GB](#up-t
 
 Ranked by a **tier-local trend**: the model's own 7-day buzz, plus a speed bonus earned only by a measurement that **actually ran on a card of that size or smaller**. A 32 GB figure can never top the 8 GB table, and a datacenter measurement never appears at all. The tables are **cumulative** (`Up to 16 GB` includes every model with evidence at 16 GB or below) and place a model only with evidence: a proved `ran on` figure, or the labelled `weights-only` fit. A model with no post in the window is not trending — it keeps its row in [🖥️ Pick your card](#-pick-your-card--what-fits-your-vram) below.
 
+The `VRAM` badge is the model's least-needed VRAM and the card behind its **headline** figure; the **tier** and speed bonus come from the card in the **Best t/s that fits** cell, so a larger headline card in the badge does not mean the row is misplaced — see [🖥️ Pick your card](#-pick-your-card--what-fits-your-vram) for the tier rule.
+
 ### Up to 8 GB
 
 _No trending model has evidence at 8 GB yet. That is a **collection gap, not “nothing fits”**: the search legs must ask for these cards (`skills/gather-data.md`, issue #337)._

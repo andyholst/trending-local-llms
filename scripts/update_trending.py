@@ -1799,6 +1799,11 @@ def render_readme(store: dict, today: datetime) -> str:
             " with no post in the window is not trending — it keeps its row in"
             " [🖥️ Pick your card](#-pick-your-card--what-fits-your-vram) below.",
             "",
+            "The `VRAM` badge is the model's least-needed VRAM and the card behind its **headline** figure;"
+            " the **tier** and speed bonus come from the card in the **Best t/s that fits** cell, so a larger"
+            " headline card in the badge does not mean the row is misplaced — see"
+            " [🖥️ Pick your card](#-pick-your-card--what-fits-your-vram) for the tier rule.",
+            "",
         ]
         for t in CARD_TIERS_GB:
             rows = tier_trending_rows(models, t, registry)
