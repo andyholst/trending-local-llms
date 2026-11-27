@@ -352,6 +352,9 @@ FILING_LANE_PROMPTS = (
     "agents/tll-reviewer/skills/tll-reviewer/SKILL.md",
     "agents/tll-tester/skills/tll-tester/SKILL.md",
     "agents/tll-planner/skills/tll-planner/SKILL.md",
+    # #1814: the architect filed an opt-in body missing ## Technical Solution (#1808);
+    # #1730's pre-file check was wired into only three of the filing lanes.
+    "agents/tll-architect/skills/tll-architect/SKILL.md",
 )
 
 
