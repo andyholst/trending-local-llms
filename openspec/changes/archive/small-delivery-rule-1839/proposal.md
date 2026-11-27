@@ -1,6 +1,7 @@
 # Proposal: small-delivery-rule-1839
 
 Issue: #1839
+PR: #1848
 
 ## Why
 

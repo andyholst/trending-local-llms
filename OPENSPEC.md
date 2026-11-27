@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **611**
+Active changes: **1** · archived: **612**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `small-delivery-rule-1839` | active | #1839 | — | [fleet-collaboration](openspec/changes/small-delivery-rule-1839/specs/fleet-collaboration/spec.md) | 6/6 | [proposal.md](openspec/changes/small-delivery-rule-1839/proposal.md) |
 
 ## Archived changes
 
@@ -566,6 +565,7 @@ Active changes: **2** · archived: **611**
 | `silent-recipe-when-redirected` | archived | #539 | — | [issue-bot-artifacts](openspec/changes/archive/silent-recipe-when-redirected/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/silent-recipe-when-redirected/proposal.md) |
 | `skip-note-every-hold` | archived | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/archive/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/skip-note-every-hold/proposal.md) |
 | `skip-note-every-sweep` | archived | #202 | — | [issue-review-queue](openspec/changes/archive/skip-note-every-sweep/specs/issue-review-queue/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/skip-note-every-sweep/proposal.md) |
+| `small-delivery-rule-1839` | archived | #1839 | #1848 | [fleet-collaboration](openspec/changes/archive/small-delivery-rule-1839/specs/fleet-collaboration/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/small-delivery-rule-1839/proposal.md) |
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
