@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **612**
+Active changes: **1** · archived: **613**
 
 ## Active changes
 
@@ -529,6 +529,7 @@ Active changes: **1** · archived: **612**
 | `repair-a-conflicted-pr` | archived | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/archive/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/repair-a-conflicted-pr/proposal.md) |
 | `repair-in-flight-is-visible` | archived | #386 (a repair in flight is invisible in the job log) | — | [bot-agent-run-safety](openspec/changes/archive/repair-in-flight-is-visible/specs/bot-agent-run-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/repair-in-flight-is-visible/proposal.md) |
 | `review-pick-parse` | archived | #344 | — | [issue-review-queue](openspec/changes/archive/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/review-pick-parse/proposal.md) |
+| `rollup-history-counter-1847` | archived | #1847 | #1849 | [post-signal](openspec/changes/archive/rollup-history-counter-1847/specs/post-signal/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/rollup-history-counter-1847/proposal.md) |
 | `rulebook-dispatch-guard-1586` | archived | #1586 | #1600 | [dispatch-guard](openspec/changes/archive/rulebook-dispatch-guard-1586/specs/dispatch-guard/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-dispatch-guard-1586/proposal.md) |
 | `rulebook-findings-seam-row-1602` | archived | #1602 | #1608 | [rulebook](openspec/changes/archive/rulebook-findings-seam-row-1602/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rulebook-findings-seam-row-1602/proposal.md) |
 | `rulebook-fleet-handover-1363` | archived | #1363 | #1609 | [rulebook](openspec/changes/archive/rulebook-fleet-handover-1363/specs/rulebook/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/rulebook-fleet-handover-1363/proposal.md) |

@@ -957,13 +957,23 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     # the SAME prune without keep_urls recovers that exact pre-change view (rule
     # 6d — one implementation), keeping stored counters value-for-value stable.
     counted = prune_posts(posts, today)
-    for counter in ("likes", "comments", "reshares", "views"):
-        sourced = 0
-        for p in counted:
+
+    def _counter_sum(post_list, counter):
+        total = 0
+        for p in post_list:
             try:
-                sourced += max(0, int(float(p.get(counter) or 0)))
+                total += max(0, int(float(p.get(counter) or 0)))
             except (TypeError, ValueError):
                 continue
+        return total
+
+    for counter in ("likes", "comments", "reshares", "views"):
+        # The retention-only view stays PRIMARY. Fall back to the SAME stored
+        # `posts` list only when it carries no signal — a rule-3b history post
+        # kept solely by `keep_urls` is older than RETENTION_DAYS and was dropped
+        # from `counted`, yet it is still evidence in `seen_posts`. One sum
+        # implementation, no new key, no invented value (rule 6d / rule 2).
+        sourced = _counter_sum(counted, counter) or _counter_sum(posts, counter)
         try:
             stored = max(0, int(float(eng.get(counter) or 0)))
         except (TypeError, ValueError):
