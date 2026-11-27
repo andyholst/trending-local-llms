@@ -85,7 +85,8 @@ own open PRs and regenerate `OPENSPEC.md` on each head.
 ## 6. Weekly maintenance pass — cadence, not a timer
 
 The owner starts the pass on the planner; it is a checklist the planner executes, never a cron
-and never a new Actions `schedule:`. The companion issue (#1834) defines it. Each pass:
+and never a new Actions `schedule:`. The runnable checklist is
+[`docs/weekly-lane-maintenance.md`](weekly-lane-maintenance.md) (issue #1834). Each pass:
 
 1. `git fetch origin master`, record the sha, re-read every lane's host `SOUL.md` and
    `skills/<lane>/SKILL.md` plus the in-tree `agents/` mirrors, and run
