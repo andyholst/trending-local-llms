@@ -214,7 +214,6 @@ def test_the_arm64_run_proof_steps_exist():
           "make test-image-smoke" in _job(wf, "test-image"), _job(wf, "test-image")[:200])
     check("the arm64 docker run lives in the Makefile target, not the workflow",
           "docker run --rm --platform linux/arm64 \"$(TAG)\"" in MAKEFILE.read_text(encoding="utf-8")
-          and "import pytest" in MAKEFILE.read_text(encoding="utf-8")
           and "python3 -c" not in _job(wf, "test-image"), "")
     for job_name, verify_part, proof_part in (("build", "Verify the base manifest", "Prove the arm64 base"),
                                               ("test-image", "Verify the test manifest", "Prove the arm64 test")):
@@ -224,6 +223,24 @@ def test_the_arm64_run_proof_steps_exist():
         pi = next(i for i, n in enumerate(names) if proof_part in n)
         check(f"{job_name}: the arm64 run proof runs after the manifest check (never before it)",
               pi > vi, str(names))
+
+
+def test_the_arm64_smoke_proves_the_test_layer_without_pytest():
+    """The test image deliberately ships NO pytest (issue #768); a smoke that imports
+    it dies ModuleNotFoundError on arm64 and blocks the whole refresh (#1807)."""
+    makefile = MAKEFILE.read_text(encoding="utf-8")
+    recipe = "\n".join(line for line in makefile.splitlines()
+                       if "python3 -c" in line and "test-image arm64 ok" in line)
+    check("the smoke's import proof is one arm64 docker run in the Makefile recipe",
+          'docker run --rm --platform linux/arm64 "$(TAG)"' in recipe
+          and "python3 -c" in recipe and recipe.count("test-image arm64 ok") == 1,
+          recipe)
+    check("the smoke imports the libraries the test image actually ships",
+          "import markdown_it" in recipe and "tabulate" in recipe, recipe)
+    check("the smoke does NOT import pytest — the test image has none (#768/#1807)",
+          "pytest" not in recipe.lower(), recipe)
+    requirements = (ROOT / "requirements-test.txt").read_text(encoding="utf-8")
+    check("requirements-test.txt does not declare pytest", "pytest" not in requirements.lower(), "")
 
 
 def test_the_verdict_is_one_implementation():
@@ -262,6 +279,7 @@ def main() -> int:
               test_both_publishers_declare_both_platforms,
               test_both_paths_verify_base_and_test_manifests,
               test_the_arm64_run_proof_steps_exist,
+              test_the_arm64_smoke_proves_the_test_layer_without_pytest,
               test_the_verdict_is_one_implementation,
               test_the_target_is_makefile_only_and_wired):
         print(f"\n[{t.__name__}]")

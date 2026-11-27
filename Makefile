@@ -464,7 +464,7 @@ image-manifest-check: ## Refuse a published base/test image tag unless its manif
 	@python3 scripts/image_manifest_check.py --tag "$(TAG)" --label "$(LABEL)"
 test-image-smoke: ## Run the published test image under linux/arm64 QEMU and prove its test-layer libraries import (issue #958) — the run-proof half of the publish gate; pass TAG=<exact published tag>
 	@if [ -z "$(TAG)" ]; then echo "[test-image-smoke] FAIL: pass TAG=<exact published tag>"; exit 2; fi
-	docker run --rm --platform linux/arm64 "$(TAG)" python3 -c "import pytest, markdown_it, tabulate; print('test-image arm64 ok')"
+	docker run --rm --platform linux/arm64 "$(TAG)" python3 -c "import markdown_it, tabulate; print('test-image arm64 ok')"
 openspec-binding-check: python-env-image ## Fail when an ACTIVE change binds no Issue and declares no keeper exemption — caught before the PR, not at the record step (issue #952)
 	$(PYTHON_RUN) python3 scripts/openspec_binding_check.py
 
