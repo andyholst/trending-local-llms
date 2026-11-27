@@ -52,6 +52,23 @@ fallback_providers:
     base_url: http://127.0.0.1:8080/v1
   - provider: nous
     model: deepseek/deepseek-v4-flash-0731
+# Auxiliary task routing (issue #1798): the strata-pinned judge names the
+# model the local server actually serves, with a Nous fallback chain so a
+# dead local route falls through instead of pausing the goal after five failures.
+auxiliary:
+  goal_judge:
+    provider: strata
+    model: qwen3.8-flash-next-iq3_xxs
+    base_url: http://127.0.0.1:8080/v1
+    fallback_chain:
+      - provider: nous
+        model: tencent/hy4-flash:free
+      - provider: nous
+        model: upstage/solar-mini4:free
+      - provider: nous
+        model: stepfun/step-3.7-flash:free
+      - provider: nous
+        model: deepseek/deepseek-v4-flash-0731
 
 # Owner-authorized 2026-11-24 (issue #1591): rule 3c is enforced by the
 # design -> reviewer sign-off -> implementer protocol on the issue thread.

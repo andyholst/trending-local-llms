@@ -12,8 +12,11 @@ provider is the built-in **`nous`** provider (the Nous Portal session; the same
 fleet lane's Hermes profile config — `agents/<lane>/config.yaml` — from that file;
 Since issue #1618 a lane may also carry `agents/<lane>/config.append.yaml`, an OPTIONAL declared extra
 block that `render_lane` appends AFTER `render_text`'s byte-exact chain output. The chain still owns
-`model:`/`model_aliases:`/`fallback_providers:`, an append may not redeclare one (refused), and a lane
-with no append file renders exactly as before.
+`model:`/`model_aliases:`/`fallback_providers:`/`auxiliary:`, an append may not redeclare one (refused),
+and a lane with no append file renders exactly as before. Since issue #1798 the chain also owns an
+`auxiliary.goal_judge` block: it pins the strata-pinned judge to the SAME served local id the chain's
+role=local_fallback entry carries (never a duplicated model id) and gives it a Nous `fallback_chain`,
+so a dead local route falls through instead of pausing the goal after five transport failures.
 `make agent-model-chain-check` (bundled into `make lint`, so `qa-validate`'s `validate` job and
 `scripts/fix_loop.sh` both run it) refuses a lane config that drifted from the chain, a chain
 that lost its primary / fallback / last-resort shape, a `nous` step carrying `base_url`/`key_env`,
@@ -88,6 +91,7 @@ class Chain(NamedTuple):
     key_env: str
     measured: dict
     read_problems: list[str]
+    auxiliary: dict
 
     @property
     def primary(self) -> Entry | None:
@@ -125,6 +129,7 @@ def read_chain(root: Path) -> tuple[Chain | None, list[str]]:
     base_url = str(raw.get("base_url") or "")
     key_env = str(raw.get("key_env") or "")
     measured = raw.get("measured") if isinstance(raw.get("measured"), dict) else {}
+    auxiliary = raw.get("auxiliary") if isinstance(raw.get("auxiliary"), dict) else {}
     rows = raw.get("chain")
     if not isinstance(rows, list) or not rows:
         return None, f"{CHAIN_REL} carries no `chain` list to read"
@@ -171,7 +176,7 @@ def read_chain(root: Path) -> tuple[Chain | None, list[str]]:
         row_base = str(row.get("base_url") or "") if "base_url" in row else base_url
         row_key = str(row.get("key_env") or "") if "key_env" in row else key_env
         entries.append(Entry(alias, model, role, provider, row_base, row_key, context_window))
-    return Chain(entries, provider, base_url, key_env, measured, problems), None
+    return Chain(entries, provider, base_url, key_env, measured, problems, auxiliary), None
 
 
 def read_makefile_pins(root: Path) -> tuple[dict[str, str], list[str]]:
@@ -215,9 +220,59 @@ def fleet_lanes(root: Path) -> list[str]:
 # ----------------------------------------------------------------------- contract
 
 
+def auxiliary_problems(chain: Chain) -> list[str]:
+    # Issue #1798: the judge's local route is NOT a second copy of the model id — it resolves a
+    # chain alias, so re-pointing the served local tier moves the judge with it. Its fallback
+    # chain names every Nous step except that local tier, including every `:free` model (the
+    # free primary included — the judge's own model is the local tier, so the free primary is
+    # a fallback here, not a restart). A `nous` step carries no base_url/key_env (#1203).
+    problems: list[str] = []
+    aux = chain.auxiliary
+    gj = aux.get("goal_judge") if isinstance(aux, dict) else None
+    if not isinstance(gj, dict):
+        return ["the chain declares no auxiliary.goal_judge — the renderer must pin the served local id (issue #1798)"]
+    alias = str(gj.get("alias") or "").strip()
+    fbs = gj.get("fallback_aliases")
+    by_alias = {e.alias: e for e in chain.entries}
+    target = by_alias.get(alias)
+    local = chain.local_fallback
+    if not local or not target or target.alias != local.alias:
+        problems.append(
+            "auxiliary.goal_judge.alias must name the chain's role=local_fallback entry "
+            f"(the served local id), found {alias!r} (issue #1798)"
+        )
+    if not isinstance(fbs, list) or not fbs:
+        problems.append("auxiliary.goal_judge.fallback_aliases must name the Nous fallback steps (issue #1798)")
+    else:
+        declared = [str(name) for name in fbs]
+        for name in declared:
+            entry = by_alias.get(name)
+            if not entry:
+                problems.append(f"auxiliary.goal_judge fallback alias {name!r} is not a chain entry")
+            elif entry.role == "local_fallback":
+                problems.append(
+                    f"auxiliary.goal_judge fallback alias {name!r} names the local tier — "
+                    "the judge already runs that model (issue #1798)"
+                )
+            elif entry.provider != chain.provider:
+                problems.append(
+                    f"auxiliary.goal_judge fallback alias {name!r} is a {entry.provider!r} step, "
+                    f"not a {chain.provider!r} step (issue #1798)"
+                )
+        missing = [e.alias for e in chain.entries if str(e.model).endswith(":free") and e.alias not in declared]
+        if missing:
+            problems.append(
+                "auxiliary.goal_judge.fallback_aliases omits Nous free model(s) "
+                + ", ".join(missing)
+                + " — every :free chain step belongs on the judge fallback (issue #1798)"
+            )
+    return problems
+
+
 def chain_problems(chain: Chain, pins: dict[str, str]) -> list[str]:
     """Every way the chain itself can fail its contract."""
     problems: list[str] = list(chain.read_problems)
+    problems.extend(auxiliary_problems(chain))
     entries = chain.entries
     if not entries:
         return ["the chain is empty"]
@@ -347,6 +402,28 @@ def render_text(chain: Chain) -> str:
             lines.append(f"    base_url: {e.base_url}")
         if e.role != "local_fallback" and e.key_env:
             lines.append(f"    key_env: {e.key_env}")
+    # Issue #1798: the strata-pinned judge follows the served local id (the chain's own
+    # role=local_fallback entry, resolved by alias — never a duplicated id), with a Nous
+    # fallback chain. A `nous` step carries NO base_url/key_env (issue #1203).
+    gj = chain.auxiliary.get("goal_judge") if isinstance(chain.auxiliary, dict) else None
+    if isinstance(gj, dict):
+        by_alias = {e.alias: e for e in chain.entries}
+        target = by_alias.get(str(gj.get("alias") or ""))
+        if target:
+            lines.append("# Auxiliary task routing (issue #1798): the strata-pinned judge names the")
+            lines.append("# model the local server actually serves, with a Nous fallback chain so a")
+            lines.append("# dead local route falls through instead of pausing the goal after five failures.")
+            lines.append("auxiliary:")
+            lines.append("  goal_judge:")
+            lines.append(f"    provider: {target.provider}")
+            lines.append(f"    model: {target.model}")
+            lines.append(f"    base_url: {target.base_url}")
+            lines.append("    fallback_chain:")
+            for name in gj.get("fallback_aliases", []):
+                entry = by_alias.get(str(name))
+                if entry:
+                    lines.append(f"      - provider: {entry.provider}")
+                    lines.append(f"        model: {entry.model}")
     return "\n".join(lines) + "\n"
 
 
@@ -384,7 +461,7 @@ def config_problems(root: Path, chain: Chain) -> list[str]:
         if append:
             # An append may add profile settings, never silently override a chain-owned block: the
             # owned-block drift verdict in `fleet_host_sync_check` reads the LAST one by name.
-            for name in ("model", "model_aliases", "fallback_providers"):
+            for name in ("model", "model_aliases", "fallback_providers", "auxiliary"):
                 if re.search(rf"(?m)^{name}:", append):
                     problems.append(
                         f"agents/{lane}/{APPEND_REL} redeclares `{name}:` — the chain owns that block"

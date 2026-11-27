@@ -290,6 +290,14 @@ def test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real
                   and (root / "agents" / "model_chain.json").read_bytes() == before, out[-200:])
 
             run_refresh("--write", root=root)
+            # Issue #1798: the weekly refresh must keep the judge's fallback alias list in
+            # step with the free tier it just changed, or the real gate below refuses it.
+            refreshed = chain_of(root)
+            aliases = refreshed["auxiliary"]["goal_judge"]["fallback_aliases"]
+            free_aliases = [e["alias"] for e in refreshed["chain"]
+                            if e.get("role") in ("primary", "fallback")]
+            check("the refreshed chain keeps every free step on the judge fallback",
+                  all(a in aliases for a in free_aliases), f"aliases={aliases} free={free_aliases}")
             # Restore the shipped chain's OWN read fields when it names them: the
             # refreshed chain must satisfy the REAL offline gate (shape, pins,
             # credential NAMES). A `nous` chain names neither — the stub was only

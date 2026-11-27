@@ -295,7 +295,7 @@ def test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_b
         pdir = home / "developer"
         pdir.mkdir(parents=True)
         kept_tail = ("terminal:\n  backend: local\n  cwd: /tmp\n"
-                     "auxiliary:\n  vision:\n    provider: auto\n")
+                     "vision:\n  provider: auto\n")
         stale = ("# a hand-written home config\nmodel:\n  provider: strata\n"
                  "  default: qwen3.8-flash-next-q2_0\n  base_url: http://127.0.0.1:8080/v1\n"
                  "custom_providers:\n  - name: strata\n    base_url: http://127.0.0.1:8080/v1\n"
@@ -310,10 +310,10 @@ def test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_b
         check("the stale strata-first model block is gone; the free primary is the default",
               PRIMARY_NEEDLE in merged
               and "qwen3.8-flash-next-q2_0" not in merged, merged[:200])
-        check("every non-owned top-level block survives BYTE-FOR-BYTE (custom_providers, terminal, auxiliary)",
+        check("every non-owned top-level block survives BYTE-FOR-BYTE (custom_providers, terminal, vision)",
               kept_tail in merged and "custom_providers:\n  - name: strata\n    base_url: http://127.0.0.1:8080/v1\n" in merged
               and "# a hand-written home config\n" in merged, merged[-300:])
-        for block in ("model", "model_aliases", "fallback_providers"):
+        for block in ("model", "model_aliases", "fallback_providers", "auxiliary"):
             rchunk = next(c for n, c in __import__("agent_profile_provision")._top_blocks(rendered) if n == block)
             mchunk = next((c for n, c in __import__("agent_profile_provision")._top_blocks(merged) if n == block), None)
             check(f"the merged `{block}:` block IS the rendered chain's block", mchunk == rchunk, block)
@@ -345,7 +345,7 @@ def test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_b
               proc2.returncode == 0
               and "display:\n  turn_completion_explainer: true\n" in merged2
               and "terminal:\n  backend: local\n" in merged2
-              and names2 == ["", "display", "fallback_providers", "model", "terminal", "model_aliases"],
+              and names2 == ["", "display", "fallback_providers", "model", "terminal", "model_aliases", "auxiliary"],
               proc2.stderr[-200:] + str(names2))
 
 
