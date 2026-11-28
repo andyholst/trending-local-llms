@@ -1,0 +1,8 @@
+# Tasks: renovate-json5-parse-guard-1870
+
+- [x] 1. Add the tested `json5_to_json` helper in `tests/test_workflows.py` (strip `//` and `/* */` comments + trailing commas outside strings, honour escapes; no dependency, no network install)
+- [x] 2. Rewrite `test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron` to parse the real file with `json.loads` and assert the parsed values (weekly schedule, explicit timezone, both managers, both booleans), keeping the no-workflow-`on.schedule` loop unchanged
+- [x] 3. Add and wire `test_renovate_json5_helper_strips_comments_and_trailing_commas_without_touching_strings`; call both functions from `main()`
+- [x] 4. RED-prove on base `1c3cd933`: old guard passes the broken fixture 19/0; new guard fails it 14/14-pass 6-fail and passes the shipped file 20/0 (captured in the PR/issue evidence)
+- [x] 5. Add this change bound to `Issue: #1870`, write `findings/1870.md`, regenerate `OPENSPEC.md`, and run `make test`, `make lint`, `make openspec-check`
+- [~] 6. Rule-6c §8 row (full text: `| tests/test_workflows.py — test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron + test_renovate_json5_helper_strips_comments_and_trailing_commas_without_touching_strings (issue #1870) | a Renovate app config that is syntactically invalid JSON5 (trailing commas, missing brace) still passes every text-match check and silently disables the weekly auto-bump plus dependency dashboard; the guard now parses the real file and asserts parsed values, RED on a broken fixture and GREEN on the shipped file, with the no-workflow-cron check intact | `) — blocked: rule 3c human sign-off (AGENTS.md is protected in a headless leg; full text declared on #1870 for the reviewer/owner to land)
