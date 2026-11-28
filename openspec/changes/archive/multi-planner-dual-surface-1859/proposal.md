@@ -1,6 +1,7 @@
 # Proposal: multi-planner-dual-surface-1859
 
 Issue: #1859
+PR: #1861
 
 ## Why
 
