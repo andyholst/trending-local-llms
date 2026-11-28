@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **623**
+Active changes: **2** · archived: **623**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `clarify-dgx-spark-hardware-1868` | active | #1868 | — | [measurement-evidence](openspec/changes/clarify-dgx-spark-hardware-1868/specs/measurement-evidence/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/clarify-dgx-spark-hardware-1868/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes

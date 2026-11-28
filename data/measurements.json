@@ -2717,7 +2717,7 @@
     {
       "engine": "Ollama",
       "tps": "87.2",
-      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10) — figure measured on the NVIDIA DGX Spark (GB10) per niklaslenz_ai/status/2111204284453044383 (identical figure on a sibling row naming 'NVIDIA DGX Spark (one)')",
       "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP), f16 KV cache; repeat-a-passage round at a 66K-token prompt, median of 3 runs, thinking off; new-story round on the same box 63.4 tok/s (Magnitude 50.4); prefill 1,834 tok/s which is prompt processing, never the decode figure",
       "weight_gb": "Q4_K_M (Ollama registry tag)",
       "context_tokens": "67584",
@@ -2728,7 +2728,7 @@
     {
       "engine": "Magnitude",
       "tps": "188.9",
-      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10) — figure measured on the NVIDIA DGX Spark (GB10) per niklaslenz_ai/status/2111204284453044383 (identical figure on a sibling row naming 'NVIDIA DGX Spark (one)')",
       "quant": "Magnitude 0.2.9 with its DFlash drafter and quantized KV cache, unsloth UD-Q4_K_XL on the repeat-a-passage round at a 66K-token prompt (75% drafter acceptance); new-story round 50.4 tok/s at 43% acceptance; prefill 2,332 tok/s",
       "weight_gb": "UD-Q4_K_XL",
       "context_tokens": "67584",
