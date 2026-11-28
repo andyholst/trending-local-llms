@@ -1,0 +1,15 @@
+{
+  // #716 path (a): Renovate runs as the GitHub App. Its weekly cadence lives
+  // HERE (app-side), never in a repository workflow's on.schedule — rule 6t /
+  // #1029 leaves refresh-bot.yml as the only workflow allowed a cron.
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Etc/UTC",
+  "schedule": ["every monday"],
+  "baseBranches": ["master"],
+  "enabledManagers": ["github-actions", "dockerfile"],
+  "separateMultipleMajor": true,
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2
+}
