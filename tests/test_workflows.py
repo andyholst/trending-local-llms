@@ -71,6 +71,60 @@ def load(name: str) -> dict:
     return d
 
 
+def json5_to_json(text: str) -> str:
+    """Reduce the JSON5 subset used by renovate.json5 to strict JSON text.
+
+    Removes `//` and `/* */` comments and trailing commas while respecting
+    string literals (including escaped quotes). The `.json5` extension is
+    deliberate (#716): the file carries rule-6t / #1029 `//` comments that
+    strict JSON forbids and that Renovate reads natively. The host has no
+    `json5` module and no network install is allowed, so this scanner is the
+    whole dependency; the guard parses the REAL file with `json.loads` on its
+    output instead of substring-matching it (issue #1870).
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    in_string = escaped = False
+    while i < n:
+        ch = text[i]
+        if in_string:
+            out.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == '"':
+            in_string = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "/":
+            i += 2
+            while i < n and text[i] not in "\r\n":
+                i += 1
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "*":
+            i += 2
+            while i + 1 < n and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i = min(i + 2, n)
+            continue
+        if ch == ",":
+            j = i + 1
+            while j < n and text[j] in " \t\r\n":
+                j += 1
+            if j < n and text[j] in "}]":
+                i += 1
+                continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def steps(job: dict) -> list[dict]:
     return job.get("steps", [])
 
@@ -1020,33 +1074,90 @@ def test_only_the_refresh_pipeline_carries_a_schedule():
                   not crons, crons)
 
 
-def test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron():
+def test_renovate_json5_helper_strips_comments_and_trailing_commas_without_touching_strings():
+    """The stripper is the parse guard's only dependency (issue #1870): it must
+    remove both comment forms and trailing commas outside strings, but never
+    eat `//` in a URL, `/*` in a value, a comma/brace inside a quoted string,
+    or an escaped quote.
+    """
+    src = (
+        '{\n'
+        '  // line comment\n'
+        '  "url": "https://example.com/a/*b", // trailing line comment\n'
+        '  /* block comment */\n'
+        '  "quoted": "a,}] // still here",\n'
+        '  "esc": "say \\"hi\\" // ok",\n'
+        '  "list": ["a", "b", ],\n'
+        '  "obj": { "k": 1, },\n'
+        '}\n'
+    )
+    flat = json5_to_json(src)
+    check("renovate json5 helper: // and /* inside a string survive",
+          "https://example.com/a/*b" in flat and "a,}] // still here" in flat, flat[:120])
+    check("renovate json5 helper: line and block comments removed",
+          "line comment" not in flat and "block comment" not in flat, flat[:160])
+    check("renovate json5 helper: trailing commas removed outside strings",
+          '"b" ]' in flat and '"k": 1 }' in flat, flat[:220])
+    try:
+        obj = json.loads(flat)
+    except ValueError as exc:
+        check("renovate json5 helper: stripped text is strict JSON", False, str(exc)[:120])
+        return
+    check("renovate json5 helper: stripped text is strict JSON", True)
+    check("renovate json5 helper: parsed values are intact",
+          obj["url"] == "https://example.com/a/*b"
+          and obj["quoted"] == "a,}] // still here"
+          and obj["esc"] == 'say "hi" // ok'
+          and obj["list"] == ["a", "b"]
+          and obj["obj"] == {"k": 1}, obj)
+
+
+def test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron(cfg_path=None):
     """Owner ruling on #716 (path (a), answering the CONFLICT-CONFIRMED verdict):
     Renovate runs as the GitHub App, so the weekly auto-bump cadence and the
     Action-SHA / Dockerfile-version bumps live in `renovate.json5` (app-side),
     NOT in a repository workflow's `on.schedule`. Rule 6t / #1029 leaves
     refresh-bot as the ONLY workflow with a cron; a Renovate workflow carrying
-    a schedule is refused. Fails when the config is missing or empty, when its
-    weekly cadence or either bump manager is gone, or when any workflow gains
-    a Renovate on.schedule.
+    a schedule is refused. The config must PARSE as JSON5 and carry the values
+    below (#1870): a syntactically broken config (stray comma, dropped brace)
+    is refused even if its text still contains every expected substring.
     """
-    cfg_path = ROOT / "renovate.json5"
-    check("renovate: app config exists at the repo root", cfg_path.is_file(), str(cfg_path))
-    cfg = cfg_path.read_text(encoding="utf-8") if cfg_path.is_file() else ""
+    path = Path(cfg_path) if cfg_path is not None else ROOT / "renovate.json5"
+    check("renovate: app config exists at the repo root", path.is_file(), str(path))
+    cfg = path.read_text(encoding="utf-8") if path.is_file() else ""
     check("renovate: app config is non-empty", bool(cfg.strip()), len(cfg))
 
-    sched_match = re.search(r'"schedule"\s*:\s*\[(.*?)\]', cfg, re.S)
-    sched = sched_match.group(1) if sched_match else ""
+    parsed: dict = {}
+    if cfg.strip():
+        try:
+            candidate = json.loads(json5_to_json(cfg))
+            check("renovate: app config PARSES as JSON5 (comments + trailing commas stripped)",
+                  isinstance(candidate, dict), type(candidate).__name__)
+            if isinstance(candidate, dict):
+                parsed = candidate
+        except ValueError as exc:
+            check("renovate: app config PARSES as JSON5 (comments + trailing commas stripped)",
+                  False, f"{type(exc).__name__}: {str(exc)[:120]}")
+    else:
+        check("renovate: app config PARSES as JSON5 (comments + trailing commas stripped)",
+              False, "empty config")
+
+    sched = parsed.get("schedule")
+    weekly = ("every monday", "every week", "weekly", "every weekend")
     check("renovate: config declares an app-side WEEKLY schedule",
-          bool(sched_match) and any(t in sched.lower()
-                                    for t in ("every monday", "every week", "weekly",
-                                              "every weekend")),
-          sched[:120])
-    check("renovate: cadence names an explicit timezone", '"timezone"' in cfg, "")
-    check("renovate: GitHub Actions SHA bumps are enabled", "github-actions" in cfg, "")
-    check("renovate: Dockerfile base-image bumps are enabled", "dockerfile" in cfg, "")
+          isinstance(sched, list) and any(
+              isinstance(s, str) and any(t in s.lower() for t in weekly) for s in sched), sched)
+    tz = parsed.get("timezone")
+    check("renovate: cadence names an explicit timezone",
+          isinstance(tz, str) and bool(tz.strip()), tz)
+    managers = parsed.get("enabledManagers")
+    check("renovate: GitHub Actions SHA bumps are enabled",
+          isinstance(managers, list) and "github-actions" in managers, managers)
+    check("renovate: Dockerfile base-image bumps are enabled",
+          isinstance(managers, list) and "dockerfile" in managers, managers)
     check("renovate: majors are separated and the dashboard is on",
-          "separateMultipleMajor" in cfg and "dependencyDashboard" in cfg, "")
+          parsed.get("separateMultipleMajor") is True and parsed.get("dependencyDashboard") is True,
+          (parsed.get("separateMultipleMajor"), parsed.get("dependencyDashboard")))
 
     for wf_name in sorted(p.name for p in WF.glob("*.yml")):
         raw = (WF / wf_name).read_text(encoding="utf-8")
@@ -3524,6 +3635,7 @@ def main() -> int:
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_only_the_refresh_pipeline_carries_a_schedule()
+    test_renovate_json5_helper_strips_comments_and_trailing_commas_without_touching_strings()
     test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron()
     test_agents_md_forbids_an_agent_dispatching_a_pipeline()
     test_the_guard_registry_is_derived_from_the_tree()
