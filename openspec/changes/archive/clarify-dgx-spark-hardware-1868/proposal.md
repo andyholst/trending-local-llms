@@ -1,4 +1,5 @@
 Issue: #1868
+PR: #1869
 
 # Proposal: clarify-dgx-spark-hardware-1868
 
