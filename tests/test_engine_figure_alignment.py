@@ -233,6 +233,43 @@ def test_justified_variant_and_bakeoff_pairs_pass_the_gate():
           not fails, fails[0] if fails else "")
 
 
+def test_allow_list_exact_pairs_are_justified_without_an_alias():
+    """#1213 F1: the validator honours the SAME CROSS_MODEL_ALLOW_LIST ingest reads.
+    Migrating these two pairs to the allow-list and dropping their store aliases
+    must NOT red `validate --only data` — the two justifications are ONE seam."""
+    import update_trending as ut
+    keys = [
+        ("vLLM", "25.4", "2026-10-14",
+         "https://lightbrd.com/GuideboardLabs/status/2110246672166699354"),
+        ("llama.cpp (strix-llama.cpp fork)", "21", "2026-10-17",
+         "https://lightbrd.com/laky_fx/status/2111512795803988237"),
+    ]
+    models = []
+    for key in keys:
+        allowed = sorted(ut.CROSS_MODEL_ALLOW_LIST[key])
+        # The allow-list keys the exact str(tps) spelling the store carries:
+        # "25.4" -> 25.4, "21" -> 21 (float() would render "21.0" and miss the key).
+        tps = float(key[1]) if "." in key[1] else int(key[1])
+        for mid in allowed:
+            models.append({
+                "id": mid, "name": mid,  # deliberately NO measurement_model_aliases
+                "engines": [{"engine": key[0], "tps": tps,
+                             "date": key[2], "hardware": "RTX 4090", "quant": "FP8",
+                             "source_post": key[3]}],
+            })
+    found = V.cross_row_duplicate_measurements(models)
+    check("allow-list-exact pairs with NO alias are not flagged",
+          found == [], json.dumps(found))
+    V.FAILURES.clear()
+    try:
+        V.check_no_duplicate_measurements({"models": models})
+        fails = list(V.FAILURES)
+    finally:
+        V.FAILURES.clear()
+    check("make validate --only data stays green on the migrated pairs",
+          not fails, fails[0] if fails else "")
+
+
 def test_the_shipped_store_has_no_undocumented_cross_row_duplicates():
     store = UT.load_store()
     found = V.cross_row_duplicate_measurements(store["models"])
@@ -266,6 +303,7 @@ def main() -> int:
     test_make_validate_fails_on_a_planted_cross_row_duplicate()
     test_a_planted_variant_pair_sharing_engine_tps_and_date_fails()
     test_justified_variant_and_bakeoff_pairs_pass_the_gate()
+    test_allow_list_exact_pairs_are_justified_without_an_alias()
     test_the_shipped_store_has_no_undocumented_cross_row_duplicates()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

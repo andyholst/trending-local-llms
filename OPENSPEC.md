@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **619**
+Active changes: **1** · archived: **620**
 
 ## Active changes
 
@@ -223,6 +223,7 @@ Active changes: **1** · archived: **619**
 | `cron-install-check-1270` | archived | #1270 — "Fleet: Hermes cron watcher installation must be identical on both hosts". | #1272 | [fleet-watchers](openspec/changes/archive/cron-install-check-1270/specs/fleet-watchers/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/cron-install-check-1270/proposal.md) |
 | `cron-install-check-profile-homes-1409` | archived | #1409 | #1421 | [fleet-watchers](openspec/changes/archive/cron-install-check-profile-homes-1409/specs/fleet-watchers/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/cron-install-check-profile-homes-1409/proposal.md) |
 | `cross-machine-coordination` | archived | #1231 | #1233 | [agent-coordination](openspec/changes/archive/cross-machine-coordination/specs/agent-coordination/spec.md) | 2/3 | [proposal.md](openspec/changes/archive/cross-machine-coordination/proposal.md) |
+| `cross-model-alias-gate-1213` | archived | #1213 | #1858 | [cross-model-alias-evidence](openspec/changes/archive/cross-model-alias-gate-1213/specs/cross-model-alias-evidence/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/cross-model-alias-gate-1213/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |

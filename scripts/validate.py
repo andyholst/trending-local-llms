@@ -1639,8 +1639,11 @@ def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tupl
     figure filed as two models. rule 'variant pair': engine+tps+date under two
     VARIANT-RELATED ids (distinct posts) — the duplicate the hardware-keyed scan
     cannot see because variants rename their hardware. Pairs justified by a
-    `measurement_model_aliases` entry on either row are NOT returned (a justified
-    exception is data, reviewed in the store diff, not a copy).
+    `measurement_model_aliases` entry on either row OR pinned allow-list-exact in
+    `CROSS_MODEL_ALLOW_LIST` are NOT returned (a justified exception is data, reviewed
+    in the store diff, not a copy). Issue #1213 F1: the post-merge gate must honour the
+    SAME justification source as ingest, so a documented pair can drop its alias
+    without redding `validate --only data`.
     The identity signatures come from the ONE shared `cross_row_duplicate_identity`
     (issue #971, rule 6d) — the same function the ingest-time refusal builds its
     carriers from, so the two seams can never disagree about what a duplicate is.
@@ -1659,7 +1662,14 @@ def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tupl
             if var_key:
                 variant.setdefault(var_key, set()).add(mid)
 
-    def justified(a: str, b: str) -> bool:
+    def justified(a: str, b: str, key: tuple) -> bool:
+        # issue #1213 F1: ONE justification seam. Ingest's
+        # `refuse_cross_model_duplicate_measures` accepts a duplicate when its
+        # identity key is allow-list-exact; the post-merge gate must accept the
+        # same pair even after its store-side alias is migrated away.
+        allowed = ut.CROSS_MODEL_ALLOW_LIST.get(key)
+        if allowed is not None and {_norm_model_id(x) for x in allowed} == {a, b}:
+            return True
         for model in models:
             mid = _norm_model_id(model.get("id"))
             if mid == a:
@@ -1676,7 +1686,7 @@ def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tupl
         if len(ids) < 2:
             continue
         for pair in itertools.combinations(sorted(ids), 2):
-            if justified(*pair):
+            if justified(pair[0], pair[1], key):
                 continue
             flagged_pairs.add(pair)
             out.append(("same post", key, list(pair)))
@@ -1684,7 +1694,7 @@ def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tupl
         if len(ids) < 2:
             continue
         for pair in itertools.combinations(sorted(ids), 2):
-            if pair in flagged_pairs or justified(*pair):
+            if pair in flagged_pairs or justified(pair[0], pair[1], key):
                 continue
             if not _ids_variant_relation(*pair):
                 continue
@@ -1700,9 +1710,9 @@ def check_no_duplicate_measurements(store: dict) -> None:
         eng, tps = key[0], key[1]
         tail = f"{key[2]} | {key[3]}" if len(key) == 4 else key[2]
         fail(f"cross-row duplicate measurement ({rule}): '{tps} t/s ({eng})' "
-             f"[{tail}] is stored under {' and '.join(ids)} — merge the rows or "
-             "justify the pair with `measurement_model_aliases` on one of them "
-             "(issue #795)")
+             f"[{tail}] is stored under {' and '.join(ids)} — merge the rows, justify "
+             "the pair with `measurement_model_aliases` on one of them, or pin it "
+             "allow-list-exact in `CROSS_MODEL_ALLOW_LIST` (issues #795/#1213)")
     if len(found) > 20:
         fail(f"cross-row duplicate measurements: {len(found) - 20} more")
 
