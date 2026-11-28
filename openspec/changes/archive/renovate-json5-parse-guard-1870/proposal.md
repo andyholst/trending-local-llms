@@ -1,6 +1,7 @@
 # Proposal: renovate-json5-parse-guard-1870
 
 Issue: #1870
+PR: #1871
 
 ## Why
 
