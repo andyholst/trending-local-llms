@@ -1125,6 +1125,18 @@ def is_amd_gpu(hw: str) -> bool:
     return bool(_AMD_GPU_RE.search(h)) and not any(k in h for k in _CUDA_HW)
 
 
+def is_nvidia_gpu(hw: str) -> bool:
+    """True when the hardware text names an NVIDIA GPU / CUDA device explicitly.
+
+    The NVIDIA analogue of is_amd_gpu(). Some engines are registered to a
+    single non-CUDA backend because their common use is on a Mac (TensorFold,
+    MLX), yet a measurement can name an NVIDIA card in its hardware. The
+    explicit hardware must win over that registry entry (issue #1864).
+    """
+    h = (hw or "").lower()
+    return any(k in h for k in _CUDA_HW)
+
+
 def join_backends(backends) -> str:
     """{'ROCm','CUDA'} -> 'CUDA / ROCm' in the canonical order (contract pattern)."""
     seen = {b for b in backends if b in _JOIN_ORDER}
@@ -1168,12 +1180,15 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
     """Which backend table a measurement belongs to: CUDA, Metal, CPU or ROCm.
     Priority: explicit Apple hardware -> explicit CPU-only wording -> AMD GPU
     hardware (Radeon / RX / Strix Halo / ROCm / HIP ..., no NVIDIA token) ->
-    CPU hardware -> the engine registry when it names ONE backend -> the
-    built-in single-backend map -> GPU/Apple keywords in hardware+quant -> CUDA
-    (default until evidence says otherwise). AMD hardware is checked BEFORE the
-    engine lookups because the engines that run on AMD (llama.cpp, vLLM,
-    Strata ...) are registered or mapped as CUDA, and before CPU because AMD
-    GPU strings often carry the host CPU ('Ryzen 5 7600 + RX 7800 XT'). Pass
+    NVIDIA / CUDA hardware -> CPU hardware -> the engine registry when it names
+    ONE backend -> the built-in single-backend map -> GPU/Apple keywords in
+    hardware+quant -> CUDA (default until evidence says otherwise). AMD and
+    NVIDIA hardware are checked BEFORE the engine lookups because an engine can
+    be registered or mapped to one backend (TensorFold -> Metal, llama.cpp ->
+    CUDA) while a measurement still names the other vendor's hardware; AMD is
+    also before CPU because AMD GPU strings often carry the host CPU ('Ryzen 5
+    7600 + RX 7800 XT'). Apple hardware and explicit CPU-only wording keep their
+    higher priority, so a TensorFold-on-Mac row still renders as Metal. Pass
     the store's `engines` registry so a new registry-only engine (e.g. a
     Mac-only server) never falls through to the CUDA default."""
     hw = (" " + (e.get("hardware") or "") + " ").lower()
@@ -1183,6 +1198,8 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
         return "CPU"
     if is_amd_gpu(hw):
         return "ROCm"
+    if is_nvidia_gpu(hw):
+        return "CUDA"
     if any(k in hw for k in _CPU_HW) and not any(k in hw for k in _CUDA_HW):
         return "CPU"
     b = registry_backend(e.get("engine", ""), registry) or ENGINE_BACKEND.get(e.get("engine", ""))
