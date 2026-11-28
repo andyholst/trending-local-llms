@@ -1020,6 +1020,43 @@ def test_only_the_refresh_pipeline_carries_a_schedule():
                   not crons, crons)
 
 
+def test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron():
+    """Owner ruling on #716 (path (a), answering the CONFLICT-CONFIRMED verdict):
+    Renovate runs as the GitHub App, so the weekly auto-bump cadence and the
+    Action-SHA / Dockerfile-version bumps live in `renovate.json5` (app-side),
+    NOT in a repository workflow's `on.schedule`. Rule 6t / #1029 leaves
+    refresh-bot as the ONLY workflow with a cron; a Renovate workflow carrying
+    a schedule is refused. Fails when the config is missing or empty, when its
+    weekly cadence or either bump manager is gone, or when any workflow gains
+    a Renovate on.schedule.
+    """
+    cfg_path = ROOT / "renovate.json5"
+    check("renovate: app config exists at the repo root", cfg_path.is_file(), str(cfg_path))
+    cfg = cfg_path.read_text(encoding="utf-8") if cfg_path.is_file() else ""
+    check("renovate: app config is non-empty", bool(cfg.strip()), len(cfg))
+
+    sched_match = re.search(r'"schedule"\s*:\s*\[(.*?)\]', cfg, re.S)
+    sched = sched_match.group(1) if sched_match else ""
+    check("renovate: config declares an app-side WEEKLY schedule",
+          bool(sched_match) and any(t in sched.lower()
+                                    for t in ("every monday", "every week", "weekly",
+                                              "every weekend")),
+          sched[:120])
+    check("renovate: cadence names an explicit timezone", '"timezone"' in cfg, "")
+    check("renovate: GitHub Actions SHA bumps are enabled", "github-actions" in cfg, "")
+    check("renovate: Dockerfile base-image bumps are enabled", "dockerfile" in cfg, "")
+    check("renovate: majors are separated and the dashboard is on",
+          "separateMultipleMajor" in cfg and "dependencyDashboard" in cfg, "")
+
+    for wf_name in sorted(p.name for p in WF.glob("*.yml")):
+        raw = (WF / wf_name).read_text(encoding="utf-8")
+        parsed = load(wf_name)
+        crons = [c.get("cron", "") for c in (parsed["on"].get("schedule") or [])]
+        renovate_wf = "renovate" in wf_name.lower() or "renovatebot/renovate" in raw
+        check(f"renovate: {wf_name} carries no Renovate on.schedule (cadence is app-side)",
+              not (renovate_wf and crons), crons if renovate_wf else "")
+
+
 def test_agents_md_forbids_an_agent_dispatching_a_pipeline():
     """Rule 6t(e) pinned at the WORDING (issue #1055, owner directive 2026-11-15): a
     Hermes/agent session never starts a CI pipeline — no `gh workflow run`, no re-run,
@@ -3487,6 +3524,7 @@ def main() -> int:
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_only_the_refresh_pipeline_carries_a_schedule()
+    test_renovate_app_config_carries_the_weekly_cadence_without_a_workflow_cron()
     test_agents_md_forbids_an_agent_dispatching_a_pipeline()
     test_the_guard_registry_is_derived_from_the_tree()
     test_a_repo_event_run_is_admitted_by_its_guard()
