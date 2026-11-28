@@ -1098,7 +1098,12 @@ ENGINE_BACKEND = {
 }
 _METAL_HW = ("apple", "mac", "m1 ", "m2 ", "m3 ", "m4 ", "m5 ", "m6 ", "m1)", "m2)", "m3)", "m4)", "m5)", "m6)", "mlx")
 _CPU_HW = ("cpu", "intel", "amd ryzen", "ryzen", "epyc", "xeon", "threadripper", "no gpu", "raspberry", "arm64", "snapdragon")
-_CUDA_HW = ("rtx", "nvidia", "cuda", "geforce", "tesla", "a100", "h100", "l40", "aic")
+_CUDA_HW = ("rtx", "nvidia", "cuda", "geforce", "tesla", "a100", "h100", "l40", "aic",
+            # DGX Spark / GB10 is NVIDIA Blackwell hardware; rows naming the box
+            # but no vendor token previously fell through to TensorFold/MLX Metal
+            # (issue #1866). One vocabulary feeds the NVIDIA guard, the AMD
+            # exclusion, the CPU check and the keyword fallback.
+            "dgx", "gb10")
 # AMD GPU evidence in a hardware string. Word-bounded on purpose: a bare 'amd'
 # is also AMD Ryzen/EPYC CPUs, 'hip' is inside 'chip'/'ship', 'rx' inside words,
 # and 'vulkan' is cross-vendor - none of those alone means an AMD GPU.
