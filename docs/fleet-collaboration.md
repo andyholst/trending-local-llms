@@ -19,7 +19,8 @@ grants collaborator/repository access.
 hermes -p tll-planner chat
 ```
 
-The planner is the single dispatcher and stays ONE instance. It checks the fetched base, reads
+The planner is the single dispatcher on its machine and stays ONE instance per machine; an
+unlimited number of planner machines may run, each with its own lane clones — see §7. It checks the fetched base, reads
 the issue board, and dispatches lanes with signed comments on the **issue thread**. It does not
 implement, does not push a branch and does not merge. Every other lane is started by a planner
 dispatch naming the issue, the lane, the base sha, the done criteria and the handover target.
@@ -29,9 +30,12 @@ newer working claim held on another host is refused (exit 1) or undecidable (exi
 
 ## 2. The board is each issue's own thread
 
-A pull request is a delivery artifact, never a handover. The ONE shared board across machines
-is the **issue's own comment thread**; a PR comment mirrors it but transfers no ownership.
-Every work comment is signed with the lane and the machine id:
+A pull request is a delivery artifact, never a substitute for the board. The ONE shared surface
+across machines is the comment threads — the **issue's own thread** and the **relevant PR comment
+thread** — and every claim, status, verdict, handover and done line is posted on both. Ownership
+still follows the newest signed comment on the issue thread; a PR comment mirrors the chain and
+does not transfer ownership by itself. See §7 for the dual-surface protocol. Every work comment
+is signed with the lane and the machine id:
 
 ```
 BOT <lane> (host <user>@<hostname>) · <verb> #<id> · …
@@ -68,12 +72,17 @@ handed over — never a fix smuggled into the change that found it.
 6. **Close** the loop: `BOT <lane> · done #<id> · handover <...>`. `handover none` is posted only when the issue is fully done; it is not a handover to another lane. Cleanup verifies the issue's state back and that the OpenSpec change is archived.
 7. **While waiting** for a test or CI gate, post ONE status note with the machine stamp and doing / waiting-for / can-help-with fields, then continue with the next actionable item. Never idle-wait or poll a background run to fill time; the next cron tick is a work boundary, not a status update.
 
+Every step above is mirrored on the relevant PR comment thread once a PR exists — the same
+signed line, machine stamp and base sha — so a bot on any machine can follow the chain from
+either surface; see §7.
+
 ## 5. Four instances per delegable lane
 
-The fleet scales to **four instances of each delegable lane**: the template `<lane>` plus
-`<lane>-2`, `<lane>-3` and `<lane>-4` on the gateway. The planner stays a single instance.
-All instances of a lane obey the same remit and the same signed-comment formats — a human must
-not be able to tell which clone picked up an item.
+The fleet scales to **four instances of each delegable lane per machine**: the template `<lane>`
+plus `<lane>-2`, `<lane>-3` and `<lane>-4` on the gateway. One planner instance runs on each
+machine; the number of machines is unbounded (§7). All instances of a lane obey the same remit
+and the same signed-comment formats — a human must not be able to tell which clone picked up an
+item.
 
 Instances self-claim from the issue comments: read the full thread, take the newest state, and
 only a signed handover moves an item between lanes. `make dispatch-check` enforces the active
@@ -104,3 +113,39 @@ and never a new Actions `schedule:`. The runnable checklist is
 
 The pass keeps the mirrors and the roster honest across hosts without a timer: drift is caught
 on a predictable cadence, and the protocol stays followable as the fleet grows.
+
+## 7. Unbounded planner machines and dual-surface handovers
+
+The owner may start **unlimited tll-planner machines, each with its own tll agent lanes**. The
+dispatcher role is singular on each machine, not singular across the fleet: no other lane
+dispatches, and scaling is horizontal across owner-started sessions. There is
+no cron, no scheduler and no second dispatcher — no new Actions `schedule:`, no gateway job and
+no registry of machines to join.
+
+The comment threads are the ONE shared surface across every machine. Across those threads,
+comments are the single source of truth: no private state, direct message or local ledger
+transfers ownership. Every signed **claim, status, verdict, handover and done** line is posted
+on BOTH surfaces — the issue thread AND the relevant PR comment thread. The issue thread carries
+the work chain from claim to close; the PR comment thread mirrors the delivery, review and gate
+chain at the exact head.
+Ownership follows the newest signed comment on the issue thread; a PR comment never replaces it.
+
+Before acting, a bot on any machine reads the newest comments on BOTH surfaces for a live claim
+on ANY machine:
+
+1. Stamp every signed line `BOT <lane> (host user@hostname) · …` — the machine id, never a
+   GitHub login, a full host name or hardware name. Two machines may comment under the same bot
+   account; the `user@hostname` stamp is what tells them apart.
+2. Run the twice-claim guard: post the claim, wait for the settle window, re-read the thread. A
+   competing newer claim on any machine wins; back off and hand the prepared work over on both
+   surfaces rather than opening a competing branch or PR.
+3. Serialize shared files and PR heads with `make dispatch-check ISSUE=<n>` (lease) plus one
+   worktree and one branch per claimed issue. The newest signed handover is the only authority
+   to move an item between lanes.
+4. Mirror each `· pr #<id> · PR #<n> · …`, `· reviewing #<id> · PR #<n> · …`, status, gate result
+   and `· done #<id> · handover <...>` line on the PR comment thread as soon as a PR exists; the
+   issue thread keeps the same chain so a bot arriving from either surface sees identical state.
+
+A machine that goes away leaves its last signed comment as state, not a lock: the next reader
+takes the newest claim, checks the lease, and either resumes the handover or reports the drift to
+`tll-planner` on the issue thread. No timer ever advances the fleet.
