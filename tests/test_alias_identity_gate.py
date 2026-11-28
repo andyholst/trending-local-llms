@@ -10,7 +10,9 @@ misattribution refusal. This suite locks the gate:
 
   1. params_identity reads the STORE params field (name parsing fails open on variant names);
   2. cross_identity_alias_reason reds a different-size counterpart, greens a same-identity
-     variant (bonsai = ternary 27B), fails open when either params is unknown;
+     variant (bonsai = ternary 27B), and fails CLOSED when either side STATES an
+     unparseable params value (issue #1213 F2 — no silent grant to a model whose size
+     the store states in an unreadable form; absent params keep the #1207 fail-open);
   3. the ingest merge REFUSES a new cross-identity counterpart (with store) and keeps the
      unconditional union without store (back-compat);
   4. a non-pending cross-identity alias is INERT in misattributed_measurement_reason;
@@ -68,12 +70,15 @@ def test_cross_identity_reason():
     flash = _row("qwen3.8-flash-next-125b", "125B (MoE)")
     dense = _row("qwen3.8-27b", "27B")
     bonsai = _row("bonsai-2-27b", "27B")
-    unknown = _row("mystery", "")
+    unknown = _row("mystery", "E4B")  # a STATED size the parser cannot read
     r = UT.cross_identity_alias_reason(flash, dense)
     check("125B vs 27B is refused, naming both", bool(r) and "125B" in r and "27B" in r, str(r))
     check("same-identity variant (bonsai 27B on 27B) is allowed", UT.cross_identity_alias_reason(dense, bonsai) is None)
-    check("unknown params fails open", UT.cross_identity_alias_reason(flash, unknown) is None
-          and UT.cross_identity_alias_reason(unknown, dense) is None)
+    check("stated-but-unparseable params fail closed (issue #1213 F2)",
+          bool(UT.cross_identity_alias_reason(flash, unknown))
+          and bool(UT.cross_identity_alias_reason(unknown, dense)))
+    check("absent params keep the documented #1207 fail-open",
+          UT.cross_identity_alias_reason(flash, _row("no-params", None)) is None)
 
 
 def test_ingest_merge_refuses_a_new_cross_identity_counterpart():
@@ -94,6 +99,41 @@ def test_ingest_merge_refuses_a_new_cross_identity_counterpart():
     a2 = UT.merge_measurement_aliases(e2, incoming)  # no store: back-compat unconditional union
     check("without store the union is unconditional (back-compat)",
           set(a2) == {"qwen3.8-27b", "qwen3-8-flash-next-125b"}, str(a2))
+
+
+def test_unparseable_params_alias_is_refused_at_ingest_and_reported():
+    """#1213 F2: a planted alias to a model whose params the gate cannot parse must
+    be REFUSED at ingest and REPORTed by the store gate — never accepted silently
+    with a ledger that still reads 12 and hides the drift."""
+    row = _row("qwen3.8-27b", "27B")
+    gemma = _row("gemma-4-e4b", "E4B")  # shipped params spelling the gate cannot parse
+    store = {"models": [row, gemma]}
+    existing = dict(row)
+    out = io.StringIO()
+    with redirect_stdout(out):
+        added = UT.merge_measurement_aliases(
+            existing, {"measurement_model_aliases": ["gemma-4-e4b"]}, store)
+    check("the unparseable counterpart is NOT added at ingest", added == [], str(added))
+    check("the refusal is loud in the ingest log",
+          "REFUSED" in out.getvalue() and "gemma-4-e4b" in out.getvalue(),
+          out.getvalue()[:300])
+    check("the row keeps no silent alias", not existing.get("measurement_model_aliases"),
+          str(existing.get("measurement_model_aliases")))
+
+    reported = _row("qwen3.8-27b", "27B", aliases=["gemma-4-e4b"])
+    vout = io.StringIO()
+    V.FAILURES.clear()
+    try:
+        with redirect_stdout(vout):
+            V.check_measurement_alias_map({"models": [reported, gemma]})
+        fails = list(V.FAILURES)
+    finally:
+        V.FAILURES.clear()
+    check("validate REPORTS the unparseable cross-identity alias",
+          "REPORT" in vout.getvalue() and "gemma-4-e4b" in vout.getvalue(),
+          vout.getvalue()[:300])
+    check("the report is ledger-visible, not a hard fail on the shipped shape",
+          not fails, str(fails)[:300])
 
 
 def test_a_non_pending_cross_identity_alias_is_inert_in_misattribution():
@@ -183,6 +223,7 @@ def main() -> int:
     test_params_identity_reads_the_store_field()
     test_cross_identity_reason()
     test_ingest_merge_refuses_a_new_cross_identity_counterpart()
+    test_unparseable_params_alias_is_refused_at_ingest_and_reported()
     test_a_non_pending_cross_identity_alias_is_inert_in_misattribution()
     test_validate_gate_reports_cross_identity_and_fails_dangling()
     test_the_shipped_store_is_clean_and_documents_the_params()

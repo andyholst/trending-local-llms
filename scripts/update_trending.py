@@ -3828,8 +3828,23 @@ def cross_identity_alias_reason(model: dict, other: dict) -> str | None:
     the exception path, bypassing the misattribution refusal. Measured in the shipped
     store (issue #1207): reciprocal qwen3.8-flash-next-125b <-> qwen3.8-27b aliases
     (125B MoE vs 27B dense), qwen3.5-0.8b on the 27B row, and 35B/180B rows on the 125B
-    row. Fails open when either params is unknown — the gate never guesses a refusal."""
+    row. Fails closed when either side STATES a params value the parser cannot read
+    (issue #1213 F2): identity cannot be proven, so the exception is REFUSED at ingest
+    and REPORTed by the store gate — it is never granted silently to a model whose
+    size the store states in an unreadable form. A genuinely ABSENT params keeps the
+    documented #1207 fail-open (an unknown size is not a claimed different size)."""
+    def _stated(v: object) -> bool:
+        return bool(str(v or "").strip())
+
     a, b = params_identity(model.get("params")), params_identity(other.get("params"))
+    stated_unparseable = ((a is None and _stated(model.get("params")))
+                          or (b is None and _stated(other.get("params"))))
+    if stated_unparseable:
+        return (f"alias counterpart '{other.get('id')}' declares params "
+                f"{other.get('params')!r} but the row declares {model.get('params')!r} "
+                f"— at least one STATED params value is unparseable, so the same model "
+                f"identity cannot be proven (issue #1213); a cross-identity alias is "
+                f"refused and reported until both state a parseable size")
     if a and b and a != b:
         return (f"alias counterpart '{other.get('id')}' declares params {other.get('params')!r} "
                 f"but the row declares {model.get('params')!r} — a different model size is "
