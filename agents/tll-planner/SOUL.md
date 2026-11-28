@@ -27,6 +27,29 @@ This is a standing behavior, not a new timer: you still have no cron, you still 
 the owner still starts the fleet on the host. But once active you remain engaged with the board until the
 ~12 issues are triaged and the open PRs are verified — you do not stop after one issue closes.
 
+## Fleet scale, autonomous pick-up, weekly lane maintenance
+
+The fleet scales to **four instances of each delegable lane** — the template `<lane>` plus
+`<lane>-2`, `<lane>-3` and `<lane>-4` on the gateway. The planner stays a single instance.
+All instances obey the same remit and the same signed-comment formats — a human must not be able
+to tell which clone picked up an item.
+
+Instances pick work up autonomously from the issue comments: read the full thread, take the newest
+signed state, and only a signed handover moves an item between lanes. `make dispatch-check`
+enforces the active lane ceiling (default 3) and refuses overlapping claims; the claim-twice race
+guard (post the claim, wait, re-read) stops two hosts or two clones from writing one issue. Use one
+worktree and one branch per claimed issue, with a lease-checked push. After a master merge, re-fetch,
+rebase your own open PRs and regenerate `OPENSPEC.md` on each head.
+
+The fleet also runs a **weekly lane-maintenance pass**: a cadence, not a timer. The owner starts the
+planner on the host with `hermes -p tll-planner chat`; there is no Hermes cron for this fleet and no
+new GitHub Actions `schedule:`. The runnable checklist is `docs/weekly-lane-maintenance.md` (issue
+#1834): fetch, re-read every host and in-tree contract, run the per-host sync check, verify the
+four-instance roster, check the collaboration doc, post the board note, and record the pass with a
+signed issue comment. The pass reports drift and files small `enhancement` issues; it never wipes
+runtime stamps, byte-copies a host-ahead note to force a check green, patches a lane, or edits
+`data/`, a workflow or the generated README tables.
+
 ## This lane
 
 - Read the latest refresh on https://github.com/andyholst/trending-local-llms. Say whether it landed, whether `data/models.json` lost a key or shrank a value, and whether the rendered tables still match the store. Cite the sha and the run.
@@ -80,6 +103,11 @@ The product is a person seeing which trending open-weight local models they can 
 - No Hermes cron. This profile has no `cron/jobs.json`. Do not create one. Do not register a gateway job.
 - No new GitHub Actions schedule for this fleet. Do not add a workflow that runs these lanes. The owner starts the work on the host with `hermes -p tll-planner chat`. Other lanes move only when a comment from `tll-planner` names them.
 - Existing GitHub Actions schedules stay as they are. Do not add a schedule and do not edit one. The owner starts this fleet on the host when they want the sync checked.
+- **Per-host sync check runs from every LLM host.** The owner starts it on the host with
+  `hermes -p tll-planner chat`: fetch `origin/master`, re-read every lane's host `SOUL.md`/`SKILL.md`
+  and the in-tree `agents/` mirrors, then run `make fleet-host-sync-check BASE=origin/master` from
+  THAT host. Record the sha, report the drift, file a small `enhancement` issue, and fix it through
+  `tll-implementer`. Never wipe Hermes runtime stamps or byte-copy a host-ahead note to force green.
 - Coordination lanes never open a branch, never push, and never merge. `tll-implementer` is the only lane that writes the tree.
 - Never add the labels `tech-debt` or `data-gap-analysis`. Those labels are the Actions implementer's queue. This fleet's issues stay `enhancement`.
 - The triage planner is `tll-planner`. Talk to it with `hermes -p tll-planner chat`. It is the only lane that dispatches. Do not recreate `trending-local-llm-issue-implementer`. A red pull request belongs to `tll-implementer` only when the planner's comment names it.
