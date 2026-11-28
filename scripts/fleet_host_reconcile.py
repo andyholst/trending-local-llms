@@ -5,14 +5,18 @@
 remedy, so every `M:` wake re-derives by hand whether a host file is BEHIND master (missing
 a pinned needle) or FORWARD (extra experience notes) -- and a raw host copy into the tree
 would delete master's bytes. This seam reuses the check's comparison inputs (`LANES`,
-`MIRROR_RELS`, `_blob`, `_git` -- ONE definition of which files are compared and against
-which base, rule 6d) and adds only NEW logic: a line-based classification
-(`FORWARD` / `STALE` / `MIXED`), a LOSSLESS union, a timestamped backup before any overwrite,
-and a destination that is either the host profile home (the section 7b refresh act) or a
-worktree's `agents/<lane>/<rel>` (the reviewed delivery).
+`MIRROR_RELS`, `RULEBOOK_REL`, `PROTECTED_RELS`, `_blob`, `_git` -- ONE definition of which
+files are compared and against which base, rule 6d) and adds only NEW logic: a line-based
+classification (`FORWARD` / `STALE` / `MIXED`), a LOSSLESS union, a timestamped backup before
+any overwrite, and a destination that is either the host profile home (the section 7b refresh
+act) or a worktree's `agents/<lane>/<rel>` (the reviewed delivery).
 
-Scope: the TEXT mirrors only -- `SOUL.md` and `skills/<lane>/SKILL.md`. `config.yaml` stays
-with `make agent-profile-provision`; a second drift verdict for it is forbidden (#1198/#1204).
+Scope: the TEXT mirrors (`SOUL.md`, `skills/<lane>/SKILL.md`) PLUS the ONE host `AGENTS.md`
+against the repo-root `AGENTS.md` (issue #1860). `config.yaml` stays with
+`make agent-profile-provision`; a second drift verdict for it is forbidden (#1198/#1204).
+Report-only is the default. Writing a protected instruction file (`AGENTS.md`) needs BOTH
+`--write` and `--attended-signoff` (ATTESTED=1): without it the whole run refuses before any
+backup or write (rule 3c, attended sign-off). CI never writes a live host.
 
 Exit: 0 clean / every divergence written, 1 divergence remains (report-only, or an unwritten
 file), 2 undecidable (bad base, missing home, unreadable blob, a violated lossless invariant).
@@ -27,10 +31,14 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:  # the ONE lane set, mirror path list and base/blob seam (rule 6d)
-    from fleet_host_sync_check import LANES, MIRROR_RELS, _blob, _git
+try:  # the ONE comparison set, base/blob seam and protected-file list (rules 6d/3c)
+    from fleet_host_sync_check import (
+        LANES, MIRROR_RELS, RULEBOOK_REL, PROTECTED_RELS, _blob, _git,
+    )
 except ImportError:  # run from the repo root
-    from scripts.fleet_host_sync_check import LANES, MIRROR_RELS, _blob, _git
+    from scripts.fleet_host_sync_check import (
+        LANES, MIRROR_RELS, RULEBOOK_REL, PROTECTED_RELS, _blob, _git,
+    )
 
 
 def _is_subsequence(needle: list[str], haystack: list[str]) -> bool:
@@ -123,6 +131,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-ref", default=None, help="refuse unless --base resolves to this ref")
     parser.add_argument("--dest", default=None, help="write the union under <dest>/agents/<lane>/<rel>")
     parser.add_argument("--write", action="store_true", help="back up + write the union (default: report only)")
+    parser.add_argument(
+        "--attended-signoff", action="store_true",
+        help="attended rule-3c sign-off: permit writes to protected instruction files (ATTESTED=1)",
+    )
+    parser.add_argument(
+        "--rulebook", default=None,
+        help="override the host rulebook path (relative to the repo root); for the CI repo-tree proof",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parent.parent
@@ -160,43 +176,67 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[fleet-reconcile] REFUSED: no profile home at {home}")
             return 2
 
-    divergent = 0
-    written = 0
+    # ONE target list: every lane mirror PLUS the single host rulebook (issue #1860).
+    targets: list[tuple[str, str, Path, bool]] = []
     for lane in LANES:
         for rel in MIRROR_RELS:
             rel = rel.format(lane=lane)
             repo_path = f"agents/{lane}/{rel}"
-            try:
-                expected_bytes = _blob(root, base_sha, repo_path)
-            except ValueError:
-                print(f"[fleet-reconcile] REFUSED: {base_sha}:{repo_path} unreadable at base")
-                return 2
             lane_dir = (dest_root / "agents" / lane) if dest_root else (home / lane)  # type: ignore[operator]
-            actual = lane_dir / rel
-            if not actual.is_file():
-                print(f"[fleet-reconcile] FAIL {lane}/{rel} missing in {lane_dir}")
-                divergent += 1
-                continue
-            base_lines = expected_bytes.decode("utf-8").splitlines()
-            host_lines = actual.read_text(encoding="utf-8").splitlines()
-            verdict = classify(base_lines, host_lines)
-            if verdict == "SAME":
-                continue
-            try:
-                merged = union_lines(base_lines, host_lines)
-            except AssertionError as exc:
-                print(f"[fleet-reconcile] REFUSED: {lane}/{rel}: {exc} -- nothing written")
-                return 2
-            plus = sum((Counter(host_lines) - Counter(base_lines)).values())
-            minus = sum((Counter(base_lines) - Counter(host_lines)).values())
-            print(f"[fleet-reconcile] CLASSIFY {lane}/{rel} {verdict} +{plus}/-{minus}")
-            print(f"[fleet-reconcile] UNION {lane}/{rel} lines={len(merged)} -> {actual}")
+            targets.append((f"{lane}/{rel}", repo_path, lane_dir / rel, False))
+    if args.rulebook:
+        # CI proof against a repo tree: the "host" rulebook is the repo's own root file.
+        rulebook_path = (dest_root / args.rulebook) if dest_root else (root / args.rulebook)
+    else:
+        rulebook_path = (dest_root / RULEBOOK_REL) if dest_root else (home / RULEBOOK_REL)  # type: ignore[operator]
+    targets.append((RULEBOOK_REL, RULEBOOK_REL, rulebook_path, RULEBOOK_REL in PROTECTED_RELS))
+
+    divergent = 0
+    pending: list[tuple[str, Path, list[str], bool]] = []
+    for label, repo_path, actual, protected in targets:
+        try:
+            expected_bytes = _blob(root, base_sha, repo_path)
+        except ValueError:
+            print(f"[fleet-reconcile] REFUSED: {base_sha}:{repo_path} unreadable at base")
+            return 2
+        if not actual.is_file():
+            print(f"[fleet-reconcile] FAIL {label} missing in {actual.parent}")
             divergent += 1
-            if args.write:
-                backup = _backup(actual)
-                print(f"[fleet-reconcile] BACKUP {backup}")
-                actual.write_text("\n".join(merged) + ("\n" if merged else ""), encoding="utf-8")
-                written += 1
+            continue
+        base_lines = expected_bytes.decode("utf-8").splitlines()
+        host_lines = actual.read_text(encoding="utf-8").splitlines()
+        verdict = classify(base_lines, host_lines)
+        if verdict == "SAME":
+            continue
+        try:
+            merged = union_lines(base_lines, host_lines)
+        except AssertionError as exc:
+            print(f"[fleet-reconcile] REFUSED: {label}: {exc} -- nothing written")
+            return 2
+        plus = sum((Counter(host_lines) - Counter(base_lines)).values())
+        minus = sum((Counter(base_lines) - Counter(host_lines)).values())
+        print(f"[fleet-reconcile] CLASSIFY {label} {verdict} +{plus}/-{minus}")
+        print(f"[fleet-reconcile] UNION {label} lines={len(merged)} -> {actual}")
+        divergent += 1
+        pending.append((label, actual, merged, protected))
+
+    # Rule 3c: a protected instruction file is never written by a headless lane. Refuse the
+    # WHOLE run before any backup or write when the pending set contains one and no attended
+    # sign-off was handed to this invocation (fail closed, not fail open for the other files).
+    if args.write and any(protected for *_, protected in pending) and not args.attended_signoff:
+        print(
+            "[fleet-reconcile] REFUSED: protected instruction file(s) in the pending set -- "
+            "attended sign-off required (rule 3c); nothing written"
+        )
+        return 2
+
+    written = 0
+    if args.write:
+        for label, actual, merged, _ in pending:
+            backup = _backup(actual)
+            print(f"[fleet-reconcile] BACKUP {backup}")
+            actual.write_text("\n".join(merged) + ("\n" if merged else ""), encoding="utf-8")
+            written += 1
 
     if not args.write and divergent:
         print(f"[fleet-reconcile] DIVERGENT {divergent} file(s) against {base_sha} -- rerun with WRITE=1")

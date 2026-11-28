@@ -56,7 +56,8 @@ def check(cond: bool, msg: str) -> int:
     return 1
 
 
-def build(tmp: Path, base_text: str, host_text: str, lane: str = "tll-tester") -> tuple[Path, Path]:
+def build(tmp: Path, base_text: str, host_text: str, lane: str = "tll-tester",
+          rulebook_base: str | None = None, rulebook_host: str | None = None) -> tuple[Path, Path]:
     """A REAL git repo at `repo` (base) and a profile home at `profiles` (host)."""
     repo = tmp / "repo"
     home = tmp / "profiles"
@@ -74,6 +75,11 @@ def build(tmp: Path, base_text: str, host_text: str, lane: str = "tll-tester") -
             host_text if name == lane else "base soul\n", encoding="utf-8"
         )
         (hskill / "SKILL.md").write_text("base skill\n", encoding="utf-8")
+    # Issue #1860: the host rulebook is a SINGLE file at the home root, compared against
+    # the repo-root AGENTS.md. `rulebook_base`/`rulebook_host` default to identical bytes
+    # so the existing nine guards stay green; the new four override them.
+    (repo / "AGENTS.md").write_text(rulebook_base or "rule alpha\nrule beta\n", encoding="utf-8")
+    (home / "AGENTS.md").write_text(rulebook_host or "rule alpha\nrule beta\n", encoding="utf-8")
     for argv in (
         ["git", "init", "-q"],
         ["git", "add", "-A"],
@@ -252,6 +258,98 @@ def test_backup_path_keeps_the_handed_spelling_on_a_plain_linux_shaped_home() ->
         return _check_backup_spelling(home, written, before)
 
 
+def test_stale_host_rulebook_and_soul_converge_to_base() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        base_soul = "alpha\nbeta\ngamma\n"
+        rule_base = "rule alpha\nrule beta\nrule gamma\n"
+        repo, home = build(
+            Path(tmp), base_soul, "alpha\nbeta\n",
+            rulebook_base=rule_base, rulebook_host="rule alpha\nrule beta\n",
+        )
+        got = run_seam(repo, home, "--write", "--attended-signoff")
+        failed = check(got.returncode == 0, "attended WRITE=1 repairs a stale host")
+        failed += check("CLASSIFY AGENTS.md STALE +0/-1" in got.stdout,
+                        "the host AGENTS.md is classified STALE against the fetched base")
+        failed += check((home / "AGENTS.md").read_text(encoding="utf-8") == rule_base,
+                        "the host rulebook converges to the repo-authoritative bytes")
+        failed += check((home / "tll-tester" / "SOUL.md").read_text(encoding="utf-8") == base_soul,
+                        "the stale SOUL mirror converges in the same run")
+        failed += check(bool(list(home.glob("AGENTS.md.bak-*"))),
+                        "the rulebook is backed up before it is overwritten")
+        return failed
+
+
+def test_forward_host_rulebook_note_is_preserved() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        rule_host = "rule alpha\nNOTE learned on this host\nrule beta\n"
+        repo, home = build(
+            Path(tmp), "alpha\nbeta\n", "alpha\nbeta\n",
+            rulebook_base="rule alpha\nrule beta\n", rulebook_host=rule_host,
+        )
+        got = run_seam(repo, home, "--write", "--attended-signoff")
+        failed = check("CLASSIFY AGENTS.md FORWARD +1/-0" in got.stdout,
+                       "a host-ahead rulebook is classified FORWARD")
+        failed += check((home / "AGENTS.md").read_text(encoding="utf-8") == rule_host,
+                        "the lossless union preserves the host's forward note")
+        return failed
+
+
+def test_protected_rulebook_write_fails_closed_without_signoff() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo, home = build(
+            Path(tmp), "alpha\nbeta\ngamma\n", "alpha\nbeta\n",
+            rulebook_base="rule alpha\nrule beta\nrule gamma\n",
+            rulebook_host="rule alpha\nrule beta\n",
+        )
+        rule_before = (home / "AGENTS.md").read_bytes()
+        soul_before = (home / "tll-tester" / "SOUL.md").read_bytes()
+        got = run_seam(repo, home, "--write")
+        failed = check(got.returncode == 2, "an unattended protected write exits 2")
+        failed += check("REFUSED" in got.stdout and "rule 3c" in got.stdout,
+                        "the refusal names rule 3c")
+        failed += check((home / "AGENTS.md").read_bytes() == rule_before,
+                        "the protected rulebook bytes are untouched")
+        failed += check((home / "tll-tester" / "SOUL.md").read_bytes() == soul_before,
+                        "fail-closed means NO file is written, not just the protected one")
+        failed += check(not list(home.glob("*.bak-*"))
+                        and not list(home.glob("tll-tester/*.bak-*")),
+                        "no backup is left by a refused write")
+        return failed
+
+
+def test_config_yaml_is_untouched() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo, home = build(Path(tmp), "alpha\nbeta\ngamma\n", "alpha\nbeta\n")
+        cfg = home / "tll-tester" / "config.yaml"
+        cfg.write_text("owned: stale\n", encoding="utf-8")
+        before = cfg.read_bytes()
+        got = run_seam(repo, home, "--write", "--attended-signoff")
+        failed = check(got.returncode == 0, "the write path still lands the mirrors")
+        failed += check(cfg.read_bytes() == before, "config.yaml is untouched by reconciliation")
+        failed += check("config.yaml" not in got.stdout, "no second config.yaml drift verdict")
+        failed += check(not list(home.glob("tll-tester/config.yaml.bak-*")),
+                        "no config.yaml backup is written")
+        return failed
+
+
+def test_make_and_ci_wire_the_signoff_and_rulebook() -> int:
+    root = Path(__file__).resolve().parent.parent
+    makefile = (root / "Makefile").read_text(encoding="utf-8")
+    workflow = (root / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    failed = check("$(if $(ATTESTED), --attended-signoff,)" in makefile,
+                   "ATTESTED=1 is plumbed to the attended sign-off flag")
+    failed += check("$(if $(RULEBOOK), --rulebook $(RULEBOOK),)" in makefile,
+                    "RULEBOOK=... is plumbed to the rulebook override")
+    failed += check("make fleet-host-reconcile BASE=HEAD PROFILES_HOME=agents RULEBOOK=AGENTS.md" in workflow,
+                    "CI verifies the read-only rulebook comparison without a live host")
+    failed += check("run: make test" in workflow,
+                    "CI runs make test, which discovers the reconciliation guard module")
+    failed += check("--write" not in [line.strip() for line in workflow.splitlines()
+                                      if "fleet-host-reconcile" in line],
+                    "no CI step turns the host write path on")
+    return failed
+
+
 def main() -> int:
     return sum(fn() for fn in (
         test_forward_host_classifies_and_write_keeps_a_backup,
@@ -263,6 +361,11 @@ def main() -> int:
         test_the_target_is_wired_to_make_ci_and_the_description,
         test_backup_path_keeps_the_handed_spelling_on_a_symlinked_macos_shaped_home,
         test_backup_path_keeps_the_handed_spelling_on_a_plain_linux_shaped_home,
+        test_stale_host_rulebook_and_soul_converge_to_base,
+        test_forward_host_rulebook_note_is_preserved,
+        test_protected_rulebook_write_fails_closed_without_signoff,
+        test_config_yaml_is_untouched,
+        test_make_and_ci_wire_the_signoff_and_rulebook,
     ))
 
 
