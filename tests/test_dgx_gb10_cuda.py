@@ -48,6 +48,22 @@ def rows_by_key(s: dict) -> dict:
             for m in s["models"] for e in m.get("engines", [])}
 
 
+def find_row(rows: dict, mid: str, eng: str, hw: str, tps: str):
+    """Find a delta row by its recorded key, tolerating an ADDITIVE suffix on
+    hardware. Issue #1868 appended a DGX-Spark clarification to two rows while
+    preserving their original text verbatim; the #1866 delta ledger records the
+    pre-clarification string. Only the LOOKUP is tolerant — every classification
+    assertion below is unchanged."""
+    key = (mid, eng, hw, tps)
+    if key in rows:
+        return rows[key]
+    for k, e in rows.items():
+        if k[0] == mid and k[1] == eng and k[3] == tps and (
+                k[2].startswith(hw) or hw.startswith(k[2])):
+            return e
+    return None
+
+
 # The three rows named in #1866 (model id, engine, hardware, tps).
 NAMED = [
     ("qwen3.8-flash-next-125b", "TensorFold", "DGX Spark", "67"),
@@ -90,7 +106,7 @@ def test_named_rows_are_cuda():
     reg = s.get("engines", {})
     rows = rows_by_key(s)
     for mid, eng, hw, tps in NAMED:
-        e = rows.get((mid, eng, hw, tps))
+        e = find_row(rows, mid, eng, hw, tps)
         check(f"store row present: {mid} / {hw} / {tps}", e is not None)
         if e is None:
             continue
@@ -123,7 +139,7 @@ def test_enumerated_delta_matches_its_decision():
     deltas = deltas_from_findings()
     check("findings/1866.md enumerates the six shifted rows", len(deltas) == 6, len(deltas))
     for mid, eng, hw, tps, before, after, decision in deltas:
-        e = rows.get((mid, eng, hw, tps))
+        e = find_row(rows, mid, eng, hw, tps)
         check(f"delta row present: {mid} / {hw} / {tps}", e is not None)
         if e is None:
             continue
