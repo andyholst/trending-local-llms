@@ -178,8 +178,13 @@ jobs:
       # remedy. This is the READ-ONLY half of the reconciliation seam: against the repo tree
       # it proves the classify/union logic on every PR without a host profile home. The write
       # path (WRITE=1, host home or DEST=<worktree>) is host-only by design.
-      - name: Fleet mirror reconciliation seam (issue #1464)
-        run: make fleet-host-reconcile BASE=HEAD PROFILES_HOME=agents
+      # (issue #1860) The comparison set now includes the ONE host AGENTS.md against the
+      # repo-root AGENTS.md. In CI there is no live host profile home: RULEBOOK=AGENTS.md
+      # resolves that one file against this same repo tree, so the read-only proof covers the
+      # rulebook too. A live host write is NEVER automated here -- it needs WRITE=1 and an
+      # attended rule-3c sign-off on the operator's machine.
+      - name: Fleet mirror reconciliation seam (issue #1464 / #1860)
+        run: make fleet-host-reconcile BASE=HEAD PROFILES_HOME=agents RULEBOOK=AGENTS.md
 
       # (issue #1266) The watcher's change detector is repo-owned: every host installs the
       # same markers. This is the offline half — no network, no credentials — so a PR

@@ -43,6 +43,12 @@ LANES = (
 # blocks go through `agent_profile_provision.check_one` (issue #1401), so a second drift
 # verdict for it is forbidden (#1198/#1204). `fleet_host_reconcile` imports this list --
 # ONE definition of which files are compared (rule 6d).
+# (issue #1860) The comparison set is MIRROR_RELS PLUS the ONE host rulebook. The rulebook is
+# a single file at the PROFILES_HOME root (not per lane), compared against the repo-root
+# AGENTS.md. `fleet_host_reconcile` imports all three names -- ONE definition of which files
+# are compared, against which base, and which writes need an attended sign-off (rules 6d/3c).
+RULEBOOK_REL = "AGENTS.md"
+PROTECTED_RELS = (RULEBOOK_REL,)  # rule 3c: never silently overwrite a host instruction file
 MIRROR_RELS = ("SOUL.md", "skills/{lane}/SKILL.md")
 
 # The rulebook markers the fleet's behaviour hangs on. Every one must be present in
@@ -173,9 +179,9 @@ def main(argv: list[str] | None = None) -> int:
                 failed += 1
 
     try:
-        rulebook = _blob(root, base_sha, "AGENTS.md").decode("utf-8")
+        rulebook = _blob(root, base_sha, RULEBOOK_REL).decode("utf-8")
     except ValueError:
-        print(f"[fleet-sync] FAIL {base_sha}:AGENTS.md missing at base")
+        print(f"[fleet-sync] FAIL {base_sha}:{RULEBOOK_REL} missing at base")
         failed += 1
     else:
         for marker in RULEBOOK_MARKERS:

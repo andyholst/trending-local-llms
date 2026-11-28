@@ -1867,13 +1867,13 @@ fleet-host-sync-check: ## Refuse a host fleet whose lane bytes / AGENTS.md lifec
 # wake refresh); DEST=<worktree> lands the same computed union under agents/<lane>/<rel> for
 # the reviewed PR. Report-only by default; WRITE=1 writes. `config.yaml` is out of scope
 # (#1198/#1204 -- agent-profile-provision owns it).
-FLEET_RECONCILE_ARGS := $(if $(BASE),--base $(BASE),--base origin/master)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)$(if $(ROOT), --root $(ROOT),)$(if $(DEST), --dest $(DEST),)$(if $(WRITE), --write,)$(if $(EXPECT_REF), --expect-ref $(EXPECT_REF),)
+FLEET_RECONCILE_ARGS := $(if $(BASE),--base $(BASE),--base origin/master)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)$(if $(ROOT), --root $(ROOT),)$(if $(DEST), --dest $(DEST),)$(if $(WRITE), --write,)$(if $(EXPECT_REF), --expect-ref $(EXPECT_REF),)$(if $(ATTESTED), --attended-signoff,)$(if $(RULEBOOK), --rulebook $(RULEBOOK),)
 
 .PHONY: _fleet-host-reconcile fleet-host-reconcile
 _fleet-host-reconcile:
 	python3 scripts/fleet_host_reconcile.py$(if $(FLEET_RECONCILE_ARGS), $(FLEET_RECONCILE_ARGS),)
 
-fleet-host-reconcile: ## Classify a divergent fleet text mirror and land the lossless union (BASE=origin/master, PROFILES_HOME=..., DEST=..., WRITE=1, EXPECT_REF=..., issue #1464)
+fleet-host-reconcile: ## Classify a divergent fleet mirror + host rulebook and land the lossless union (BASE=origin/master, PROFILES_HOME=..., DEST=..., WRITE=1, ATTESTED=1 for protected rule 3c writes, RULEBOOK=..., EXPECT_REF=..., issue #1464/#1860)
 	@$(MAKE) --no-print-directory _fleet-host-reconcile
 
 .PHONY: _watch-monitor watch-monitor
