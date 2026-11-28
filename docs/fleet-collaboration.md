@@ -102,8 +102,8 @@ and never a new Actions `schedule:`. The runnable checklist is
    `make fleet-host-sync-check BASE=origin/master` **from this host**. Report the drift; file a
    small `enhancement` issue for it and fix through `tll-implementer` and the in-tree mirrors —
    never wipe Hermes runtime stamps or byte-copy a host-ahead note to force green.
-2. Verify the roster: four instances of every delegable lane plus the single planner; report
-   missing or unhealthy instances.
+2. Verify the roster: four instances of every delegable lane plus one planner on each machine;
+   report missing or unhealthy instances.
 3. Verify that this collaboration document still matches the live protocols; file a small
    issue for any drift.
 4. Re-read open fleet issues and PRs; post the board note with in-progress lanes and PRs
