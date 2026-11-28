@@ -37,8 +37,8 @@ into the pass record and tick each line as it is done.
       is real work and is reconciled through the write lane, not overwritten.
 
 - [ ] **2. Verify the roster.** Confirm four instances of each delegable lane are present on the
-      gateway — `<lane>`, `<lane>-2`, `<lane>-3`, `<lane>-4` — with `tll-planner` a single instance.
-      Run `hermes -p <name> doctor` for each instance. Report every missing or
+      gateway — `<lane>`, `<lane>-2`, `<lane>-3`, `<lane>-4` — plus one `tll-planner` on each
+      machine. Run `hermes -p <name> doctor` for each instance. Report every missing or
       unhealthy instance; do not silently recreate a profile or grant access.
 
 - [ ] **3. Verify the collaboration doc still matches the live protocols.** Read

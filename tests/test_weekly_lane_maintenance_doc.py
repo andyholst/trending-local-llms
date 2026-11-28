@@ -94,7 +94,7 @@ def test_the_pass_covers_roster_collab_board_and_record() -> int:
         "<lane>-2",
         "<lane>-3",
         "<lane>-4",
-        "`tll-planner` a single instance",
+        "one `tll-planner` on each",
         "hermes -p <name> doctor",
         "docs/fleet-collaboration.md",
         "in-progress lanes",

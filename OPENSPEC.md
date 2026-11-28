@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **618**
+Active changes: **1** · archived: **619**
 
 ## Active changes
 
@@ -397,6 +397,7 @@ Active changes: **1** · archived: **618**
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `model-type-rollup-1246` | archived | #1246 (companion to the pending owner ruling #1235) | #1247 | [trend-aggregation](openspec/changes/archive/model-type-rollup-1246/specs/trend-aggregation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/model-type-rollup-1246/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
+| `multi-planner-dual-surface-1859` | archived | #1859 | #1861 | [agent-coordination](openspec/changes/archive/multi-planner-dual-surface-1859/specs/agent-coordination/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/multi-planner-dual-surface-1859/proposal.md) |
 | `multiarch-base-test-image-publishers` | archived | #958 — "The base and test image publishers are still amd64-only" | #1114 | [agent-image-publish](openspec/changes/archive/multiarch-base-test-image-publishers/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/multiarch-base-test-image-publishers/proposal.md) |
 | `nerve-check-test-value-marker` | archived | #1277 | #1283 | [nerve-check-test-value-marker](openspec/changes/archive/nerve-check-test-value-marker/specs/nerve-check-test-value-marker/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/nerve-check-test-value-marker/proposal.md) |
 | `next-issue-duty-1260` | archived | #1260 | #1286 | [fleet-handover](openspec/changes/archive/next-issue-duty-1260/specs/fleet-handover/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/next-issue-duty-1260/proposal.md) |

@@ -1083,6 +1083,32 @@ def test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer() -> int:
     return failed
 
 
+def test_the_collaboration_doc_covers_unbounded_planners_and_dual_surface_handovers() -> int:
+    """Issue #1859: unlimited planner machines use the issue AND PR comment threads."""
+    rel = COLLAB_DOC.relative_to(ROOT)
+    if not COLLAB_DOC.is_file():
+        print(f"FAIL {rel} missing")
+        return 1
+    text = COLLAB_DOC.read_text(encoding="utf-8")
+    needles = (
+        "## 7. Unbounded planner machines and dual-surface handovers",
+        "unlimited tll-planner machines",
+        "each with its own tll agent lanes",
+        "issue thread",
+        "PR comment thread",
+        "user@hostname",
+        "make dispatch-check",
+        "comments are the single source of truth",
+        "no cron, no scheduler and no second dispatcher",
+    )
+    failed = 0
+    for needle in needles:
+        if needle not in text:
+            print(f"FAIL {rel} does not name {needle!r}")
+            failed += 1
+    return failed
+
+
 def test_host_ahead_lane_skill_clauses_are_landed() -> int:
     """Issue #1745: the owner-authorised host-ahead clauses survive in all three mirrors.
 
@@ -1126,6 +1152,7 @@ def main() -> int:
         test_the_canonical_collaboration_doc_covers_every_lane_and_the_board_protocol,
         test_agents_readme_points_at_the_canonical_collaboration_doc,
         test_the_collaboration_doc_keeps_cadence_distinct_from_a_timer,
+        test_the_collaboration_doc_covers_unbounded_planners_and_dual_surface_handovers,
         test_the_planner_mirror_carries_the_owners_parallel_dispatch_rule,
         test_the_planner_mirror_carries_the_owner_style_and_pr_gate_notes,
         test_fourth_batch_host_ahead_notes_are_landed,
