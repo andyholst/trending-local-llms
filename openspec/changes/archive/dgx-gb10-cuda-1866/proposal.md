@@ -1,5 +1,5 @@
 Issue: #1866
-PR: pending
+PR: #1867
 
 # Proposal: dgx-gb10-cuda-1866
 

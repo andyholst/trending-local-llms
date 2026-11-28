@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **622**
+Active changes: **1** · archived: **623**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `dgx-gb10-cuda-1866` | active | #1866 | pending | [measurement-backend](openspec/changes/dgx-gb10-cuda-1866/specs/measurement-backend/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/dgx-gb10-cuda-1866/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -242,6 +241,7 @@ Active changes: **2** · archived: **622**
 | `declared-est-reask-pipeline` | archived | #936 | #941 | [data-gap-analysis](openspec/changes/archive/declared-est-reask-pipeline/specs/data-gap-analysis/spec.md) | 9/11 · 2 blocked | [proposal.md](openspec/changes/archive/declared-est-reask-pipeline/proposal.md) |
 | `dedupe-mirrors-1468` | archived | #1468 | #1472 | [agent-skill-mirrors](openspec/changes/archive/dedupe-mirrors-1468/specs/agent-skill-mirrors/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/dedupe-mirrors-1468/proposal.md) |
 | `detect-approval-hold-in-pr-health` | archived | #1123 (filed with a live measurement) | #1124 | [pr-health](openspec/changes/archive/detect-approval-hold-in-pr-health/specs/pr-health/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/detect-approval-hold-in-pr-health/proposal.md) |
+| `dgx-gb10-cuda-1866` | archived | #1866 | #1867 | [measurement-backend](openspec/changes/archive/dgx-gb10-cuda-1866/specs/measurement-backend/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/dgx-gb10-cuda-1866/proposal.md) |
 | `dimension-applicability` | archived | #469 | — | [data-gap-analysis](openspec/changes/archive/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/dimension-applicability/proposal.md) |
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
 | `dispatch-guard-1416` | archived | #1416 | #1428 | [dispatch-guard](openspec/changes/archive/dispatch-guard-1416/specs/dispatch-guard/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/dispatch-guard-1416/proposal.md) |
